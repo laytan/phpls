@@ -15,8 +15,8 @@ import (
 func main() {
 	ctx := context.Background()
 
-	// TODO: Based on cmdline args and flags,
-	// TODO: also make listener port etc configurable.
+	// OPTIM: Based on cmdline args and flags,
+	// OPTIM: also make listener port etc configurable.
 	// See: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#implementationConsiderations
 	connType := "ws"
 	connChan := make(chan net.Conn, 1)

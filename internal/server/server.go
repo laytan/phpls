@@ -1,9 +1,9 @@
 package server
 
 import (
-	"context"
-
+	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/elephp/pkg/lsperrors"
 )
 
 func NewServer(client protocol.ClientCloser) *server {
@@ -12,23 +12,36 @@ func NewServer(client protocol.ClientCloser) *server {
 	}
 }
 
-type server struct {
-	client protocol.ClientCloser
+type serverInfo struct {
+	Name    string `json:"name"`
+	Version string `json:"version,omitempty"`
 }
 
-func (s *server) Initialize(
-	context.Context,
-	*protocol.ParamInitialize,
-) (*protocol.InitializeResult, error) {
-	return &protocol.InitializeResult{
-		Capabilities: protocol.ServerCapabilities{},
-		ServerInfo: struct {
-			Name    string `json:"name"`
-			Version string `json:"version,omitempty"`
-		}{
-			Name: "elephp",
-			// TODO: version from env/go/anywhere
-			Version: "0.0.1-dev",
-		},
-	}, nil
+type server struct {
+	client protocol.ClientCloser
+
+	// Untill this is true, the server should only allow 'initialize' and 'initialized' requests.
+	isInitialized bool
+
+	// When this is true, the server should only allow 'exit' requests.
+	// When the 'exit' request is sent, the server can exit completely.
+	isShuttingDown bool
+
+	openFile *protocol.TextDocumentItem
+}
+
+// OPTIM: Might make sense to use the state design pattern, eliminating the call
+// OPTIM: to this method in every handler.
+func (s *server) isMethodAllowed(method string) error {
+	// If we are shutting down, we only allow an exit request.
+	if s.isShuttingDown && method != "Exit" {
+		return jsonrpc2.ErrInvalidRequest
+	}
+
+	// When not initialized, we require initialization first.
+	if !s.isInitialized && method != "Initialize" && method != "Initialized" {
+		return lsperrors.ErrServerNotInitialized
+	}
+
+	return nil
 }

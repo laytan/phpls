@@ -37,14 +37,6 @@ func (s *server) DidDeleteFiles(context.Context, *protocol.DeleteFilesParams) er
 	return errors.New(errorUnimplemented)
 }
 
-func (s *server) Initialized(context.Context, *protocol.InitializedParams) error {
-	return errors.New(errorUnimplemented)
-}
-
-func (s *server) Exit(context.Context) error {
-	return errors.New(errorUnimplemented)
-}
-
 func (s *server) DidChangeConfiguration(
 	context.Context,
 	*protocol.DidChangeConfigurationParams,
@@ -243,10 +235,6 @@ func (s *server) Resolve(
 }
 
 func (s *server) InlayHintRefresh(context.Context) error {
-	return errors.New(errorUnimplemented)
-}
-
-func (s *server) Shutdown(context.Context) error {
 	return errors.New(errorUnimplemented)
 }
 
