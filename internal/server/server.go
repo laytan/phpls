@@ -27,7 +27,10 @@ type server struct {
 	// When the 'exit' request is sent, the server can exit completely.
 	isShuttingDown bool
 
+	// The currently open file, if any.
 	openFile *protocol.TextDocumentItem
+
+	root protocol.DocumentURI
 }
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call

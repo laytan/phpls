@@ -10,8 +10,8 @@ import (
 
 // Entrypoint, must be requested first by the client.
 func (s *server) Initialize(
-	context.Context,
-	*protocol.ParamInitialize,
+	ctx context.Context,
+	params *protocol.ParamInitialize,
 ) (*protocol.InitializeResult, error) {
 	if err := s.isMethodAllowed("Initialize"); err != nil {
 		return nil, err
@@ -25,14 +25,17 @@ func (s *server) Initialize(
 
 	// NOTE: Are we sending strings? There is a 'locale' param that we might want to support (translations).
 
-	// TODO: use 'rootPath' and 'rootUri' to start parsing the project.
-	// OPTIM: might need to take 'workspaceFolders' into account here later to, although I don't know what that is yet.
-
 	// TODO: store 'capabilities' of client and use when necessary, (maybe wrap in nice access methods).
 
 	// OPTIM: support 'trace', when set, we need to send traces back specified by
 	// OPTIM: the given trace severity.
 	// NOTE: $/logTrace should be used for systematic trace reporting. For single debugging messages, the server should send window/logMessage notifications.
+
+	// OPTIM: support 'workspaceFolders'.
+	s.root = params.RootURI
+	if len(s.root) == 0 {
+		return nil, lsperrors.ErrRequestFailed("LSP Server requires RootURI to be set")
+	}
 
 	return &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
