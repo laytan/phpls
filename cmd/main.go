@@ -18,7 +18,7 @@ func main() {
 	// OPTIM: Based on cmdline args and flags,
 	// OPTIM: also make listener port etc configurable.
 	// See: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#implementationConsiderations
-	connType := "ws"
+	connType := "stdio"
 	connChan := make(chan net.Conn, 1)
 	go func() {
 		if err := connection.NewConnectionListener(connType, connChan); err != nil {

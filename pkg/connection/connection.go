@@ -16,6 +16,9 @@ func NewConnectionListener(connType string, connChan chan<- net.Conn) error {
 	case "tcp":
 		tcp(connChan)
 		return nil
+	case "stdio":
+		connChan <- NewDefaultStdio()
+		return nil
 	}
 
 	return errors.New("no connChan listener for given connType")
