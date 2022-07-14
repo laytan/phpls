@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 )
 
@@ -32,10 +34,13 @@ func (s *server) Initialize(
 	// NOTE: $/logTrace should be used for systematic trace reporting. For single debugging messages, the server should send window/logMessage notifications.
 
 	// OPTIM: support 'workspaceFolders'.
-	s.root = params.RootURI
+	s.root = strings.TrimPrefix(string(params.RootURI), "file://")
 	if len(s.root) == 0 {
 		return nil, lsperrors.ErrRequestFailed("LSP Server requires RootURI to be set")
 	}
+
+	s.project = project.NewProject(string(s.root))
+	go s.project.Parse()
 
 	return &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
@@ -46,6 +51,7 @@ func (s *server) Initialize(
 
 				OpenClose: true,
 			},
+			DefinitionProvider: true,
 		},
 		ServerInfo: serverInfo{
 			Name: "elephp",

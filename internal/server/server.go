@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 )
 
@@ -30,7 +31,9 @@ type server struct {
 	// The currently open file, if any.
 	openFile *protocol.TextDocumentItem
 
-	root protocol.DocumentURI
+	root string
+
+	project *project.Project
 }
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call

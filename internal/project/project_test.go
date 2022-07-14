@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -14,14 +15,18 @@ import (
 
 func TestDefinitions(t *testing.T) {
 	project := NewProject("/Users/laytan/projects/elephp/fixtures/definitions")
-	err := project.parse()
+	err := project.Parse()
 	if err != nil {
 		panic(err)
 	}
 
-	project.definition(
+	pos, err := project.Definition(
 		"/Users/laytan/projects/elephp/fixtures/definitions/variable.php",
-		5,
-		8,
+		&Position{Row: 7, Col: 8},
 	)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Definition is at (%d, %d)\n", pos.Row, pos.Col)
 }

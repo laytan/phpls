@@ -1,6 +1,8 @@
 package project
 
 import (
+	"sort"
+
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/visitor"
 )
@@ -36,7 +38,12 @@ type line struct {
 	nodes []ast.Vertex
 }
 
-func (v *DefinitionResolver) getNode() (ast.Vertex, bool) {
+func (v *DefinitionResolver) getColumn(node ast.Vertex) int {
+	line := v.Lines[node.GetPosition().StartLine]
+	return (node.GetPosition().StartPos - line.startPos) + 1
+}
+
+func (v *DefinitionResolver) getNode() ([]ast.Vertex, bool) {
 	line, exists := v.Lines[v.row]
 	if !exists {
 		return nil, false
@@ -44,24 +51,33 @@ func (v *DefinitionResolver) getNode() (ast.Vertex, bool) {
 
 	pos := line.startPos + v.col
 
-	var min ast.Vertex
+	// Get all the nodes that span the current position.
+	nodes := make([]ast.Vertex, 0)
 	for _, node := range line.nodes {
 		if node.GetPosition().StartPos <= pos && node.GetPosition().EndPos >= pos {
-			if min == nil {
-				min = node
-				continue
-			}
-
-			range1 := node.GetPosition().EndPos - node.GetPosition().StartPos
-			range2 := min.GetPosition().EndPos - min.GetPosition().StartPos
-
-			if range1 < range2 {
-				min = node
-			}
+			nodes = append(nodes, node)
 		}
 	}
 
-	return min, min != nil
+	if len(nodes) == 0 {
+		return nil, false
+	}
+
+	// OPTIM: insert nodes in sorted order, so we don't have to sort here.
+	sort.Slice(nodes, func(i int, j int) bool {
+		// NOTE: will this work with multiline nodes?
+		// NOTE: should we check the range based on line start and end to?
+
+		iPos := nodes[i].GetPosition()
+		iRange := iPos.EndPos - iPos.StartPos
+
+		jPos := nodes[j].GetPosition()
+		jRange := jPos.EndPos - jPos.StartPos
+
+		return iRange < jRange
+	})
+
+	return nodes, true
 }
 
 func (v *DefinitionResolver) check(n ast.Vertex) {

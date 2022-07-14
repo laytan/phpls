@@ -2,16 +2,7 @@ package server
 
 import (
 	"context"
-	"io/fs"
-	"io/ioutil"
-	"path/filepath"
-	"strings"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/conf"
-	"github.com/VKCOM/php-parser/pkg/errors"
-	"github.com/VKCOM/php-parser/pkg/parser"
-	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/pkg/lsperrors"
 )

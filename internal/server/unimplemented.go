@@ -256,13 +256,6 @@ func (s *server) SignatureHelp(
 	return nil, errorUnimplemented
 }
 
-func (s *server) Definition(
-	context.Context,
-	*protocol.DefinitionParams,
-) (protocol.Definition, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *server) References(
 	context.Context,
 	*protocol.ReferenceParams,
