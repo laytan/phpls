@@ -10,11 +10,10 @@ import (
 type ConnType uint
 
 const (
-    ConnStdio ConnType = iota
-    ConnWs
-    ConnTcp
+	ConnStdio ConnType = iota
+	ConnWs
+	ConnTcp
 )
-
 
 func NewConnectionListener(connType ConnType, URL string, connChan chan<- net.Conn) {
 	switch connType {
@@ -26,7 +25,7 @@ func NewConnectionListener(connType ConnType, URL string, connChan chan<- net.Co
 		return
 	case ConnStdio:
 		connChan <- NewDefaultStdio()
-		return 
+		return
 	}
 }
 

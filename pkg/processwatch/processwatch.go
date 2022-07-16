@@ -8,15 +8,15 @@ import (
 )
 
 func New(pid uint16, interval time.Duration, onExit func()) *Watcher {
-    watcher := Watcher{
-        Pid: pid,
-        Interval: interval,
-        OnExit: onExit,
-    }
-    
-    watcher.Start()
+	watcher := Watcher{
+		Pid:      pid,
+		Interval: interval,
+		OnExit:   onExit,
+	}
 
-    return &watcher
+	watcher.Start()
+
+	return &watcher
 }
 
 // TODO: Way to stop watcher

@@ -19,46 +19,46 @@ import (
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 )
 
-var (
-    ErrIncorrectConnTypeAmt = errors.New("Elephp requires exactly one connection type to be selected")
+var ErrIncorrectConnTypeAmt = errors.New(
+	"Elephp requires exactly one connection type to be selected",
 )
 
 type Opts struct {
 	ClientProcessId uint16 `long:"clientProcessId" description:"Process ID that when terminated, terminates the language server"`
-	UseStdio        bool   `long:"stdio" description:"Communicate over stdio"`
-	UseWs           bool   `long:"ws" description:"Communicate over websockets"`
-	UseTcp          bool   `long:"tcp" description:"Communicate over TCP"`
-	URL             string `long:"url" description:"The URL to listen on for tcp or websocket connections" default:"127.0.0.1:2001"`
-    Statsviz        bool   `long:"statsviz" description:"Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz"`
+	UseStdio        bool   `long:"stdio"           description:"Communicate over stdio"`
+	UseWs           bool   `long:"ws"              description:"Communicate over websockets"`
+	UseTcp          bool   `long:"tcp"             description:"Communicate over TCP"`
+	URL             string `long:"url"             description:"The URL to listen on for tcp or websocket connections"              default:"127.0.0.1:2001"`
+	Statsviz        bool   `long:"statsviz"        description:"Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz"`
 }
 
 func (o *Opts) ConnType() (connection.ConnType, error) {
-    connTypes := map[connection.ConnType]bool{
-        connection.ConnStdio: o.UseStdio,
-        connection.ConnTcp: o.UseTcp,
-        connection.ConnWs: o.UseWs,
-    }
-    
-    var result connection.ConnType
-    var found bool
-    for connType, selected := range connTypes {
-        if !selected {
-            continue
-        }
+	connTypes := map[connection.ConnType]bool{
+		connection.ConnStdio: o.UseStdio,
+		connection.ConnTcp:   o.UseTcp,
+		connection.ConnWs:    o.UseWs,
+	}
 
-        if found {
-        return result, ErrIncorrectConnTypeAmt
-    }
+	var result connection.ConnType
+	var found bool
+	for connType, selected := range connTypes {
+		if !selected {
+			continue
+		}
 
-        result = connType
-        found = true
-    }
+		if found {
+			return result, ErrIncorrectConnTypeAmt
+		}
 
-    if !found {
-        return result, ErrIncorrectConnTypeAmt
-    }
+		result = connType
+		found = true
+	}
 
-    return result, nil
+	if !found {
+		return result, ErrIncorrectConnTypeAmt
+	}
+
+	return result, nil
 }
 
 func main() {
@@ -68,32 +68,30 @@ func main() {
 		return
 	}
 
-    connType, err := opts.ConnType()
-    if err != nil {
-        log.Fatalf(err.Error())
-    }
+	connType, err := opts.ConnType()
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 
-    // TODO: if this is 0, we need to make sure the client sends their process ID
-    // TODO: during initialization and we should watch that process.
-    if opts.ClientProcessId != 0 {
-        processwatch.New(opts.ClientProcessId, time.Second * 10, func () {
-            log.Fatal("The client process has exited, exiting elephp to")
-        })
-    }
+	// TODO: if this is 0, we need to make sure the client sends their process ID
+	// TODO: during initialization and we should watch that process.
+	if opts.ClientProcessId != 0 {
+		processwatch.New(opts.ClientProcessId, time.Second*10, func() {
+			log.Fatal("The client process has exited, exiting elephp to")
+		})
+	}
 
-    
-    if opts.Statsviz {
-        go func() {
-            statsviz.RegisterDefault()
-            log.Println(http.ListenAndServe("localhost:6060", nil))
-        }()
-    }
-
+	if opts.Statsviz {
+		go func() {
+			statsviz.RegisterDefault()
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
+	}
 
 	ctx := context.Background()
 
 	connChan := make(chan net.Conn, 1)
-	go func() { connection.NewConnectionListener(connType, opts.URL, connChan); }()
+	go func() { connection.NewConnectionListener(connType, opts.URL, connChan) }()
 	conn := <-connChan
 
 	stream := jsonrpc2.NewHeaderStream(conn)
