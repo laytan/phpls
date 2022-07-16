@@ -5,8 +5,10 @@ import (
 	"errors"
 	"log"
 	"net"
+	"net/http"
 	"time"
 
+	"github.com/arl/statsviz"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/jessevdk/go-flags"
 	"github.com/laytan/elephp/internal/server"
@@ -27,6 +29,7 @@ type Opts struct {
 	UseWs           bool   `long:"ws" description:"Communicate over websockets"`
 	UseTcp          bool   `long:"tcp" description:"Communicate over TCP"`
 	URL             string `long:"url" description:"The URL to listen on for tcp or websocket connections" default:"127.0.0.1:2001"`
+    Statsviz        bool   `long:"statsviz" description:"Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz"`
 }
 
 func (o *Opts) ConnType() (connection.ConnType, error) {
@@ -77,6 +80,15 @@ func main() {
             log.Fatal("The client process has exited, exiting elephp to")
         })
     }
+
+    
+    if opts.Statsviz {
+        go func() {
+            statsviz.RegisterDefault()
+            log.Println(http.ListenAndServe("localhost:6060", nil))
+        }()
+    }
+
 
 	ctx := context.Background()
 
