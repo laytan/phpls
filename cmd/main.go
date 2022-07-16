@@ -11,6 +11,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/laytan/elephp/internal/server"
 	"github.com/laytan/elephp/pkg/connection"
+	"github.com/laytan/elephp/pkg/processwatch"
 
 	// TODO: Check the difference between v1 and v2 of this
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
@@ -67,6 +68,14 @@ func main() {
     connType, err := opts.ConnType()
     if err != nil {
         log.Fatalf(err.Error())
+    }
+
+    // TODO: if this is 0, we need to make sure the client sends their process ID
+    // TODO: during initialization and we should watch that process.
+    if opts.ClientProcessId != 0 {
+        processwatch.New(opts.ClientProcessId, time.Second * 10, func () {
+            log.Fatal("The client process has exited, exiting elephp to")
+        })
     }
 
 	ctx := context.Background()
