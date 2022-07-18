@@ -17,8 +17,8 @@ func (s *server) Definition(
 	pos, err := s.project.Definition(
 		path,
 		&project.Position{
-			Row: int(params.Position.Line) + 1,
-			Col: int(params.Position.Character) + 1,
+			Row: uint(params.Position.Line + 1),
+			Col: uint(params.Position.Character + 1),
 		},
 	)
 	if err != nil {

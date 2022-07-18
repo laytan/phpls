@@ -1,26 +1,22 @@
 package traversers
 
 import (
+	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/visitor"
 )
 
-func NewAssignment(variable *ast.ExprVariable) *assignment {
-	name, ok := variable.Name.(*ast.Identifier)
-	if !ok {
-		panic("not ok")
-	}
-
+func NewAssignment(variable *ir.SimpleVar) *assignment {
 	return &assignment{
 		variable:     variable,
-		variableName: string(name.IdentifierTkn.Value),
+		variableName: "$" + variable.Name,
 	}
 }
 
 type assignment struct {
 	visitor.Null
 
-	variable     *ast.ExprVariable
+	variable     *ir.SimpleVar
 	variableName string
 
 	Assignment *ast.ExprAssign
