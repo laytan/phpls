@@ -47,7 +47,7 @@ func main() {
 	ctx := context.Background()
 
 	connChan := make(chan net.Conn, 1)
-	go func() { connection.NewConnectionListener(connType, config.ConnURL(), connChan) }()
+	go func() { connection.NewConnectionListener(connType, config.ConnURL(), connChan, nil) }()
 	conn := <-connChan
 
 	stream := jsonrpc2.NewHeaderStream(conn)

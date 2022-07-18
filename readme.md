@@ -15,5 +15,5 @@ go run cmd/main.go --statsviz
 
 Run all tests with coverage:
 ```bash
-go test ./... --cover
+go test ./... --cover -timeout=1s
 ```
