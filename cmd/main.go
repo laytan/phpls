@@ -53,8 +53,14 @@ func main() {
 	ctx := context.Background()
 
 	connChan := make(chan net.Conn, 1)
-	go func() { connection.NewConnectionListener(connType, config.ConnURL(), connChan, nil) }()
+	listeningChann := make(chan bool, 1)
+	go func() { connection.NewConnectionListener(connType, config.ConnURL(), connChan, listeningChann) }()
+
+	<-listeningChann
+	log.Infof("Waiting for connection of type: %s\n", connType)
+
 	conn := <-connChan
+	log.Infoln("Connected with client")
 
 	stream := jsonrpc2.NewHeaderStream(conn)
 	rpcConn := jsonrpc2.NewConn(stream)

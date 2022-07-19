@@ -33,6 +33,7 @@ func NewConnectionListener(
 		close(listeningChann)
 
 		connChan <- NewDefaultStdio()
+		close(connChan)
 		return
 	}
 }
