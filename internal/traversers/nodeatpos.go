@@ -19,10 +19,10 @@ func (n *nodeatpos) EnterNode(node ir.Node) bool {
 	pos := ir.GetPosition(node)
 	if n.pos >= uint(pos.StartPos) && n.pos <= uint(pos.EndPos) {
 		n.Nodes = append(n.Nodes, node)
+		return true
 	}
 
-	// OPTIM: we might be able to return false sometimes for more performance.
-	return true
+	return false
 }
 
 func (n *nodeatpos) LeaveNode(ir.Node) {}
