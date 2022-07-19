@@ -7,12 +7,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type ConnType uint
+type ConnType string
 
 const (
-	ConnStdio ConnType = iota
-	ConnWs
-	ConnTcp
+	ConnStdio ConnType = "stdio"
+	ConnWs    ConnType = "ws"
+	ConnTcp   ConnType = "tcp"
 )
 
 func NewConnectionListener(

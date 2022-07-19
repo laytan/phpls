@@ -8,6 +8,22 @@ import (
 	"github.com/laytan/elephp/pkg/connection"
 )
 
+type LogOutput string
+
+const (
+	LogOutputStderr LogOutput = "stderr"
+	LogOutputFile   LogOutput = "file"
+)
+
+type LogLevel string
+
+const (
+	LogLevelDebug LogLevel = "debug"
+	LogLevelInfo  LogLevel = "info"
+	LogLevelWarn  LogLevel = "warn"
+	LogLevelError LogLevel = "error"
+)
+
 var ErrIncorrectConnTypeAmt = errors.New(
 	"Elephp requires exactly one connection type to be selected",
 )
@@ -24,15 +40,8 @@ type Config interface {
 	ConnType() (connection.ConnType, error)
 	ConnURL() string
 	UseStatsviz() bool
-}
-
-type opts struct {
-	ClientProcessId uint16 `long:"clientProcessId" description:"Process ID that when terminated, terminates the language server"`
-	UseStdio        bool   `long:"stdio"           description:"Communicate over stdio"`
-	UseWs           bool   `long:"ws"              description:"Communicate over websockets"`
-	UseTcp          bool   `long:"tcp"             description:"Communicate over TCP"`
-	URL             string `long:"url"             description:"The URL to listen on for tcp or websocket connections"              default:"127.0.0.1:2001"`
-	Statsviz        bool   `long:"statsviz"        description:"Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz"`
+	LogOutput() LogOutput
+	LogLevel() LogLevel
 }
 
 type lsConfig struct {
@@ -65,7 +74,7 @@ func (c *lsConfig) ConnType() (connection.ConnType, error) {
 		}
 
 		if found {
-			return 0, ErrIncorrectConnTypeAmt
+			return "", ErrIncorrectConnTypeAmt
 		}
 
 		result = connType
@@ -73,7 +82,7 @@ func (c *lsConfig) ConnType() (connection.ConnType, error) {
 	}
 
 	if !found {
-		return 0, ErrIncorrectConnTypeAmt
+		return "", ErrIncorrectConnTypeAmt
 	}
 
 	return result, nil
@@ -85,4 +94,12 @@ func (c *lsConfig) ConnURL() string {
 
 func (c *lsConfig) UseStatsviz() bool {
 	return c.opts.Statsviz
+}
+
+func (c *lsConfig) LogOutput() LogOutput {
+	return c.opts.Log
+}
+
+func (c *lsConfig) LogLevel() LogLevel {
+	return c.opts.LogLevel
 }

@@ -2,17 +2,19 @@ package main
 
 import (
 	"context"
-	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/arl/statsviz"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/config"
+	"github.com/laytan/elephp/internal/logging"
 	"github.com/laytan/elephp/internal/server"
 	"github.com/laytan/elephp/pkg/connection"
 	"github.com/laytan/elephp/pkg/processwatch"
+	log "github.com/sirupsen/logrus"
 
 	// TODO: Check the difference between v1 and v2 of this
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
@@ -22,25 +24,29 @@ func main() {
 	config := config.New()
 	err := config.Initialize()
 	if err != nil {
-		log.Println(err.Error())
-		return
+		os.Exit(1)
 	}
+
+	logging.Configure(config)
 
 	connType, err := config.ConnType()
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err)
 	}
 
 	if pid, isset := config.ClientPid(); isset {
+		log.Infof("Starting process watch for pid: %d\n", pid)
 		processwatch.New(pid, time.Second*10, func() {
-			log.Fatal("The client process has exited, exiting elephp to")
+			log.Infoln("The client process has exited, exiting elephp to")
+			os.Exit(1)
 		})
 	}
 
 	if config.UseStatsviz() {
 		go func() {
+			log.Infoln("Starting Statsviz at http://localhost:6060/debug/statsviz")
 			statsviz.RegisterDefault()
-			log.Println(http.ListenAndServe("localhost:6060", nil))
+			log.Error(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}
 
@@ -57,6 +63,6 @@ func main() {
 	rpcConn.Go(ctx, protocol.Handlers(protocol.ServerHandler(server, jsonrpc2.MethodNotFound)))
 	<-rpcConn.Done()
 	if err := rpcConn.Err(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
