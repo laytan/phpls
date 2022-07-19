@@ -1,49 +1,38 @@
 package traversers
 
-import (
-	"github.com/VKCOM/noverify/src/ir"
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/visitor"
-)
+import "github.com/VKCOM/noverify/src/ir"
 
 func NewAssignment(variable *ir.SimpleVar) *assignment {
 	return &assignment{
-		variable:     variable,
-		variableName: "$" + variable.Name,
+		variable: variable,
 	}
 }
 
+// assignment implements ir.Visitor.
 type assignment struct {
-	visitor.Null
-
-	variable     *ir.SimpleVar
-	variableName string
-
-	Assignment *ast.ExprAssign
+	variable   *ir.SimpleVar
+	Assignment *ir.SimpleVar
 }
 
-func (v *assignment) ExprAssign(n *ast.ExprAssign) {
-	if v.Assignment != nil {
-		return
+func (a *assignment) EnterNode(node ir.Node) bool {
+	if a.Assignment != nil {
+		return false
 	}
 
-	// TODO: a variable can be assigned multiple times, what should we do?
-
-	// TODO: can we cancel the whole visitor when we find the assignment?
-
-	// TODO: what about scopes (function, class, global, etc.)?
-
-	variable, ok := n.Var.(*ast.ExprVariable)
-	if !ok {
-		panic("not ok")
+	switch typedNode := node.(type) {
+	case *ir.Assign:
+		if assigned, ok := typedNode.Variable.(*ir.SimpleVar); ok {
+			if assigned.Name == a.variable.Name {
+				a.Assignment = assigned
+			}
+		}
+	case *ir.Parameter:
+		if typedNode.Variable.Name == a.variable.Name {
+			a.Assignment = typedNode.Variable
+		}
 	}
 
-	identifier, ok := variable.Name.(*ast.Identifier)
-	if !ok {
-		panic("not ok")
-	}
-
-	if string(identifier.IdentifierTkn.Value) == v.variableName {
-		v.Assignment = n
-	}
+	return true
 }
+
+func (a *assignment) LeaveNode(ir.Node) {}

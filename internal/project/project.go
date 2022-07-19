@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,7 +17,7 @@ import (
 	perrors "github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
+	"github.com/VKCOM/php-parser/pkg/visitor/dumper"
 	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/position"
 )
@@ -115,23 +116,34 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 		panic("File not found " + path)
 	}
 
+	goDumper := dumper.NewDumper(os.Stdout).WithTokens().WithPositions()
+	file.ast.Accept(goDumper)
+
 	apos := position.FromLocation(file.content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
 	irr := irconv.ConvertNode(file.ast)
 	irr.Walk(nap)
 
+	// Root.
+	scope := nap.Nodes[0]
 	for _, node := range nap.Nodes {
+		fmt.Printf("%T\n", node)
 		switch typedNode := node.(type) {
+		case *ir.FunctionStmt:
+			scope = typedNode
+			break
 		case *ir.SimpleVar:
-			assignment := p.assignment(path, typedNode)
+			assignment := p.assignment(scope, typedNode)
+			fmt.Printf("%#v\n", assignment)
 			if assignment == nil {
 				return nil, errors.New("No assignment found matching the variable at given position")
 			}
 
-			_, col := position.ToLocation(file.content, uint(assignment.Position.StartPos))
+			pos := ir.GetPosition(assignment)
+			_, col := position.ToLocation(file.content, uint(pos.StartPos))
 
 			return &Position{
-				Row: uint(assignment.Position.StartLine),
+				Row: uint(pos.StartLine),
 				Col: col,
 			}, nil
 		}
@@ -140,16 +152,11 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 	return nil, errors.New("No definition found for given arguments")
 }
 
-func (p *Project) assignment(path string, variable *ir.SimpleVar) *ast.ExprAssign {
+func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) ir.Node {
 	// OPTIM: will in the future need to span multiple files, but lets be basic about this.
 
-	file, ok := p.files[path]
-	if !ok {
-		panic("Not ok")
-	}
+	traverser := traversers.NewAssignment(variable)
+	scope.Walk(traverser)
 
-	assignmentTraverser := traversers.NewAssignment(variable)
-	traverser.NewTraverser(assignmentTraverser).Traverse(file.ast)
-
-	return assignmentTraverser.Assignment
+	return traverser.Assignment
 }

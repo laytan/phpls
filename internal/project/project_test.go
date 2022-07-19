@@ -22,11 +22,11 @@ func TestDefinitions(t *testing.T) {
 			position:    &Position{Row: 7, Col: 8},
 			outPosition: &Position{Row: 5, Col: 1},
 		},
-		// {
-		// 	file:        "/parameter.php",
-		// 	position:    &Position{Row: 7, Col: 13},
-		// 	outPosition: &Position{Row: 5, Col: 17},
-		// },
+		{
+			file:        "/parameter.php",
+			position:    &Position{Row: 7, Col: 13},
+			outPosition: &Position{Row: 5, Col: 17},
+		},
 	}
 
 	project := NewProject("/Users/laytan/projects/elephp/fixtures/definitions")
