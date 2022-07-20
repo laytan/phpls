@@ -86,8 +86,13 @@ func (p *Project) Parse() error {
 }
 
 func (p *Project) ParseRoot(root string) error {
-	// OPTIM: Move to the more efficient WalkDir
-	return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+	// NOTE: This does not walk symbolic links, is that a problem?
+	return filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			log.Error(fmt.Errorf("Error parsing root %s: %w", root, err))
+			return nil
+		}
+
 		// OPTIM: https://github.com/rjeczalik/notify to keep an eye on file changes and adds.
 
 		// TODO: make configurable what a php file is.
@@ -96,14 +101,23 @@ func (p *Project) ParseRoot(root string) error {
 			return nil
 		}
 
+		finfo, err := info.Info()
+		if err != nil {
+			log.Error(fmt.Errorf("Error reading file info of %s: %w", path, err))
+		}
+
 		// If we currently have this parsed and the file hasn't changed, don't parse it again.
 		if existing, ok := p.files[path]; ok {
-			if !existing.modified.Before(info.ModTime()) {
+			if !existing.modified.Before(finfo.ModTime()) {
 				return nil
 			}
 		}
 
-		return p.ParseFile(path, info.ModTime())
+		if err := p.ParseFile(path, finfo.ModTime()); err != nil {
+			log.Error(fmt.Errorf("Error parsing file %s: %w", path, err))
+		}
+
+		return nil
 	})
 }
 
