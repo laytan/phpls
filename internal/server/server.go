@@ -5,6 +5,7 @@ import (
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	log "github.com/sirupsen/logrus"
 )
 
 func NewServer(client protocol.ClientCloser) *server {
@@ -29,7 +30,7 @@ type server struct {
 	isShuttingDown bool
 
 	// The currently open file, if any.
-	openFile *protocol.TextDocumentItem
+	openFile string
 
 	root string
 
@@ -41,11 +42,19 @@ type server struct {
 func (s *server) isMethodAllowed(method string) error {
 	// If we are shutting down, we only allow an exit request.
 	if s.isShuttingDown && method != "Exit" {
+		log.Errorf(
+			"Method %s not allowed because the server is waiting for the exit method\n",
+			method,
+		)
 		return jsonrpc2.ErrInvalidRequest
 	}
 
 	// When not initialized, we require initialization first.
 	if !s.isInitialized && method != "Initialize" && method != "Initialized" {
+		log.Errorf(
+			"Method %s not allowed because the server is waiting for the initialization methods\n",
+			method,
+		)
 		return lsperrors.ErrServerNotInitialized
 	}
 

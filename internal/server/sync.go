@@ -2,9 +2,12 @@ package server
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
@@ -12,11 +15,15 @@ func (s *server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 		return err
 	}
 
-	if s.openFile != nil {
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+
+	if s.openFile != "" && s.openFile != path {
+		log.Errorln("Can't track file because an open file is already being tracked")
 		return lsperrors.ErrRequestFailed("LSP Server is already tracking an open file")
 	}
 
-	s.openFile = &params.TextDocument
+	s.openFile = path
+	log.Infof("Started tracking open file %s\n", s.openFile)
 	return nil
 }
 
@@ -28,32 +35,53 @@ func (s *server) DidChange(
 		return err
 	}
 
-	if s.openFile == nil {
+	if s.openFile == "" {
+		log.Errorln("Can't process DidChange request because there is no open file being tracked")
 		return lsperrors.ErrRequestFailed("LSP Server is not tracking an open file to be changed")
 	}
 
-	if params.TextDocument.URI != s.openFile.URI {
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+	if path != s.openFile {
+		log.Errorf(
+			"Got DidChange request for file %s but we are tracking %s as open\n",
+			path,
+			s.openFile,
+		)
 		return lsperrors.ErrRequestFailed("LSP Server is tracking a different file as open")
 	}
 
 	for _, changes := range params.ContentChanges {
 		if changes.Range != nil {
+			log.Errorln("LSP Server does not support ranges in DidChange requests")
 			return lsperrors.ErrRequestFailed(
 				"LSP Server does not support ranges in DidChange requests",
 			)
 		}
 
-		s.openFile.Text = changes.Text
+		s.project.ParseFileContent(
+			path,
+			[]byte(changes.Text),
+			time.Now(),
+		)
 	}
 
+	log.Infof("Parsed changes for open file %s\n", s.openFile)
 	return nil
 }
 
-func (s *server) DidClose(context.Context, *protocol.DidCloseTextDocumentParams) error {
+func (s *server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
 	if err := s.isMethodAllowed("DidClose"); err != nil {
 		return err
 	}
 
-	s.openFile = nil
+	// OPTIM: This might not be necessary, the changes made are good enough.
+	s.project.ParseFile(
+		strings.TrimPrefix(string(params.TextDocument.URI), "file://"),
+		time.Now(),
+	)
+
+	log.Infof("Closed file %s, started tracking it from the filesystem again\n", s.openFile)
+
+	s.openFile = ""
 	return nil
 }

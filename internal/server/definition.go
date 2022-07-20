@@ -2,10 +2,13 @@ package server
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
+	"github.com/laytan/elephp/pkg/lsperrors"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *server) Definition(
@@ -22,8 +25,13 @@ func (s *server) Definition(
 		},
 	)
 	if err != nil {
-		// TODO: should not return general errors, log and return an lsp error
-		return nil, err
+		if errors.Is(err, project.ErrNoDefinitionFound) {
+			log.Warn(err)
+			return nil, nil
+		}
+
+		log.Error(err)
+		return nil, lsperrors.ErrRequestFailed(err.Error())
 	}
 
 	uri := params.TextDocument.URI

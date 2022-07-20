@@ -19,6 +19,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var ErrNoDefinitionFound = errors.New("No definition found for symbol at given position")
+
 func NewProject(root string) *Project {
 	// OPTIM: parse phpstorm stubs once and store on filesystem or even in the binary because they won't change.
 	//
@@ -30,12 +32,24 @@ func NewProject(root string) *Project {
 	return &Project{
 		files: make(map[string]file),
 		roots: roots,
+		parserConfig: conf.Config{
+			ErrorHandlerFunc: func(e *perrors.Error) {
+				// TODO: when we get a parse/syntax error, publish the error
+				// TODO: via diagnostics (lsp).
+				// OPTIM: when we get a parse error, maybe don't use the faulty ast but use the latest
+				// OPTIM: valid version. Currently it tries to parse as much as it can but stops on an error.
+				log.Info(e)
+			},
+			// TODO: Get php version from 'php --version', or is there a builtin lsp way of getting language version?
+			Version: &version.Version{Major: 8, Minor: 0},
+		},
 	}
 }
 
 type Project struct {
-	files map[string]file
-	roots []string
+	files        map[string]file
+	roots        []string
+	parserConfig conf.Config
 }
 
 type file struct {
@@ -61,27 +75,19 @@ func (p *Project) Parse() error {
 		)
 	}()
 
-	config := conf.Config{
-		ErrorHandlerFunc: func(e *perrors.Error) {
-			panic(e)
-		},
-		// TODO: Get php version from 'php --version', or is there a builtin lsp way of getting language version?
-		Version: &version.Version{Major: 8, Minor: 0},
-	}
-
 	for _, root := range p.roots {
-		p.ParseRoot(root, config)
+		p.ParseRoot(root)
 	}
 
 	return nil
 }
 
-func (p *Project) ParseRoot(root string, config conf.Config) error {
+func (p *Project) ParseRoot(root string) error {
 	filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// OPTIM: https://github.com/rjeczalik/notify to keep an eye on file changes and adds.
 
 		// TODO: make configurable what a php file is.
-		// TODO: does the lsp spec specify a way to get configured file types?
+		// NOTE: the TextDocumentItem struct has the languageid on it, maybe use that?
 		if !strings.HasSuffix(path, ".php") || info.IsDir() {
 			return nil
 		}
@@ -93,33 +99,41 @@ func (p *Project) ParseRoot(root string, config conf.Config) error {
 			}
 		}
 
-		content, err := ioutil.ReadFile(path)
-		if err != nil {
-			// TODO: don't panic willy nilly
-			panic(err)
-		}
-
-		rootNode, err := parser.Parse(content, config)
-		if err != nil {
-			// TODO: don't panic, this is always a version not supported error
-			panic(err)
-		}
-
-		irNode := irconv.ConvertNode(rootNode)
-		irRootNode, ok := irNode.(*ir.Root)
-		if !ok {
-			panic("Not ok")
-		}
-
-		p.files[path] = file{
-			ast:      irRootNode,
-			content:  string(content),
-			modified: info.ModTime(),
-		}
+		p.ParseFile(path, info.ModTime())
 		return nil
 	})
 
 	return nil
+}
+
+func (p *Project) ParseFile(path string, modTime time.Time) {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		// TODO: don't panic willy nilly
+		panic(err)
+	}
+
+	p.ParseFileContent(path, content, modTime)
+}
+
+func (p *Project) ParseFileContent(path string, content []byte, modTime time.Time) {
+	rootNode, err := parser.Parse(content, p.parserConfig)
+	if err != nil {
+		// TODO: don't panic, this is always a version not supported error
+		panic(err)
+	}
+
+	irNode := irconv.ConvertNode(rootNode)
+	irRootNode, ok := irNode.(*ir.Root)
+	if !ok {
+		panic("Not ok")
+	}
+
+	p.files[path] = file{
+		ast:      irRootNode,
+		content:  string(content),
+		modified: modTime,
+	}
 }
 
 func (p *Project) Definition(path string, pos *Position) (*Position, error) {
@@ -133,9 +147,6 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 		// TODO: better
 		panic("File not found " + path)
 	}
-
-	// goDumper := dumper.NewDumper(os.Stdout).WithTokens().WithPositions()
-	// file.ast.Accept(goDumper)
 
 	apos := position.FromLocation(file.content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
@@ -156,7 +167,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 			assignment := p.assignment(scope, typedNode)
 			// fmt.Printf("%#v\n", assignment)
 			if assignment == nil {
-				return nil, errors.New("No assignment found matching the variable at given position")
+				return nil, ErrNoDefinitionFound
 			}
 
 			pos := ir.GetPosition(assignment)
@@ -170,7 +181,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 			function, path := p.function(scope, typedNode)
 
 			if function == nil {
-				return nil, errors.New("No assignment found matching the variable at given position")
+				return nil, ErrNoDefinitionFound
 			}
 
 			pos := ir.GetPosition(function)
@@ -184,7 +195,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 		}
 	}
 
-	return nil, errors.New("No definition found for given arguments")
+	return nil, ErrNoDefinitionFound
 }
 
 func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) ir.Node {
