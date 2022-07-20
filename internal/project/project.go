@@ -2,6 +2,7 @@ package project
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"path/filepath"
@@ -76,14 +77,17 @@ func (p *Project) Parse() error {
 	}()
 
 	for _, root := range p.roots {
-		p.ParseRoot(root)
+		if err := p.ParseRoot(root); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (p *Project) ParseRoot(root string) error {
-	filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+	// OPTIM: Move to the more efficient WalkDir
+	return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// OPTIM: https://github.com/rjeczalik/notify to keep an eye on file changes and adds.
 
 		// TODO: make configurable what a php file is.
@@ -99,34 +103,29 @@ func (p *Project) ParseRoot(root string) error {
 			}
 		}
 
-		p.ParseFile(path, info.ModTime())
-		return nil
+		return p.ParseFile(path, info.ModTime())
 	})
-
-	return nil
 }
 
-func (p *Project) ParseFile(path string, modTime time.Time) {
+func (p *Project) ParseFile(path string, modTime time.Time) error {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
-		// TODO: don't panic willy nilly
-		panic(err)
+		return fmt.Errorf("Error reading file %s: %w", path, err)
 	}
 
-	p.ParseFileContent(path, content, modTime)
+	return p.ParseFileContent(path, content, modTime)
 }
 
-func (p *Project) ParseFileContent(path string, content []byte, modTime time.Time) {
+func (p *Project) ParseFileContent(path string, content []byte, modTime time.Time) error {
 	rootNode, err := parser.Parse(content, p.parserConfig)
 	if err != nil {
-		// TODO: don't panic, this is always a version not supported error
-		panic(err)
+		return fmt.Errorf("Error parsing file %s into AST: %w", path, err)
 	}
 
 	irNode := irconv.ConvertNode(rootNode)
 	irRootNode, ok := irNode.(*ir.Root)
 	if !ok {
-		panic("Not ok")
+		return errors.New("AST root node could not be converted to IR root node")
 	}
 
 	p.files[path] = file{
@@ -134,6 +133,8 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 		content:  string(content),
 		modified: modTime,
 	}
+
+	return nil
 }
 
 func (p *Project) Definition(path string, pos *Position) (*Position, error) {
@@ -144,8 +145,11 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 
 	file, ok := p.files[path]
 	if !ok {
-		// TODO: better
-		panic("File not found " + path)
+		if err := p.ParseFile(path, time.Now()); err != nil {
+			return nil, fmt.Errorf("Definition error: %w", err)
+		}
+
+		file = p.files[path]
 	}
 
 	apos := position.FromLocation(file.content, pos.Row, pos.Col)

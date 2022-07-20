@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 type ConnType string
@@ -41,7 +42,7 @@ func NewConnectionListener(
 func tcp(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 	lis, err := net.Listen("tcp", URL)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	defer lis.Close()
@@ -51,7 +52,7 @@ func tcp(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 
 	conn, err := lis.Accept()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	connChan <- conn
@@ -66,7 +67,7 @@ func ws(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		srv.Close()
