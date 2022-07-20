@@ -75,7 +75,12 @@ func ws(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 		close(connChan)
 	})
 
-	go srv.ListenAndServe()
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Error(err)
+		}
+	}()
+
 	listeningChann <- true
 	close(listeningChann)
 }

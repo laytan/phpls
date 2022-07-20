@@ -14,11 +14,6 @@ func NewServer(client protocol.ClientCloser) *server {
 	}
 }
 
-type serverInfo struct {
-	Name    string `json:"name"`
-	Version string `json:"version,omitempty"`
-}
-
 type server struct {
 	client protocol.ClientCloser
 

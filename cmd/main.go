@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -45,7 +46,10 @@ func main() {
 	if config.UseStatsviz() {
 		go func() {
 			log.Infoln("Starting Statsviz at http://localhost:6060/debug/statsviz")
-			statsviz.RegisterDefault()
+			if err := statsviz.RegisterDefault(); err != nil {
+				log.Error(fmt.Errorf("Unable to register statsviz routes: %w", err))
+			}
+
 			log.Error(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}

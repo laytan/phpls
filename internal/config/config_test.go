@@ -114,11 +114,13 @@ func TestStatsviz(t *testing.T) {
 	is := is.New(t)
 
 	config := newTestConfig([]string{"--statsviz"})
-	config.Initialize()
+	err := config.Initialize()
+	is.NoErr(err)
 	is.True(config.UseStatsviz())
 
 	config = newTestConfig([]string{})
-	config.Initialize()
+	err = config.Initialize()
+	is.NoErr(err)
 	is.Equal(config.UseStatsviz(), false)
 }
 
@@ -126,11 +128,13 @@ func TestConnUrl(t *testing.T) {
 	is := is.New(t)
 
 	config := newTestConfig([]string{})
-	config.Initialize()
+	err := config.Initialize()
+	is.NoErr(err)
 	is.Equal(config.ConnURL(), "127.0.0.1:2001")
 
 	config = newTestConfig([]string{"--url=\"127.0.0.1:2003\""})
-	config.Initialize()
+	err = config.Initialize()
+	is.NoErr(err)
 	is.Equal(config.ConnURL(), "127.0.0.1:2003")
 }
 

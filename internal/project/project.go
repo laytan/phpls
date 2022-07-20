@@ -89,7 +89,7 @@ func (p *Project) ParseRoot(root string) error {
 	// NOTE: This does not walk symbolic links, is that a problem?
 	return filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
-			log.Error(fmt.Errorf("Error parsing root %s: %w", root, err))
+			log.Error(fmt.Errorf("Error parsing %s: %w", path, err))
 			return nil
 		}
 
@@ -178,12 +178,13 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 		case *ir.Root:
 			scope = typedNode
 			break
+
 		case *ir.FunctionStmt:
 			scope = typedNode
 			break
+
 		case *ir.SimpleVar:
 			assignment := p.assignment(scope, typedNode)
-			// fmt.Printf("%#v\n", assignment)
 			if assignment == nil {
 				return nil, ErrNoDefinitionFound
 			}
@@ -195,6 +196,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 				Row: uint(pos.StartLine),
 				Col: col,
 			}, nil
+
 		case *ir.FunctionCallExpr:
 			function, path := p.function(scope, typedNode)
 
@@ -217,7 +219,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 }
 
 func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) ir.Node {
-	// OPTIM: will in the future need to span multiple files, but lets be basic about this.
+	// TODO: will in the future need to span multiple files, but lets be basic about this.
 
 	traverser := traversers.NewAssignment(variable)
 	scope.Walk(traverser)
@@ -226,6 +228,8 @@ func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) ir.Node {
 }
 
 func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.FunctionStmt, string) {
+	// TODO: this does not handle scopes very well yet.
+
 	traverser, err := traversers.NewFunction(call)
 	if err != nil {
 		return nil, ""

@@ -8,7 +8,13 @@ import (
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	log "github.com/sirupsen/logrus"
 )
+
+type serverInfo struct {
+	Name    string `json:"name"`
+	Version string `json:"version,omitempty"`
+}
 
 // Entrypoint, must be requested first by the client.
 func (s *server) Initialize(
@@ -40,7 +46,13 @@ func (s *server) Initialize(
 	}
 
 	s.project = project.NewProject(string(s.root))
-	go s.project.Parse()
+
+	// TODO: send this error to client, seems important to know about.
+	go func() {
+		if err := s.project.Parse(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	return &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{

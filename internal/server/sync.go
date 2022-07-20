@@ -58,11 +58,14 @@ func (s *server) DidChange(
 			)
 		}
 
-		s.project.ParseFileContent(
+		if err := s.project.ParseFileContent(
 			path,
 			[]byte(changes.Text),
 			time.Now(),
-		)
+		); err != nil {
+			log.Error(err)
+			return lsperrors.ErrRequestFailed(err.Error())
+		}
 	}
 
 	log.Infof("Parsed changes for open file %s\n", s.openFile)
@@ -75,10 +78,13 @@ func (s *server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocu
 	}
 
 	// OPTIM: This might not be necessary, the changes made are good enough.
-	s.project.ParseFile(
+	if err := s.project.ParseFile(
 		strings.TrimPrefix(string(params.TextDocument.URI), "file://"),
 		time.Now(),
-	)
+	); err != nil {
+		log.Error(err)
+		return lsperrors.ErrRequestFailed(err.Error())
+	}
 
 	log.Infof("Closed file %s, started tracking it from the filesystem again\n", s.openFile)
 

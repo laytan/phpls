@@ -11,7 +11,6 @@ type testDefinitionsInput struct {
 	file        string
 	position    *Position
 	outPosition *Position
-	outFile     string
 }
 
 func TestDefinitions(t *testing.T) {
