@@ -26,9 +26,14 @@ func (s *server) Definition(
 		return nil, err
 	}
 
+	uri := params.TextDocument.URI
+	if pos.Path != "" {
+		uri = protocol.DocumentURI("file://" + pos.Path)
+	}
+
 	// TODO: Create helpers for creating this from a position.
 	return []protocol.Location{{
-		URI: params.TextDocument.URI,
+		URI: uri,
 		Range: protocol.Range{
 			Start: protocol.Position{
 				Line:      uint32(pos.Row) - 1,

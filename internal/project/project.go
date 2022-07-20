@@ -2,64 +2,64 @@ package project
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irconv"
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
 	perrors "github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
-	"github.com/VKCOM/php-parser/pkg/visitor/dumper"
 	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/position"
+	log "github.com/sirupsen/logrus"
 )
 
 func NewProject(root string) *Project {
+	// OPTIM: parse phpstorm stubs once and store on filesystem or even in the binary because they won't change.
+	//
+	// OPTIM: This is also parsing tests for the specific stubs,
+	// OPTIM: and has specific files for different php versions that should be excluded/handled appropriately.
+	stubs := "/Users/laytan/projects/elephp/phpstorm-stubs"
+
+	roots := []string{root, stubs}
 	return &Project{
 		files: make(map[string]file),
-		root:  root,
+		roots: roots,
 	}
 }
 
 type Project struct {
 	files map[string]file
-	root  string
+	roots []string
 }
 
 type file struct {
-	ast      ast.Vertex
+	ast      *ir.Root
 	content  string
 	modified time.Time
 }
 
-// TODO: Change to uint32's
 type Position struct {
-	Row uint
-	Col uint
+	Row  uint
+	Col  uint
+	Path string
 }
-
-// TODO: get phpstorm stubs, parse them once, store them serialized, retrieve them when needed (already an ast) (no need to parse again).
-// We can add the stub directory to the root at first maybe, need to support multiple roots but that is no problem really.
-
-// Definition needs to look at any accessible symbols
-// Where accessible is:
-// - used symbols
-// - functions in the global scope
-// - phpstorm stubs
-// - if starts with '$this->' look at symbols in current class, and protected/public symbols in parent classes.
-//
-// Completion needs to look at everything definition does and also non-used symbols, also returning an edit to 'use'  the symbol.
 
 func (p *Project) Parse() error {
 	start := time.Now()
+	defer func() {
+		log.Infof(
+			"Parsed %d files of %d root folders in %s\n.",
+			len(p.files),
+			len(p.roots),
+			time.Since(start),
+		)
+	}()
 
 	config := conf.Config{
 		ErrorHandlerFunc: func(e *perrors.Error) {
@@ -69,7 +69,15 @@ func (p *Project) Parse() error {
 		Version: &version.Version{Major: 8, Minor: 0},
 	}
 
-	filepath.Walk(p.root, func(path string, info fs.FileInfo, err error) error {
+	for _, root := range p.roots {
+		p.ParseRoot(root, config)
+	}
+
+	return nil
+}
+
+func (p *Project) ParseRoot(root string, config conf.Config) error {
+	filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// OPTIM: https://github.com/rjeczalik/notify to keep an eye on file changes and adds.
 
 		// TODO: make configurable what a php file is.
@@ -97,44 +105,56 @@ func (p *Project) Parse() error {
 			panic(err)
 		}
 
+		irNode := irconv.ConvertNode(rootNode)
+		irRootNode, ok := irNode.(*ir.Root)
+		if !ok {
+			panic("Not ok")
+		}
+
 		p.files[path] = file{
-			ast:      rootNode,
+			ast:      irRootNode,
 			content:  string(content),
 			modified: info.ModTime(),
 		}
 		return nil
 	})
 
-	fmt.Printf("Parsed %d files in %s.\n", len(p.files), time.Since(start))
 	return nil
 }
 
 func (p *Project) Definition(path string, pos *Position) (*Position, error) {
+	start := time.Now()
+	defer func() {
+		log.Infof("Retrieving definition took %s\n", time.Since(start))
+	}()
+
 	file, ok := p.files[path]
 	if !ok {
 		// TODO: better
 		panic("File not found " + path)
 	}
 
-	goDumper := dumper.NewDumper(os.Stdout).WithTokens().WithPositions()
-	file.ast.Accept(goDumper)
+	// goDumper := dumper.NewDumper(os.Stdout).WithTokens().WithPositions()
+	// file.ast.Accept(goDumper)
 
 	apos := position.FromLocation(file.content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
-	irr := irconv.ConvertNode(file.ast)
-	irr.Walk(nap)
+	file.ast.Walk(nap)
 
 	// Root.
-	scope := nap.Nodes[0]
+	var scope ir.Node
 	for _, node := range nap.Nodes {
-		fmt.Printf("%T\n", node)
+		// fmt.Printf("%T\n", node)
 		switch typedNode := node.(type) {
+		case *ir.Root:
+			scope = typedNode
+			break
 		case *ir.FunctionStmt:
 			scope = typedNode
 			break
 		case *ir.SimpleVar:
 			assignment := p.assignment(scope, typedNode)
-			fmt.Printf("%#v\n", assignment)
+			// fmt.Printf("%#v\n", assignment)
 			if assignment == nil {
 				return nil, errors.New("No assignment found matching the variable at given position")
 			}
@@ -145,6 +165,21 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 			return &Position{
 				Row: uint(pos.StartLine),
 				Col: col,
+			}, nil
+		case *ir.FunctionCallExpr:
+			function, path := p.function(scope, typedNode)
+
+			if function == nil {
+				return nil, errors.New("No assignment found matching the variable at given position")
+			}
+
+			pos := ir.GetPosition(function)
+			_, col := position.ToLocation(file.content, uint(pos.StartPos))
+
+			return &Position{
+				Row:  uint(pos.StartLine),
+				Col:  col,
+				Path: path,
 			}, nil
 		}
 	}
@@ -159,4 +194,26 @@ func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) ir.Node {
 	scope.Walk(traverser)
 
 	return traverser.Assignment
+}
+
+func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.FunctionStmt, string) {
+	traverser, err := traversers.NewFunction(call)
+	if err != nil {
+		return nil, ""
+	}
+
+	scope.Walk(traverser)
+	if traverser.Function != nil {
+		return traverser.Function, ""
+	}
+
+	for path, file := range p.files {
+		file.ast.Walk(traverser)
+
+		if traverser.Function != nil {
+			return traverser.Function, path
+		}
+	}
+
+	return nil, ""
 }
