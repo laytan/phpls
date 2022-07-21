@@ -1,5 +1,8 @@
 # Elephp
 
+![Go build/test](https://github.com/laytan/elephp/actions/workflows/go-test.yml/badge.svg?branch=main)
+![Go linting](https://github.com/laytan/elephp/actions/workflows/golangci-lint.yml/badge.svg?branch=main)
+
 Elephp is a language server for PHP.
 
 ## Installation
