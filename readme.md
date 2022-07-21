@@ -70,3 +70,16 @@ Linting:
 golangci-lint run
 ```
 
+## License
+
+Elephp is licensed with the [Apache 2](https://www.apache.org/licenses/LICENSE-2.0) license.
+
+The project uses [JetBrains's phpstorm-stubs](https://github.com/JetBrains/phpstorm-stubs)
+which is also licensed with the [Apache 2](https://www.apache.org/licenses/LICENSE-2.0) license and does not
+make any significant changes to its licensed material.
+
+[JetBrains's phpstorm-stubs](https://github.com/JetBrains/phpstorm-stubs) contains material by the PHP Documentation Group,
+licensed with [CC-BY 3.0](https://www.php.net/manual/en/cc.license.php).
+
+The project also uses a small subset of [VK.com's noverify](https://github.com/VKCOM/noverify)
+licensed with the [MIT](https://raw.githubusercontent.com/VKCOM/noverify/v0.5.3/LICENSE) license.
