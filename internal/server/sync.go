@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
+func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
 	if err := s.isMethodAllowed("DidOpen"); err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (s *server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 	return nil
 }
 
-func (s *server) DidChange(
+func (s *Server) DidChange(
 	ctx context.Context,
 	params *protocol.DidChangeTextDocumentParams,
 ) error {
@@ -72,7 +72,7 @@ func (s *server) DidChange(
 	return nil
 }
 
-func (s *server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
+func (s *Server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
 	if err := s.isMethodAllowed("DidClose"); err != nil {
 		return err
 	}

@@ -17,9 +17,11 @@ import (
 	"github.com/laytan/elephp/pkg/processwatch"
 	log "github.com/sirupsen/logrus"
 
-	// TODO: Check the difference between v1 and v2 of this
+	// TODO: Check the difference between v1 and v2 of this.
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 )
+
+const clientPidPollingIntervalSeconds = 10
 
 func main() {
 	config := config.New()
@@ -37,7 +39,7 @@ func main() {
 
 	if pid, isset := config.ClientPid(); isset {
 		log.Infof("Starting process watch for pid: %d\n", pid)
-		processwatch.New(pid, time.Second*10, func() {
+		processwatch.New(pid, time.Second*clientPidPollingIntervalSeconds, func() {
 			log.Infoln("The client process has exited, exiting elephp to")
 			os.Exit(1)
 		})

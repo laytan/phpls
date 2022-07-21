@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -24,17 +25,35 @@ func NewStdio(in io.ReadCloser, out io.WriteCloser) *Stdio {
 }
 
 // Read implements io.Reader interface.
-func (s *Stdio) Read(b []byte) (int, error) { return s.in.Read(b) }
+func (s *Stdio) Read(b []byte) (int, error) {
+	n, err := s.in.Read(b)
+	if err != nil {
+		return 0, fmt.Errorf("Error reading from stdio: %v", err)
+	}
+
+	return n, nil
+}
 
 // Write implements io.Writer interface.
-func (s *Stdio) Write(b []byte) (int, error) { return s.out.Write(b) }
+func (s *Stdio) Write(b []byte) (int, error) {
+	n, err := s.out.Write(b)
+	if err != nil {
+		return 0, fmt.Errorf("Error writing to stdio: %v", err)
+	}
+
+	return n, nil
+}
 
 // Close implements io.Closer interface.
 func (s *Stdio) Close() error {
-	if err := s.in.Close(); err != nil {
-		return err
+	errIn := s.in.Close()
+	errOut := s.out.Close()
+
+	if errIn != nil || errOut != nil {
+		return fmt.Errorf("Errors closing stdio, stdin: %v, stdout: %v", errIn, errOut)
 	}
-	return s.out.Close()
+
+	return nil
 }
 
 // LocalAddr implements net.Conn interface.

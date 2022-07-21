@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *server) Definition(
+func (s *Server) Definition(
 	ctx context.Context,
 	params *protocol.DefinitionParams,
 ) (protocol.Definition, error) {

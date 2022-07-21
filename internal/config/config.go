@@ -51,18 +51,18 @@ type lsConfig struct {
 
 func (c *lsConfig) Initialize() error {
 	_, err := flags.ParseArgs(&c.opts, c.Args)
-	return err
+	return err //nolint:wrapcheck
 }
 
 func (c *lsConfig) ClientPid() (uint16, bool) {
-	isset := c.opts.ClientProcessId != 0
-	return c.opts.ClientProcessId, isset
+	isset := c.opts.ClientProcessID != 0
+	return c.opts.ClientProcessID, isset
 }
 
 func (c *lsConfig) ConnType() (connection.ConnType, error) {
 	connTypes := map[connection.ConnType]bool{
 		connection.ConnStdio: c.opts.UseStdio,
-		connection.ConnTcp:   c.opts.UseTcp,
+		connection.ConnTCP:   c.opts.UseTCP,
 		connection.ConnWs:    c.opts.UseWs,
 	}
 

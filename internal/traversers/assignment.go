@@ -2,19 +2,19 @@ package traversers
 
 import "github.com/VKCOM/noverify/src/ir"
 
-func NewAssignment(variable *ir.SimpleVar) *assignment {
-	return &assignment{
+func NewAssignment(variable *ir.SimpleVar) *Assignment {
+	return &Assignment{
 		variable: variable,
 	}
 }
 
-// assignment implements ir.Visitor.
-type assignment struct {
+// Assignment implements ir.Visitor.
+type Assignment struct {
 	variable   *ir.SimpleVar
 	Assignment *ir.SimpleVar
 }
 
-func (a *assignment) EnterNode(node ir.Node) bool {
+func (a *Assignment) EnterNode(node ir.Node) bool {
 	if a.Assignment != nil {
 		return false
 	}
@@ -35,4 +35,4 @@ func (a *assignment) EnterNode(node ir.Node) bool {
 	return true
 }
 
-func (a *assignment) LeaveNode(ir.Node) {}
+func (a *Assignment) LeaveNode(ir.Node) {}

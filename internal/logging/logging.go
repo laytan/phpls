@@ -29,6 +29,8 @@ func Configure(con config.Config) {
 		logrus.SetOutput(&lumberjack.Logger{
 			Filename: os.TempDir() + "elephp.log",
 		})
+	case config.LogOutputStderr:
+		// Default configuration for logrus.
 	}
 }
 

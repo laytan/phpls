@@ -1,8 +1,10 @@
 package connection
 
 import (
+	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -13,7 +15,7 @@ type ConnType string
 const (
 	ConnStdio ConnType = "stdio"
 	ConnWs    ConnType = "ws"
-	ConnTcp   ConnType = "tcp"
+	ConnTCP   ConnType = "tcp"
 )
 
 func NewConnectionListener(
@@ -26,7 +28,7 @@ func NewConnectionListener(
 	case ConnWs:
 		ws(URL, connChan, listeningChann)
 		return
-	case ConnTcp:
+	case ConnTCP:
 		tcp(URL, connChan, listeningChann)
 		return
 	case ConnStdio:
@@ -60,7 +62,7 @@ func tcp(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 }
 
 func ws(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
-	srv := http.Server{Addr: URL}
+	srv := http.Server{Addr: URL, ReadHeaderTimeout: time.Second}
 
 	upgrader := websocket.Upgrader{}
 
@@ -70,7 +72,10 @@ func ws(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 			log.Fatal(err)
 		}
 
-		srv.Close()
+		if err = srv.Close(); err != nil {
+			log.Error(fmt.Errorf("Error closing WS HTTP server: %w", err))
+		}
+
 		connChan <- NewWsConnAdapter(c)
 		close(connChan)
 	})

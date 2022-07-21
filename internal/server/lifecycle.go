@@ -17,7 +17,7 @@ type serverInfo struct {
 }
 
 // Entrypoint, must be requested first by the client.
-func (s *server) Initialize(
+func (s *Server) Initialize(
 	ctx context.Context,
 	params *protocol.ParamInitialize,
 ) (*protocol.InitializeResult, error) {
@@ -75,7 +75,7 @@ func (s *server) Initialize(
 
 // The client has received our Initialize response and is going to start sending
 // normal requests.
-func (s *server) Initialized(context.Context, *protocol.InitializedParams) error {
+func (s *Server) Initialized(context.Context, *protocol.InitializedParams) error {
 	if err := s.isMethodAllowed("Initialized"); err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (s *server) Initialized(context.Context, *protocol.InitializedParams) error
 }
 
 // Starts the shutdown procedure, the client indicates it wants us to exit soon.
-func (s *server) Shutdown(context.Context) error {
+func (s *Server) Shutdown(context.Context) error {
 	if err := s.isMethodAllowed("Shutdown"); err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (s *server) Shutdown(context.Context) error {
 }
 
 // Exits with error code 0 when isShuttingDown, 1 otherwise.
-func (s *server) Exit(context.Context) error {
+func (s *Server) Exit(context.Context) error {
 	if err := s.isMethodAllowed("Exit"); err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ func New(pid uint16, interval time.Duration, onExit func()) *Watcher {
 	return &watcher
 }
 
-// TODO: Way to stop watcher
+// TODO: Way to stop watcher.
 type Watcher struct {
 	Interval   time.Duration
 	OnExit     func()
@@ -74,6 +74,7 @@ func IsProcessRunning(pid uint16) bool {
 		return false
 	case syscall.EPERM:
 		return true
+	default:
 	}
 
 	return false

@@ -8,13 +8,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func NewServer(client protocol.ClientCloser) *server {
-	return &server{
+func NewServer(client protocol.ClientCloser) *Server {
+	return &Server{
 		client: client,
 	}
 }
 
-type server struct {
+type Server struct {
 	client protocol.ClientCloser
 
 	// Untill this is true, the server should only allow 'initialize' and 'initialized' requests.
@@ -34,7 +34,7 @@ type server struct {
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call
 // OPTIM: to this method in every handler.
-func (s *server) isMethodAllowed(method string) error {
+func (s *Server) isMethodAllowed(method string) error {
 	// If we are shutting down, we only allow an exit request.
 	if s.isShuttingDown && method != "Exit" {
 		log.Errorf(

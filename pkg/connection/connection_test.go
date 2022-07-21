@@ -13,7 +13,7 @@ func TestTcp(t *testing.T) {
 
 	connChan := make(chan net.Conn)
 	listeningChann := make(chan bool)
-	go func() { NewConnectionListener(ConnTcp, ":1112", connChan, listeningChann) }()
+	go func() { NewConnectionListener(ConnTCP, ":1112", connChan, listeningChann) }()
 
 	listening, ok := <-listeningChann
 	is.True(listening)

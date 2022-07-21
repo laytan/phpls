@@ -1,0 +1,168 @@
+run:
+    tests: false
+    go: '1.18'
+
+linters:
+    disable-all: true
+    enable:
+        - bidichk
+        - deadcode
+        - errname
+        - exhaustive
+        - godot
+        - gosec
+        - gosimple
+        - govet
+        - ifshort
+        - ineffassign
+        - nakedret
+        - prealloc
+        - predeclared
+        - staticcheck
+        - varcheck
+        - wrapcheck
+        - revive
+
+linters-settings:
+    exhaustive:
+        default-signifies-exhaustive: true
+    gosimple:
+        checks: ["all"]
+    nakedret:
+        max-func-lines: 1
+    revive:
+        rules:
+          # START DEFAULTS
+          #
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#blank-imports
+          - name: blank-imports
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-as-argument
+          - name: context-as-argument
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-keys-type
+          - name: context-keys-type
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#dot-imports
+          - name: dot-imports
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-return
+          - name: error-return
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
+          - name: error-strings
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-naming
+          - name: error-naming
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#exported
+          - name: exported
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#if-return
+          - name: if-return
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#increment-decrement
+          - name: increment-decrement
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#var-naming
+          - name: var-naming
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#var-declaration
+          - name: var-declaration
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#package-comments
+          - name: package-comments
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range
+          - name: range
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range
+          - name: range
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#receiver-naming
+          - name: receiver-naming
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#time-naming
+          - name: time-naming
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unexported-return
+          - name: unexported-return
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#indent-error-flow
+          - name: indent-error-flow
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#errorf
+          - name: errorf
+            severity: warning
+            disabled: false
+          #   
+          # START CUSTOM
+          #
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#add-constant
+          - name: add-constant
+            severity: warning
+            disabled: false
+            arguments:
+              - maxLitCount: "3"
+                allowStrs: '""'
+                allowInts: "0,1,2"
+                allowFloats: "0.0,0.,1.0,1.,2.0,2."
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#atomic
+          - name: atomic
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#bool-literal-in-expr
+          - name: bool-literal-in-expr
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#defer
+          - name: defer
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#early-return
+          - name: early-return
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#time-equal
+          - name: time-equal
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unhandled-error
+          - name: unhandled-error
+            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#use-any
+          - name: use-any
+            severity: warning
+            disabled: false
+    wrapcheck:
+        ignoreSigs:
+          - .Errorf(
+          - errors.New(
+          - errors.Unwrap(
+          - .Wrap(
+          - .Wrapf(
+          - .WithMessage(
+          - .WithMessagef(
+          - .WithStack(
+          - jsonrpc2.NewError(
+          - lsperrors.ErrRequestFailed

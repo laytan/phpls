@@ -42,7 +42,7 @@ func NewProject(root string) *Project {
 				log.Info(e)
 			},
 			// TODO: Get php version from 'php --version', or is there a builtin lsp way of getting language version?
-			Version: &version.Version{Major: 8, Minor: 0},
+			Version: &version.Version{Major: 8, Minor: 0}, //nolint:revive
 		},
 	}
 }
@@ -87,7 +87,7 @@ func (p *Project) Parse() error {
 
 func (p *Project) ParseRoot(root string) error {
 	// NOTE: This does not walk symbolic links, is that a problem?
-	return filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			log.Error(fmt.Errorf("Error parsing %s: %w", path, err))
 			return nil
@@ -119,6 +119,11 @@ func (p *Project) ParseRoot(root string) error {
 
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("Error parsing project: %w", err)
+	}
+
+	return nil
 }
 
 func (p *Project) ParseFile(path string, modTime time.Time) error {
@@ -177,11 +182,9 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 		switch typedNode := node.(type) {
 		case *ir.Root:
 			scope = typedNode
-			break
 
 		case *ir.FunctionStmt:
 			scope = typedNode
-			break
 
 		case *ir.SimpleVar:
 			assignment := p.assignment(scope, typedNode)
@@ -218,7 +221,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 	return nil, ErrNoDefinitionFound
 }
 
-func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) ir.Node {
+func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) *ir.SimpleVar {
 	// TODO: will in the future need to span multiple files, but lets be basic about this.
 
 	traverser := traversers.NewAssignment(variable)

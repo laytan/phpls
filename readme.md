@@ -17,3 +17,9 @@ Run all tests with coverage:
 ```bash
 go test ./... --cover -timeout=1s
 ```
+
+Linting:
+```bash
+# install at: https://golangci-lint.run/usage/install/
+golangci-lint run
+```

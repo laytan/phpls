@@ -14,6 +14,7 @@ package connection
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -43,7 +44,7 @@ func (a *Adapter) Read(b []byte) (int, error) {
 	if a.reader == nil {
 		messageType, reader, err := a.conn.NextReader()
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("Error reading websocket message: %w", err)
 		}
 
 		if messageType != websocket.TextMessage {
@@ -74,17 +75,22 @@ func (a *Adapter) Write(b []byte) (int, error) {
 
 	nextWriter, err := a.conn.NextWriter(websocket.TextMessage)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("Error writing websocket message: %v", err)
 	}
 
-	bytesWritten, err := nextWriter.Write(b)
-	nextWriter.Close()
+	defer nextWriter.Close()
 
-	return bytesWritten, err
+	bytesWritten, err := nextWriter.Write(b)
+
+	return bytesWritten, fmt.Errorf("Error writing websocket message: %v", err)
 }
 
 func (a *Adapter) Close() error {
-	return a.conn.Close()
+	if err := a.conn.Close(); err != nil {
+		return fmt.Errorf("Error closing websocket connection: %v", err)
+	}
+
+	return nil
 }
 
 func (a *Adapter) LocalAddr() net.Addr {
@@ -104,9 +110,17 @@ func (a *Adapter) SetDeadline(t time.Time) error {
 }
 
 func (a *Adapter) SetReadDeadline(t time.Time) error {
-	return a.conn.SetReadDeadline(t)
+	if err := a.conn.SetReadDeadline(t); err != nil {
+		return fmt.Errorf("Error setting read deadline: %v", err)
+	}
+
+	return nil
 }
 
 func (a *Adapter) SetWriteDeadline(t time.Time) error {
-	return a.conn.SetWriteDeadline(t)
+	if err := a.conn.SetWriteDeadline(t); err != nil {
+		return fmt.Errorf("Error setting write deadline: %v", err)
+	}
+
+	return nil
 }

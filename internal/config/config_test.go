@@ -31,7 +31,7 @@ func TestConfigConnType(t *testing.T) {
 		},
 		{
 			args:     []string{"--tcp"},
-			connType: connection.ConnTcp,
+			connType: connection.ConnTCP,
 		},
 		{
 			args:     []string{"--ws"},
