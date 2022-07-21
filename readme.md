@@ -21,7 +21,7 @@ sudo ln -s /unzipped/folder/elephp /usr/local/bin/elephp
 Make sure you have git and go(1.18) installed.
 
 ```bash
-git clone https://github.com/laytan/elephp.git
+git clone --recurse-submodules https://github.com/laytan/elephp.git
 go build -o elephp cmd/main.go
 ```
 
