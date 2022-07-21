@@ -3,8 +3,10 @@ package position
 import (
 	"fmt"
 	"io/ioutil"
+	"path"
 	"testing"
 
+	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/matryer/is"
 )
 
@@ -20,7 +22,7 @@ func TestPosition(t *testing.T) {
 	}
 
 	content, err := ioutil.ReadFile(
-		"/Users/laytan/projects/elephp/fixtures/definitions/parameter.php",
+		path.Join(pathutils.Root(), "fixtures", "definitions", "parameter.php"),
 	)
 	is.NoErr(err)
 

@@ -1,17 +1,60 @@
 # Elephp
 
-## Commands
+Elephp is a language server for PHP.
 
-Example running, use `go run cmd/main.go -h` for help:
+## Installation
+
+### Prebuilt
+
+1. Download the zip file from the releases page
+2. Unzip this somewhere
+3. Symlink the executable to a folder that's in your path, example:
 ```bash
-go run cmd/main.go --stdio
+sudo ln -s /unzipped/folder/elephp /usr/local/bin/elephp
 ```
 
-Run the LS with [statsviz](https://github.com/arl/statsviz) on [http://localhost:6060/debug/statsviz](http://localhost:6060/debug/statsviz):
+### Building yourself
+
+Make sure you have git and go(1.18) installed.
+
 ```bash
-go run cmd/main.go --statsviz
+git clone https://github.com/laytan/elephp.git
+go build -o elephp cmd/main.go
 ```
 
+Symlink the executable to a folder that's in your path, example:
+```bash
+sudo ln -s /unzipped/folder/elephp /usr/local/bin/elephp
+```
+
+Or if you're on windows, add it to your path.
+
+## Running the language server
+
+Running a language server is done using your IDE/editor most of the time,
+but here are the options available:
+
+```
+elephp -h
+
+Application Options:
+      --clientProcessId=              Process ID that when terminated, terminates the
+                                      language server
+      --stdio                         Communicate over stdio
+      --ws                            Communicate over websockets
+      --tcp                           Communicate over TCP
+      --url=                          The URL to listen on for tcp or websocket
+                                      connections (default: 127.0.0.1:2001)
+      --statsviz                      Visualize stats(CPU, memory etc.) on
+                                      localhost:6060/debug/statsviz
+      --log=[stderr|file]             Set the log output location (default: stderr)
+      --level=[debug|info|warn|error] The level of logs to output (default: warn)
+
+Help Options:
+  -h, --help                          Show this help message
+```
+
+## Development
 
 Run all tests with coverage:
 ```bash
@@ -23,3 +66,4 @@ Linting:
 # install at: https://golangci-lint.run/usage/install/
 golangci-lint run
 ```
+

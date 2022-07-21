@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/laytan/elephp/internal/traversers"
+	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/position"
 	log "github.com/sirupsen/logrus"
 )
@@ -27,7 +29,7 @@ func NewProject(root string) *Project {
 	//
 	// OPTIM: This is also parsing tests for the specific stubs,
 	// OPTIM: and has specific files for different php versions that should be excluded/handled appropriately.
-	stubs := "/Users/laytan/projects/elephp/phpstorm-stubs"
+	stubs := path.Join(pathutils.Root(), "phpstorm-stubs")
 
 	roots := []string{root, stubs}
 	return &Project{

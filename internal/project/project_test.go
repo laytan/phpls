@@ -2,9 +2,16 @@ package project
 
 import (
 	"fmt"
+	"path"
 	"testing"
 
+	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/matryer/is"
+)
+
+var (
+	definitionsFolder = path.Join(pathutils.Root(), "fixtures", "definitions")
+	stubsFolder       = path.Join(pathutils.Root(), "phpstorm-stubs")
 )
 
 type testDefinitionsInput struct {
@@ -18,32 +25,32 @@ func TestDefinitions(t *testing.T) {
 
 	expectations := []testDefinitionsInput{
 		{
-			file:        "/variable.php",
+			file:        "variable.php",
 			position:    &Position{Row: 7, Col: 8},
 			outPosition: &Position{Row: 5, Col: 1},
 		},
 		{
-			file:        "/parameter.php",
+			file:        "parameter.php",
 			position:    &Position{Row: 7, Col: 13},
 			outPosition: &Position{Row: 5, Col: 17},
 		},
 		{
-			file:        "/function.php",
+			file:        "function.php",
 			position:    &Position{Row: 7, Col: 1},
 			outPosition: &Position{Row: 3, Col: 1},
 		},
 		{
-			file:     "/stdlib.php",
+			file:     "stdlib.php",
 			position: &Position{Row: 3, Col: 6},
 			outPosition: &Position{
 				Row:  779,
 				Col:  0,
-				Path: "/Users/laytan/projects/elephp/phpstorm-stubs/standard/standard_8.php",
+				Path: path.Join(stubsFolder, "standard", "standard_8.php"),
 			},
 		},
 	}
 
-	project := NewProject("/Users/laytan/projects/elephp/fixtures/definitions")
+	project := NewProject(definitionsFolder)
 	err := project.Parse()
 	is.NoErr(err)
 
@@ -52,7 +59,7 @@ func TestDefinitions(t *testing.T) {
 			is := is.New(t)
 
 			pos, err := project.Definition(
-				"/Users/laytan/projects/elephp/fixtures/definitions"+test.file,
+				path.Join(definitionsFolder, test.file),
 				test.position,
 			)
 			is.NoErr(err)
@@ -64,13 +71,13 @@ func TestDefinitions(t *testing.T) {
 
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
-	project := NewProject("/Users/laytan/projects/elephp/fixtures/definitions")
+	project := NewProject(definitionsFolder)
 	err := project.Parse()
 	is.NoErr(err)
 
 	for i := 0; i < b.N; i++ {
 		_, err := project.Definition(
-			"/Users/laytan/projects/elephp/fixtures/definitions/stdlib.php",
+			path.Join(definitionsFolder, "stdlib.php"),
 			&Position{Row: 3, Col: 6},
 		)
 		is.NoErr(err)
