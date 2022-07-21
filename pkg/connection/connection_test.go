@@ -2,6 +2,7 @@ package connection
 
 import (
 	"net"
+	"os"
 	"testing"
 
 	"github.com/gorilla/websocket"
@@ -45,9 +46,13 @@ func TestTcp(t *testing.T) {
 func TestWs(t *testing.T) {
 	is := is.New(t)
 
+	// Need to use os.hostname for github actions to pass.
+	hostname, err := os.Hostname()
+	is.NoErr(err)
+
 	connChan := make(chan net.Conn)
 	listeningChann := make(chan bool)
-	go func() { NewConnectionListener(ConnWs, ":1113", connChan, listeningChann) }()
+	go func() { NewConnectionListener(ConnWs, hostname+":1113", connChan, listeningChann) }()
 
 	listening, ok := <-listeningChann
 	is.True(listening)
@@ -58,14 +63,16 @@ func TestWs(t *testing.T) {
 	is.Equal(listening, false)
 	is.Equal(ok, false)
 
-	conn, _, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:1113", nil)
+	uri := "ws://" + hostname + ":1113"
+
+	conn, _, err := websocket.DefaultDialer.Dial(uri, nil)
 	is.NoErr(err)
 	defer conn.Close()
 
 	_, ok = <-connChan
 	is.True(ok)
 
-	conn, _, err = websocket.DefaultDialer.Dial("ws://127.0.0.1:1113", nil)
+	conn, _, err = websocket.DefaultDialer.Dial(uri, nil)
 	if err == nil {
 		defer conn.Close()
 		t.Error("Expected 2nd dial to error")
