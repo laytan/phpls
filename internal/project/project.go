@@ -143,6 +143,12 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 		return fmt.Errorf("Error parsing file %s into AST: %w", path, err)
 	}
 
+	// if strings.HasSuffix(path, "global-var.php") {
+	// 	// TODO: comment out.
+	// 	goDumper := dumper.NewDumper(os.Stdout).WithPositions()
+	// 	rootNode.Accept(goDumper)
+	// }
+
 	irNode := irconv.ConvertNode(rootNode)
 	irRootNode, ok := irNode.(*ir.Root)
 	if !ok {
@@ -179,7 +185,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 
 	// Root.
 	var scope ir.Node
-	for _, node := range nap.Nodes {
+	for i, node := range nap.Nodes {
 		// fmt.Printf("%T\n", node)
 		switch typedNode := node.(type) {
 		case *ir.Root:
@@ -187,6 +193,30 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 
 		case *ir.FunctionStmt:
 			scope = typedNode
+
+		case *ir.GlobalStmt:
+			rootNode, ok := nap.Nodes[0].(*ir.Root)
+			if !ok {
+				return nil, ErrNoDefinitionFound
+			}
+
+			globalVar, ok := nap.Nodes[i+1].(*ir.SimpleVar)
+			if !ok {
+				return nil, ErrNoDefinitionFound
+			}
+
+			assignment := p.globalAssignment(rootNode, globalVar)
+			if assignment == nil {
+				return nil, ErrNoDefinitionFound
+			}
+
+			pos := ir.GetPosition(assignment)
+			_, col := position.ToLocation(file.content, uint(pos.StartPos))
+
+			return &Position{
+				Row: uint(pos.StartLine),
+				Col: col,
+			}, nil
 
 		case *ir.SimpleVar:
 			assignment := p.assignment(scope, typedNode)
@@ -228,6 +258,16 @@ func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) *ir.SimpleVa
 
 	traverser := traversers.NewAssignment(variable)
 	scope.Walk(traverser)
+
+	return traverser.Assignment
+}
+
+func (p *Project) globalAssignment(root *ir.Root, globalVar *ir.SimpleVar) *ir.SimpleVar {
+	// First search the current file for the assignment.
+	traverser := traversers.NewGlobalAssignment(globalVar)
+	root.Walk(traverser)
+
+	// TODO: search the whole project if the global is not assigned here.
 
 	return traverser.Assignment
 }

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"testing"
@@ -48,6 +49,20 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(stubsFolder, "standard", "standard_8.php"),
 			},
 		},
+		{
+			file:     "global_var.php",
+			position: &Position{Row: 1, Col: 1},
+		},
+		{
+			file:        "global_var.php",
+			position:    &Position{Row: 12, Col: 10},
+			outPosition: &Position{Row: 11, Col: 12},
+		},
+		{
+			file:        "global_var.php",
+			position:    &Position{Row: 11, Col: 12},
+			outPosition: &Position{Row: 2, Col: 1},
+		},
 	}
 
 	project := NewProject(definitionsFolder)
@@ -62,7 +77,13 @@ func TestDefinitions(t *testing.T) {
 				path.Join(definitionsFolder, test.file),
 				test.position,
 			)
-			is.NoErr(err)
+
+			// Error is expected when no out position is given.
+			if test.outPosition == nil {
+				is.True(errors.Is(err, ErrNoDefinitionFound))
+			} else {
+				is.NoErr(err)
+			}
 
 			is.Equal(pos, test.outPosition)
 		})

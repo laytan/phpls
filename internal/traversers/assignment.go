@@ -30,6 +30,17 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 		if typedNode.Variable.Name == a.variable.Name {
 			a.Assignment = typedNode.Variable
 		}
+	case *ir.GlobalStmt:
+		for _, varNode := range typedNode.Vars {
+			typedVar, ok := varNode.(*ir.SimpleVar)
+			if !ok {
+				continue
+			}
+
+			if typedVar.Name == a.variable.Name {
+				a.Assignment = typedVar
+			}
+		}
 	}
 
 	return true
