@@ -41,21 +41,29 @@ but here are the options available:
 elephp -h
 
 Application Options:
-      --clientProcessId=              Process ID that when terminated, terminates the
-                                      language server
-      --stdio                         Communicate over stdio
-      --ws                            Communicate over websockets
-      --tcp                           Communicate over TCP
-      --url=                          The URL to listen on for tcp or websocket
-                                      connections (default: 127.0.0.1:2001)
-      --statsviz                      Visualize stats(CPU, memory etc.) on
-                                      localhost:6060/debug/statsviz
-      --log=[stderr|file]             Set the log output location (default: stderr)
-      --level=[debug|info|warn|error] The level of logs to output (default: warn)
+      --clientProcessId=             Process ID that when terminated, terminates the language server
+      --stdio                        Communicate over stdio
+      --ws                           Communicate over websockets
+      --tcp                          Communicate over TCP
+      --url=                         The URL to listen on for tcp or websocket connections (default: 127.0.0.1:2001)
+      --statsviz                     Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz
+      --log=[stderr|file]            Set the log output location (default: file)
+      --level=[info|info|warn|error] The level of logs to output (default: info)
 
 Help Options:
-  -h, --help                          Show this help message
+  -h, --help                         Show this help message
 ```
+
+## Logs
+
+If --log is set to file(the default) when running the language server, logs will be put in
+the logs/elephp.log file.
+
+Once this file gets to 100mb, the file is renamed to elephp-timestamp.log and the 
+main log file gets recreated.
+The maximum amount of log files is set to 2, so old log files will get deleted automatically.
+
+You can keep an eye on the logs by running `elephp logs`, this will tail the log file for you.
 
 ## Development
 

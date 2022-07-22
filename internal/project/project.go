@@ -197,11 +197,13 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 		case *ir.GlobalStmt:
 			rootNode, ok := nap.Nodes[0].(*ir.Root)
 			if !ok {
+				log.Errorln("First node was not the root node, this should not happen")
 				return nil, ErrNoDefinitionFound
 			}
 
 			globalVar, ok := nap.Nodes[i+1].(*ir.SimpleVar)
 			if !ok {
+				log.Errorln("Node after the global stmt was not a variable, which we expected")
 				return nil, ErrNoDefinitionFound
 			}
 

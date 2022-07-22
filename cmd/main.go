@@ -24,6 +24,14 @@ import (
 const clientPidPollingIntervalSeconds = 10
 
 func main() {
+	if os.Args[1] == "logs" {
+		if err := logging.Tail(); err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
 	config := config.New()
 	err := config.Initialize()
 	if err != nil {
