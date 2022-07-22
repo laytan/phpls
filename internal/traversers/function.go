@@ -15,19 +15,23 @@ func NewFunction(call *ir.FunctionCallExpr) (*Function, error) {
 	}
 
 	return &Function{
-		call: call,
-		name: name,
+		call:           call,
+		name:           name,
+		currNodeIsRoot: true,
 	}, nil
 }
 
 // Function implements ir.Visitor.
 type Function struct {
-	call     *ir.FunctionCallExpr
-	name     *ir.Name
-	Function *ir.FunctionStmt
+	call           *ir.FunctionCallExpr
+	name           *ir.Name
+	Function       *ir.FunctionStmt
+	currNodeIsRoot bool
 }
 
 func (f *Function) EnterNode(node ir.Node) bool {
+	defer func() { f.currNodeIsRoot = false }()
+
 	if f.Function != nil {
 		return false
 	}
@@ -35,6 +39,12 @@ func (f *Function) EnterNode(node ir.Node) bool {
 	if function, ok := node.(*ir.FunctionStmt); ok {
 		if function.FunctionName.Value == f.name.Value {
 			f.Function = function
+		}
+
+		// If the root node is a function, we need to return true so we
+		// check the nodes inside it.
+		if f.currNodeIsRoot {
+			return true
 		}
 
 		return false

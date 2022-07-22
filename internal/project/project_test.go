@@ -63,6 +63,15 @@ func TestDefinitions(t *testing.T) {
 			position:    &Position{Row: 11, Col: 12},
 			outPosition: &Position{Row: 2, Col: 1},
 		},
+		{
+			file:        "function.php",
+			position:    &Position{Row: 15, Col: 5},
+			outPosition: &Position{Row: 11, Col: 5},
+		},
+		{
+			file:     "function.php",
+			position: &Position{Row: 18, Col: 1},
+		},
 	}
 
 	project := NewProject(definitionsFolder)
