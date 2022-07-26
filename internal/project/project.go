@@ -235,19 +235,29 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 			}, nil
 
 		case *ir.FunctionCallExpr:
-			function, path := p.function(scope, typedNode)
+			function, destPath := p.function(scope, typedNode)
 
 			if function == nil {
 				return nil, ErrNoDefinitionFound
 			}
 
+			if destPath == "" {
+				destPath = path
+			}
+
+			destFile, ok := p.files[destPath]
+			if !ok {
+				log.Errorf("Destination at %s is not in parsed files cache\n", path)
+				return nil, ErrNoDefinitionFound
+			}
+
 			pos := ir.GetPosition(function)
-			_, col := position.ToLocation(file.content, uint(pos.StartPos))
+			_, col := position.ToLocation(destFile.content, uint(pos.StartPos))
 
 			return &Position{
 				Row:  uint(pos.StartLine),
 				Col:  col,
-				Path: path,
+				Path: destPath,
 			}, nil
 		}
 	}
