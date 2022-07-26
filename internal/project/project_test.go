@@ -74,7 +74,7 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     "class.php",
-			position: &Position{Row: 11, Col: 19},
+			position: &Position{Row: 12, Col: 19},
 			outPosition: &Position{
 				Row:  165,
 				Col:  1,
@@ -83,16 +83,25 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:        "class.php",
-			position:    &Position{Row: 14, Col: 22},
-			outPosition: &Position{Row: 7, Col: 1},
+			position:    &Position{Row: 15, Col: 22},
+			outPosition: &Position{Row: 8, Col: 1},
 		},
 		{
 			file:     "class.php",
-			position: &Position{Row: 16, Col: 20},
+			position: &Position{Row: 17, Col: 20},
 			outPosition: &Position{
 				Row:  7,
 				Col:  1,
 				Path: path.Join(stubsFolder, "swoole", "Swoole", "WebSocket", "Server.php"),
+			},
+		},
+		{
+			file:     "class.php",
+			position: &Position{Row: 19, Col: 16},
+			outPosition: &Position{
+				Row:  7,
+				Col:  1,
+				Path: path.Join(stubsFolder, "swoole", "Swoole", "Process.php"),
 			},
 		},
 	}
@@ -103,7 +112,7 @@ func TestDefinitions(t *testing.T) {
 
 	for _, test := range expectations {
 		t.Run(
-			fmt.Sprintf("%s:%d#%d", test.file, test.position.Row, test.position.Col),
+			fmt.Sprintf("%s:%d,%d", test.file, test.position.Row, test.position.Col),
 			func(t *testing.T) {
 				is := is.New(t)
 
