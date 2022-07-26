@@ -259,6 +259,33 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 				Col:  col,
 				Path: destPath,
 			}, nil
+
+		case *ir.Name:
+			rootNode, ok := nap.Nodes[0].(*ir.Root)
+			if !ok {
+				log.Errorln("First node was not the root node, this should not happen")
+				return nil, ErrNoDefinitionFound
+			}
+
+			class, destPath := p.class(rootNode, typedNode)
+			if class == nil {
+				return nil, ErrNoDefinitionFound
+			}
+
+			destFile, ok := p.files[destPath]
+			if !ok {
+				log.Errorf("Destination at %s is not in parsed files cache\n", destPath)
+				return nil, ErrNoDefinitionFound
+			}
+
+			pos := ir.GetPosition(class)
+			_, col := position.ToLocation(destFile.content, uint(pos.StartPos))
+
+			return &Position{
+				Row:  uint(pos.StartLine),
+				Col:  col,
+				Path: destPath,
+			}, nil
 		}
 	}
 
@@ -302,6 +329,45 @@ func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.Functi
 
 		if traverser.Function != nil {
 			return traverser.Function, path
+		}
+	}
+
+	return nil, ""
+}
+
+// NOTE: the NameTkn stays the same, only the Value is changed to the FQN.
+func (p *Project) nameToFQN(root *ir.Root, name *ir.Name) *ir.Name {
+	if name.IsFullyQualified() {
+		return name
+	}
+
+	traverser, err := traversers.NewFQN(name)
+	if err != nil {
+		return nil
+	}
+
+	root.Walk(traverser)
+
+	return &ir.Name{
+		Position: name.Position,
+		NameTkn:  name.NameTkn,
+		Value:    traverser.Result(),
+	}
+}
+
+func (p *Project) class(root *ir.Root, name *ir.Name) (*ir.ClassStmt, string) {
+	fqn := p.nameToFQN(root, name)
+
+	traverser, err := traversers.NewClass(fqn)
+	if err != nil {
+		return nil, ""
+	}
+
+	for path, file := range p.files {
+		file.ast.Walk(traverser)
+
+		if traverser.ResultClass != nil {
+			return traverser.ResultClass, path
 		}
 	}
 

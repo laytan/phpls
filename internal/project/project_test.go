@@ -72,30 +72,65 @@ func TestDefinitions(t *testing.T) {
 			file:     "function.php",
 			position: &Position{Row: 18, Col: 1},
 		},
+		{
+			file:     "class.php",
+			position: &Position{Row: 11, Col: 19},
+			outPosition: &Position{
+				Row:  165,
+				Col:  1,
+				Path: path.Join(stubsFolder, "date", "date_c.php"),
+			},
+		},
+		{
+			file:        "class.php",
+			position:    &Position{Row: 14, Col: 22},
+			outPosition: &Position{Row: 7, Col: 1},
+		},
+		{
+			file:     "class.php",
+			position: &Position{Row: 16, Col: 20},
+			outPosition: &Position{
+				Row:  7,
+				Col:  1,
+				Path: path.Join(stubsFolder, "swoole", "Swoole", "WebSocket", "Server.php"),
+			},
+		},
 	}
 
 	project := NewProject(definitionsFolder)
 	err := project.Parse()
 	is.NoErr(err)
 
-	for i, test := range expectations {
-		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			is := is.New(t)
+	for _, test := range expectations {
+		t.Run(
+			fmt.Sprintf("%s:%d#%d", test.file, test.position.Row, test.position.Col),
+			func(t *testing.T) {
+				is := is.New(t)
 
-			pos, err := project.Definition(
-				path.Join(definitionsFolder, test.file),
-				test.position,
-			)
+				testPath := path.Join(definitionsFolder, test.file)
 
-			// Error is expected when no out position is given.
-			if test.outPosition == nil {
-				is.True(errors.Is(err, ErrNoDefinitionFound))
-			} else {
-				is.NoErr(err)
-			}
+				pos, err := project.Definition(
+					testPath,
+					test.position,
+				)
 
-			is.Equal(pos, test.outPosition)
-		})
+				// Error is expected when no out position is given.
+				if test.outPosition == nil {
+					is.True(errors.Is(err, ErrNoDefinitionFound))
+				} else {
+					is.NoErr(err)
+				}
+
+				// If test out position has no path, assume the same path as the input.
+				if test.outPosition != nil && test.outPosition.Path == "" && pos.Path != "" {
+					is.Equal(testPath, pos.Path)
+					is.Equal(test.outPosition.Col, pos.Col)
+					is.Equal(test.outPosition.Row, pos.Row)
+				} else {
+					is.Equal(pos, test.outPosition)
+				}
+			},
+		)
 	}
 }
 
