@@ -31,7 +31,6 @@ func TestPosition(t *testing.T) {
 			is := is.New(t)
 
 			row, col := ToLocation(string(content), pos)
-			fmt.Printf("Got row: %d, col: %d for pos %d\n", row, col, pos)
 			is.Equal(row, loc[0])
 			is.Equal(col, loc[1])
 		})
