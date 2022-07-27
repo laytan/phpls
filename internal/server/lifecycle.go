@@ -91,6 +91,8 @@ func (s *Server) Shutdown(context.Context) error {
 	}
 
 	s.isShuttingDown = true
+
+	log.Println("Received shutdown request, waiting for exit request")
 	return nil
 }
 
@@ -99,6 +101,8 @@ func (s *Server) Exit(context.Context) error {
 	if err := s.isMethodAllowed("Exit"); err != nil {
 		return err
 	}
+
+	log.Println("Received exit request, exiting")
 
 	if s.isShuttingDown {
 		os.Exit(0)
