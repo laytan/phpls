@@ -198,6 +198,24 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(stubsFolder, "http", "http3.php"),
 			},
 		},
+		{
+			file:     "use.php",
+			position: &Position{Row: 3, Col: 5},
+			outPosition: &Position{
+				Row:  7,
+				Col:  1,
+				Path: path.Join(stubsFolder, "swoole", "Swoole", "Client.php"),
+			},
+		},
+		{
+			file:     "use.php",
+			position: &Position{Row: 4, Col: 6},
+			outPosition: &Position{
+				Row:  165,
+				Col:  1,
+				Path: path.Join(stubsFolder, "date", "date_c.php"),
+			},
+		},
 	}
 
 	project := NewProject(definitionsFolder)
