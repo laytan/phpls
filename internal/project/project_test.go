@@ -104,6 +104,24 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(stubsFolder, "swoole", "Swoole", "Process.php"),
 			},
 		},
+		{
+			file:     path.Join("trait", "trait_user.php"),
+			position: &Position{Row: 7, Col: 9},
+			outPosition: &Position{
+				Row:  3,
+				Col:  1,
+				Path: path.Join(definitionsFolder, "trait", "trait.php"),
+			},
+		},
+		{
+			file:     path.Join("trait", "trait_user.php"),
+			position: &Position{Row: 8, Col: 9},
+			outPosition: &Position{
+				Row:  5,
+				Col:  1,
+				Path: path.Join(definitionsFolder, "trait", "trait_in_namespace.php"),
+			},
+		},
 	}
 
 	project := NewProject(definitionsFolder)

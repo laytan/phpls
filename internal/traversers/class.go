@@ -11,14 +11,14 @@ var ErrOnlyFQNSupported = errors.New(
 	"Class definition traverser only supports fully qualified names",
 )
 
-func NewClass(name *ir.Name) (*Class, error) {
+func NewClassLike(name *ir.Name) (*ClassLike, error) {
 	if !name.IsFullyQualified() {
 		return nil, ErrOnlyFQNSupported
 	}
 
 	namespace := strings.Trim(strings.TrimSuffix(name.Value, name.LastPart()), partSeperator)
 
-	return &Class{
+	return &ClassLike{
 		fqn:                  name.Value,
 		namespace:            namespace,
 		class:                name.LastPart(),
@@ -27,8 +27,8 @@ func NewClass(name *ir.Name) (*Class, error) {
 	}, nil
 }
 
-// Class implements ir.Visitor.
-type Class struct {
+// ClassLike implements ir.Visitor.
+type ClassLike struct {
 	// Search query.
 	fqn       string
 	namespace string
@@ -39,13 +39,13 @@ type Class struct {
 	fileNamespace        string
 	fileMatchesNamespace bool
 
-	// Resulting found class.
-	ResultClass *ir.ClassStmt
+	// Resulting found *ir.ClassStmt, *ir.InterfaceStmt or *ir.TraitStmt.
+	Result ir.Node
 }
 
-func (c *Class) EnterNode(node ir.Node) bool {
+func (c *ClassLike) EnterNode(node ir.Node) bool {
 	// Already got our result.
-	if c.ResultClass != nil {
+	if c.Result != nil {
 		return false
 	}
 
@@ -59,6 +59,9 @@ func (c *Class) EnterNode(node ir.Node) bool {
 			return false
 		}
 	}
+
+	var foundClassLikeNode ir.Node
+	var foundClassLikeFQN string
 
 	switch typedNode := node.(type) {
 
@@ -81,13 +84,19 @@ func (c *Class) EnterNode(node ir.Node) bool {
 		return false
 
 	case *ir.ClassStmt:
-		foundClass := c.fileNamespace + partSeperator + typedNode.ClassName.Value
-		if !strings.HasPrefix(foundClass, partSeperator) {
-			foundClass = partSeperator + foundClass
-		}
+		foundClassLikeFQN = c.nameToFQN(typedNode.ClassName.Value)
+		foundClassLikeNode = typedNode
+	case *ir.InterfaceStmt:
+		foundClassLikeFQN = c.nameToFQN(typedNode.InterfaceName.Value)
+		foundClassLikeNode = typedNode
+	case *ir.TraitStmt:
+		foundClassLikeFQN = c.nameToFQN(typedNode.TraitName.Value)
+		foundClassLikeNode = typedNode
+	}
 
-		if c.fqn == foundClass {
-			c.ResultClass = typedNode
+	if foundClassLikeFQN != "" {
+		if c.fqn == foundClassLikeFQN {
+			c.Result = foundClassLikeNode
 		}
 
 		return false
@@ -96,4 +105,13 @@ func (c *Class) EnterNode(node ir.Node) bool {
 	return true
 }
 
-func (c *Class) LeaveNode(ir.Node) {}
+func (c *ClassLike) LeaveNode(ir.Node) {}
+
+func (c *ClassLike) nameToFQN(name string) string {
+	foundClassLike := c.fileNamespace + partSeperator + name
+	if !strings.HasPrefix(foundClassLike, partSeperator) {
+		foundClassLike = partSeperator + foundClassLike
+	}
+
+	return foundClassLike
+}

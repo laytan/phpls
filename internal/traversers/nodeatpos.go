@@ -1,6 +1,8 @@
 package traversers
 
-import "github.com/VKCOM/noverify/src/ir"
+import (
+	"github.com/VKCOM/noverify/src/ir"
+)
 
 func NewNodeAtPos(pos uint) *NodeAtPos {
 	return &NodeAtPos{
@@ -17,6 +19,10 @@ type NodeAtPos struct {
 
 func (n *NodeAtPos) EnterNode(node ir.Node) bool {
 	pos := ir.GetPosition(node)
+	if pos == nil {
+		return true
+	}
+
 	if n.pos >= uint(pos.StartPos) && n.pos <= uint(pos.EndPos) {
 		n.Nodes = append(n.Nodes, node)
 		return true

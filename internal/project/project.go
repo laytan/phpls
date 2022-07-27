@@ -267,8 +267,8 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 				return nil, ErrNoDefinitionFound
 			}
 
-			class, destPath := p.class(rootNode, typedNode)
-			if class == nil {
+			classLike, destPath := p.classLike(rootNode, typedNode)
+			if classLike == nil {
 				return nil, ErrNoDefinitionFound
 			}
 
@@ -278,7 +278,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 				return nil, ErrNoDefinitionFound
 			}
 
-			pos := ir.GetPosition(class)
+			pos := ir.GetPosition(classLike)
 			_, col := position.ToLocation(destFile.content, uint(pos.StartPos))
 
 			return &Position{
@@ -355,10 +355,11 @@ func (p *Project) nameToFQN(root *ir.Root, name *ir.Name) *ir.Name {
 	}
 }
 
-func (p *Project) class(root *ir.Root, name *ir.Name) (*ir.ClassStmt, string) {
+// Returns either *ir.ClassStmt, *ir.InterfaceStmt or *ir.TraitStmt.
+func (p *Project) classLike(root *ir.Root, name *ir.Name) (ir.Node, string) {
 	fqn := p.nameToFQN(root, name)
 
-	traverser, err := traversers.NewClass(fqn)
+	traverser, err := traversers.NewClassLike(fqn)
 	if err != nil {
 		return nil, ""
 	}
@@ -366,8 +367,8 @@ func (p *Project) class(root *ir.Root, name *ir.Name) (*ir.ClassStmt, string) {
 	for path, file := range p.files {
 		file.ast.Walk(traverser)
 
-		if traverser.ResultClass != nil {
-			return traverser.ResultClass, path
+		if traverser.Result != nil {
+			return traverser.Result, path
 		}
 	}
 
