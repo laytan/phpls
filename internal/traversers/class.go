@@ -86,12 +86,17 @@ func (c *ClassLike) EnterNode(node ir.Node) bool {
 	case *ir.ClassStmt:
 		foundClassLikeFQN = c.nameToFQN(typedNode.ClassName.Value)
 		foundClassLikeNode = typedNode
+
 	case *ir.InterfaceStmt:
 		foundClassLikeFQN = c.nameToFQN(typedNode.InterfaceName.Value)
 		foundClassLikeNode = typedNode
+
 	case *ir.TraitStmt:
 		foundClassLikeFQN = c.nameToFQN(typedNode.TraitName.Value)
 		foundClassLikeNode = typedNode
+
+	default:
+		return true
 	}
 
 	if foundClassLikeFQN != "" {
