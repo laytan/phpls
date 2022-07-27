@@ -49,17 +49,6 @@ func (c *ClassLike) EnterNode(node ir.Node) bool {
 		return false
 	}
 
-	// If the current file does not match the namespace,
-	// and we are not the root node, there is no reason to check this node.
-	if c.fileNamespace != "" && c.fileNamespace != c.namespace {
-		switch node.(type) {
-		case *ir.Root:
-			break
-		default:
-			return false
-		}
-	}
-
 	var foundClassLikeNode ir.Node
 	var foundClassLikeFQN string
 

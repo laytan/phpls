@@ -186,6 +186,18 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(stubsFolder, "swoole", "Swoole", "Client.php"),
 			},
 		},
+		{
+			file: "multiple_namespaces_in_one_file.php",
+			position: &Position{
+				Row: 7,
+				Col: 47,
+			},
+			outPosition: &Position{
+				Row:  713,
+				Col:  1,
+				Path: path.Join(stubsFolder, "http", "http3.php"),
+			},
+		},
 	}
 
 	project := NewProject(definitionsFolder)
