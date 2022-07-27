@@ -5,6 +5,72 @@
 
 Elephp is a language server for PHP.
 
+## Features
+
+Below I have outlined all features that a LSP can theoretically do, and the progress/priority for it.
+
+### In progress/done
+
+- [x] Communication
+    - [x] Stdio
+    - [x] Websockets
+    - [x] TCP
+- [ ] Go to definition
+    - [x] Standard PHP symbols
+    - [x] Use statements
+    - [x] Namespace statements
+    - [x] ClassLike (classes, interfaces & traits)
+    - [x] Extends statements
+    - [x] Global variables
+    - [x] Local variables
+    - [x] Parameters
+    - [ ] Methods
+    - [ ] Properties
+    - [ ] Constants (classLike & global)
+    - [ ] Anonymous functions
+    - [ ] Arrow functions
+
+### Features to be implemented before v1
+
+- Check if we can publish the binary/ls via packagist
+- Go to declaration
+- Go to type definition
+- Go to implementation
+- Find references
+- Hover
+- Document symbols
+- Signature help
+- Completion
+- Workspace symbols
+- Watching for changes outside editor (Did change watched files)
+
+### Features for later
+
+- Diagnostics (Publish & Pull)
+- Highlight references (Document highlight)
+- Rename
+- Code lens
+- Folding
+
+### Features with even lower priority/that don't make sense to me
+
+**Look into what these are:**  
+- Inline value (is this a refactor?)
+- Inlay hints (Looks like a completion?)
+- Code action
+
+**Others:**  
+- Selection range
+- Document link
+- Semantic tokens
+- Moniker
+- Document Colors
+- Formatting (Use third party formatter?)
+    - Full formatting
+    - Range formatting
+    - On type formatting
+- Linked editing range
+
 ## Installation
 
 ### Prebuilt
