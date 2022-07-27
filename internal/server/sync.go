@@ -17,13 +17,9 @@ func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 
 	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
 
-	if s.openFile != "" && s.openFile != path {
-		log.Errorln("Can't track file because an open file is already being tracked")
-		return lsperrors.ErrRequestFailed("LSP Server is already tracking an open file")
-	}
+	s.openFiles = append(s.openFiles, path)
 
-	s.openFile = path
-	log.Infof("Started tracking open file %s\n", s.openFile)
+	log.Infof("Started tracking open file %s\n", s.openFiles)
 	return nil
 }
 
@@ -35,19 +31,19 @@ func (s *Server) DidChange(
 		return err
 	}
 
-	if s.openFile == "" {
-		log.Errorln("Can't process DidChange request because there is no open file being tracked")
-		return lsperrors.ErrRequestFailed("LSP Server is not tracking an open file to be changed")
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+
+	isTrackingPath := false
+	for _, checkingPath := range s.openFiles {
+		if path == checkingPath {
+			isTrackingPath = true
+			break
+		}
 	}
 
-	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
-	if path != s.openFile {
-		log.Errorf(
-			"Got DidChange request for file %s but we are tracking %s as open\n",
-			path,
-			s.openFile,
-		)
-		return lsperrors.ErrRequestFailed("LSP Server is tracking a different file as open")
+	if !isTrackingPath {
+		log.Errorf("Got DidChange request for file %s but we are tracking: %v\n", path, s.openFiles)
+		return lsperrors.ErrRequestFailed("LSP Server is not tracking changed file")
 	}
 
 	for _, changes := range params.ContentChanges {
@@ -68,7 +64,7 @@ func (s *Server) DidChange(
 		}
 	}
 
-	log.Infof("Parsed changes for open file %s\n", s.openFile)
+	log.Infof("Parsed changes for open file %s\n", s.openFiles)
 	return nil
 }
 
@@ -77,17 +73,23 @@ func (s *Server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocu
 		return err
 	}
 
-	// OPTIM: This might not be necessary, the changes made are good enough.
-	if err := s.project.ParseFile(
-		strings.TrimPrefix(string(params.TextDocument.URI), "file://"),
-		time.Now(),
-	); err != nil {
-		log.Error(err)
-		return lsperrors.ErrRequestFailed(err.Error())
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+
+	index := -1
+	for i, checkingPath := range s.openFiles {
+		if path == checkingPath {
+			index = i
+			break
+		}
 	}
 
-	log.Infof("Closed file %s, started tracking it from the filesystem again\n", s.openFile)
+	if index == -1 {
+		log.Errorf("Trying to close file %s which is not in open files %v\n", path, s.openFiles)
+		return lsperrors.ErrRequestFailed("Trying to close file which is not in tracked/open files")
+	}
 
-	s.openFile = ""
+	s.openFiles = append(s.openFiles[:index], s.openFiles[index+1:]...)
+
+	log.Infof("Closed file %s, started tracking it from the filesystem again\n", s.openFiles)
 	return nil
 }
