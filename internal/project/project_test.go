@@ -122,6 +122,58 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(definitionsFolder, "trait", "trait_in_namespace.php"),
 			},
 		},
+		{
+			file:     path.Join("interface", "interface_user.php"),
+			position: &Position{Row: 5, Col: 43},
+			outPosition: &Position{
+				Row:  3,
+				Col:  1,
+				Path: path.Join(definitionsFolder, "interface", "interface.php"),
+			},
+		},
+		{
+			file:     path.Join("interface", "interface_user.php"),
+			position: &Position{Row: 9, Col: 46},
+			outPosition: &Position{
+				Row:  5,
+				Col:  1,
+				Path: path.Join(definitionsFolder, "interface", "interface_in_namespace.php"),
+			},
+		},
+		{
+			file:     path.Join("interface", "interface_user.php"),
+			position: &Position{Row: 13, Col: 43},
+			outPosition: &Position{
+				Row:  13,
+				Col:  1,
+				Path: path.Join(stubsFolder, "date", "date_c.php"),
+			},
+		},
+		{
+			file:     path.Join("interface", "interface_user.php"),
+			position: &Position{Row: 21, Col: 43},
+			outPosition: &Position{
+				Row: 17,
+				Col: 1,
+			},
+		},
+		{
+			file:     path.Join("interface", "interface_user.php"),
+			position: &Position{Row: 25, Col: 45},
+			outPosition: &Position{
+				Row: 17,
+				Col: 1,
+			},
+		},
+		{
+			file:     path.Join("interface", "interface_user.php"),
+			position: &Position{Row: 25, Col: 75},
+			outPosition: &Position{
+				Row:  13,
+				Col:  1,
+				Path: path.Join(stubsFolder, "date", "date_c.php"),
+			},
+		},
 	}
 
 	project := NewProject(definitionsFolder)
