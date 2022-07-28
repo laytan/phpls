@@ -255,6 +255,20 @@ func TestDefinitions(t *testing.T) {
 	}
 }
 
+// func TestTrie(t *testing.T) {
+// 	is := is.New(t)
+//
+// 	project := NewProject(definitionsFolder)
+// 	err := project.Parse()
+// 	is.NoErr(err)
+//
+// 	opts := []func(*trie.SearchOptions){trie.WithMaxResults(10)}
+// 	result := project.symbolTrie.Search(strings.Split("array", ""), opts...)
+// 	for _, res := range result.Results {
+// 		fmt.Println(res.Key)
+// 	}
+// }
+
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
 	project := NewProject(definitionsFolder)

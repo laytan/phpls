@@ -19,6 +19,7 @@ import (
 	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/shivamMg/trie"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -46,6 +47,7 @@ func NewProject(root string) *Project {
 			// TODO: Get php version from 'php --version', or is there a builtin lsp way of getting language version?
 			Version: &version.Version{Major: 8, Minor: 0}, //nolint:revive
 		},
+		symbolTrie: trie.New(),
 	}
 }
 
@@ -53,10 +55,16 @@ type Project struct {
 	files        map[string]file
 	roots        []string
 	parserConfig conf.Config
+
+	// Symbol trie for global variables, classes, interfaces etc.
+	// End goal being: never needing to traverse the whole project to search
+	// for something.
+	symbolTrie *trie.Trie
 }
 
 type file struct {
 	ast        *ir.Root
+	symbolTrie *trie.Trie
 	content    string
 	namespaces []*string
 	uses       []*ir.UseStmt
@@ -157,10 +165,14 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 		return errors.New("AST root node could not be converted to IR root node")
 	}
 
+	symbolTraverser := traversers.NewSymbol(p.symbolTrie, path)
+	irRootNode.Walk(symbolTraverser)
+
 	traverser := traversers.NewNamespaces()
 	irRootNode.Walk(traverser)
 
 	p.files[path] = file{
+		// TODO: remove ast prop.
 		ast:        irRootNode,
 		content:    string(content),
 		namespaces: traverser.Namespaces,
@@ -258,7 +270,7 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 				return nil, ErrNoDefinitionFound
 			}
 
-			pos := ir.GetPosition(function)
+			pos := function.Position
 			_, col := position.ToLocation(destFile.content, uint(pos.StartPos))
 
 			return &Position{
@@ -319,8 +331,6 @@ func (p *Project) globalAssignment(root *ir.Root, globalVar *ir.SimpleVar) *ir.S
 }
 
 func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.FunctionStmt, string) {
-	// TODO: this does not handle scopes very well yet.
-
 	traverser, err := traversers.NewFunction(call)
 	if err != nil {
 		return nil, ""
@@ -331,12 +341,37 @@ func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.Functi
 		return traverser.Function, ""
 	}
 
-	for path, file := range p.files {
-		file.ast.Walk(traverser)
+	// No definition found locally, searching globally.
+	name, ok := call.Function.(*ir.Name)
+	if !ok {
+		return nil, ""
+	}
 
-		if traverser.Function != nil {
-			return traverser.Function, path
-		}
+	opts := []func(*trie.SearchOptions){trie.WithMaxResults(1)}
+	results := p.symbolTrie.Search(strings.Split(name.Value, ""), opts...)
+	if len(results.Results) == 0 {
+		return nil, ""
+	}
+
+	res := results.Results[0]
+
+	// Only want exact matches.
+	if strings.Join(res.Key, "") != name.Value {
+		return nil, ""
+	}
+
+	node, ok := res.Value.(*traversers.TrieNode)
+	if !ok {
+		log.Errorf(
+			"Expected symbol tree node to be of type *traversers.TrieNode, got %T\n",
+			res.Value,
+		)
+		return nil, ""
+	}
+
+	// Only want functions.
+	if function, ok := node.Node.(*ir.FunctionStmt); ok {
+		return function, node.Path
 	}
 
 	return nil, ""
