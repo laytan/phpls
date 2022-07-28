@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/laytan/elephp/pkg/pathutils"
+	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/matryer/is"
 )
 
@@ -218,7 +219,7 @@ func TestDefinitions(t *testing.T) {
 		},
 	}
 
-	project := NewProject(definitionsFolder)
+	project := NewProject(definitionsFolder, phpversion.EightOne())
 	err := project.Parse()
 	is.NoErr(err)
 
@@ -271,7 +272,7 @@ func TestDefinitions(t *testing.T) {
 
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
-	project := NewProject(definitionsFolder)
+	project := NewProject(definitionsFolder, phpversion.EightOne())
 	err := project.Parse()
 	is.NoErr(err)
 
@@ -288,7 +289,7 @@ func BenchmarkParsing(b *testing.B) {
 	is := is.New(b)
 
 	for i := 0; i < b.N; i++ {
-		project := NewProject(definitionsFolder)
+		project := NewProject(definitionsFolder, phpversion.EightOne())
 		err := project.Parse()
 		is.NoErr(err)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	"github.com/laytan/elephp/pkg/phpversion"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -45,7 +46,15 @@ func (s *Server) Initialize(
 		return nil, lsperrors.ErrRequestFailed("LSP Server requires RootURI to be set")
 	}
 
-	s.project = project.NewProject(string(s.root))
+	phpv, err := phpversion.Get()
+	if err != nil {
+		log.Error(err)
+		return nil, lsperrors.ErrRequestFailed("LSP Server " + err.Error())
+	}
+
+	log.Infof("Detected php version: %s\n", phpv.String())
+
+	s.project = project.NewProject(string(s.root), phpv)
 
 	// TODO: send this error to client, seems important to know about.
 	go func() {

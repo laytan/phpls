@@ -18,6 +18,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/pathutils"
+	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/shivamMg/trie"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ import (
 
 var ErrNoDefinitionFound = errors.New("No definition found for symbol at given position")
 
-func NewProject(root string) *Project {
+func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 	// OPTIM: parse phpstorm stubs once and store on filesystem or even in the binary because they won't change.
 	//
 	// OPTIM: This is also parsing tests for the specific stubs,
@@ -44,8 +45,10 @@ func NewProject(root string) *Project {
 				// OPTIM: valid version. Currently it tries to parse as much as it can but stops on an error.
 				log.Info(e)
 			},
-			// TODO: Get php version from 'php --version', or is there a builtin lsp way of getting language version?
-			Version: &version.Version{Major: 8, Minor: 0}, //nolint:revive
+			Version: &version.Version{
+				Major: uint64(phpv.Major),
+				Minor: uint64(phpv.Minor),
+			},
 		},
 		symbolTrie: trie.New(),
 	}
