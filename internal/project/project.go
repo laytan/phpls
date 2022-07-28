@@ -63,12 +63,26 @@ type Project struct {
 }
 
 type file struct {
-	ast        *ir.Root
 	symbolTrie *trie.Trie
 	content    string
 	namespaces []*string
 	uses       []*ir.UseStmt
 	modified   time.Time
+}
+
+func (f *file) parse(config conf.Config) (*ir.Root, error) {
+	rootNode, err := parser.Parse([]byte(f.content), config)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing file into AST: %w", err)
+	}
+
+	irNode := irconv.ConvertNode(rootNode)
+	irRootNode, ok := irNode.(*ir.Root)
+	if !ok {
+		return nil, errors.New("AST root node could not be converted to IR root node")
+	}
+
+	return irRootNode, nil
 }
 
 type Position struct {
@@ -172,8 +186,6 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	irRootNode.Walk(traverser)
 
 	p.files[path] = file{
-		// TODO: remove ast prop.
-		ast:        irRootNode,
 		content:    string(content),
 		namespaces: traverser.Namespaces,
 		uses:       traverser.Uses,
@@ -198,9 +210,14 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 		file = p.files[path]
 	}
 
+	ast, err := file.parse(p.parserConfig)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing %s: %w", path, err)
+	}
+
 	apos := position.FromLocation(file.content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
-	file.ast.Walk(nap)
+	ast.Walk(nap)
 
 	// Root.
 	var scope ir.Node
@@ -414,7 +431,15 @@ func (p *Project) classLike(root *ir.Root, name *ir.Name) (ir.Node, string) {
 	}
 
 	for path, file := range p.files {
-		file.ast.Walk(traverser)
+
+		// TODO: Use the symbol trie for this, instead of parsing everything.
+		ast, err := file.parse(p.parserConfig)
+		if err != nil {
+			log.Error(fmt.Errorf("Error parsing %s: %w", path, err))
+			return nil, ""
+		}
+
+		ast.Walk(traverser)
 
 		if traverser.Result != nil {
 			return traverser.Result, path
