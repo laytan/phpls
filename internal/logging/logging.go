@@ -45,7 +45,13 @@ func Configure(con config.Config) {
 func Tail() error {
 	t, err := tail.TailFile(
 		path.Join(pathutils.Root(), "logs", "elephp.log"),
-		tail.Config{Follow: true, ReOpen: true, MustExist: true},
+		tail.Config{
+			Follow:    true,
+			ReOpen:    true,
+			MustExist: true,
+			// Start at the end of the file.
+			Location: &tail.SeekInfo{Offset: 0, Whence: 2},
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("Error configuring logs tail: %w", err)
