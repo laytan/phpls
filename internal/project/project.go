@@ -56,9 +56,11 @@ type Project struct {
 }
 
 type file struct {
-	ast      *ir.Root
-	content  string
-	modified time.Time
+	ast        *ir.Root
+	content    string
+	namespaces []*string
+	uses       []*ir.UseStmt
+	modified   time.Time
 }
 
 type Position struct {
@@ -155,10 +157,15 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 		return errors.New("AST root node could not be converted to IR root node")
 	}
 
+	traverser := traversers.NewNamespaces()
+	irRootNode.Walk(traverser)
+
 	p.files[path] = file{
-		ast:      irRootNode,
-		content:  string(content),
-		modified: modTime,
+		ast:        irRootNode,
+		content:    string(content),
+		namespaces: traverser.Namespaces,
+		uses:       traverser.Uses,
+		modified:   modTime,
 	}
 
 	return nil
@@ -357,6 +364,13 @@ func (p *Project) nameToFQN(root *ir.Root, name *ir.Name) *ir.Name {
 
 // Returns either *ir.ClassStmt, *ir.InterfaceStmt or *ir.TraitStmt.
 func (p *Project) classLike(root *ir.Root, name *ir.Name) (ir.Node, string) {
+	// OPTIM: first check the current file and included files (use statements), in most cases, that will match.
+	// OPTIM: and only if there is no match, search globally.
+	// OPTIM: there does need to be an index of path, to namespaces for this to work.
+	// OPTIM: should we store the namespaces of a file in the file struct, would that be to much initial parsing?
+	//
+	// OPTIM: could even have an index of global (stdlib) classlikes for easy access.
+
 	fqn := p.nameToFQN(root, name)
 
 	traverser, err := traversers.NewClassLike(fqn)

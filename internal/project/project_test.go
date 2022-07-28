@@ -269,3 +269,13 @@ func BenchmarkStdlibFunction(b *testing.B) {
 		is.NoErr(err)
 	}
 }
+
+func BenchmarkParsing(b *testing.B) {
+	is := is.New(b)
+
+	for i := 0; i < b.N; i++ {
+		project := NewProject(definitionsFolder)
+		err := project.Parse()
+		is.NoErr(err)
+	}
+}
