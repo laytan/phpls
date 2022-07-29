@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/VKCOM/noverify/src/ir"
@@ -34,9 +36,6 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 	// OPTIM: and has specific files for different php versions that should be excluded/handled appropriately.
 	stubs := path.Join(pathutils.Root(), "phpstorm-stubs")
 
-	symbolTrie := symboltrie.New[*traversers.TrieNode]()
-	symbolTraverser := traversers.NewSymbol(symbolTrie)
-
 	roots := []string{root, stubs}
 	return &Project{
 		files:      make(map[string]file),
@@ -55,12 +54,13 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 				Minor: uint64(phpv.Minor),
 			},
 		},
-		symbolTrie:      symbolTrie,
-		symbolTraverser: symbolTraverser,
+		symbolTrie: symboltrie.New[*traversers.TrieNode](),
 	}
 }
 
 type Project struct {
+	mu sync.Mutex
+
 	// Path to file map.
 	files map[string]file
 	// Namespace to file map.
@@ -72,8 +72,7 @@ type Project struct {
 	// Symbol trie for global variables, classes, interfaces etc.
 	// End goal being: never needing to traverse the whole project to search
 	// for something.
-	symbolTrie      *symboltrie.Trie[*traversers.TrieNode]
-	symbolTraverser *traversers.Symbol
+	symbolTrie *symboltrie.Trie[*traversers.TrieNode]
 }
 
 type file struct {
@@ -126,6 +125,13 @@ func (p *Project) Parse() error {
 }
 
 func (p *Project) ParseRoot(root string) error {
+	// Waitgroup so this funtion can wait for everything to be parsed
+	// before returning.
+	wg := sync.WaitGroup{}
+
+	// Semaphore to limit the number of go routines working at the same time.
+	sem := make(chan struct{}, runtime.NumCPU())
+
 	// NOTE: This does not walk symbolic links, is that a problem?
 	err := filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
@@ -133,29 +139,39 @@ func (p *Project) ParseRoot(root string) error {
 			return nil
 		}
 
-		// OPTIM: https://github.com/rjeczalik/notify to keep an eye on file changes and adds.
-
 		// TODO: make configurable what a php file is.
 		// NOTE: the TextDocumentItem struct has the languageid on it, maybe use that?
 		if !strings.HasSuffix(path, ".php") || info.IsDir() {
 			return nil
 		}
 
-		finfo, err := info.Info()
-		if err != nil {
-			log.Error(fmt.Errorf("Error reading file info of %s: %w", path, err))
-		}
+		// Start a new go routine to do the actual parsing work.
+		// Make sure we wait for it to finish by adding to the wait group.
+		wg.Add(1)
+		go func(path string, info fs.DirEntry) {
+			// Takes from the semaphore, this blocks until there is an available spot.
+			sem <- struct{}{}
+			// Make sure we release the semaphore when we are done.
+			defer func() { <-sem }()
+			// Signal the wait group this is done too.
+			defer wg.Done()
 
-		// If we currently have this parsed and the file hasn't changed, don't parse it again.
-		if existing, ok := p.files[path]; ok {
-			if !existing.modified.Before(finfo.ModTime()) {
-				return nil
+			finfo, err := info.Info()
+			if err != nil {
+				log.Error(fmt.Errorf("Error reading file info of %s: %w", path, err))
 			}
-		}
 
-		if err := p.ParseFile(path, finfo.ModTime()); err != nil {
-			log.Error(fmt.Errorf("Error parsing file %s: %w", path, err))
-		}
+			// If we currently have this parsed and the file hasn't changed, don't parse it again.
+			// if existing, ok := p.files[path]; ok {
+			// 	if !existing.modified.Before(finfo.ModTime()) {
+			// 		return
+			// 	}
+			// }
+
+			if err := p.ParseFile(path, finfo.ModTime()); err != nil {
+				log.Error(fmt.Errorf("Error parsing file %s: %w", path, err))
+			}
+		}(path, info)
 
 		return nil
 	})
@@ -163,11 +179,14 @@ func (p *Project) ParseRoot(root string) error {
 		return fmt.Errorf("Error parsing project: %w", err)
 	}
 
+	wg.Wait()
+	close(sem)
+
 	return nil
 }
 
 func (p *Project) ParseFile(path string, modTime time.Time) error {
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("Error reading file %s: %w", path, err)
 	}
@@ -193,12 +212,16 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 		return errors.New("AST root node could not be converted to IR root node")
 	}
 
-	p.symbolTraverser.SetPath(path)
-	irRootNode.Walk(p.symbolTraverser)
+	symbolTraverser := traversers.NewSymbol(p.symbolTrie)
+	symbolTraverser.SetPath(path)
+	irRootNode.Walk(symbolTraverser)
 
 	traverser := traversers.NewNamespaces()
 	irRootNode.Walk(traverser)
 
+	// Writing/Reading from a map needs to be done by one go routine at a time.
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	for _, namespace := range traverser.Namespaces {
 		namespaces, ok := p.namespaces[namespace]
 		if ok {
