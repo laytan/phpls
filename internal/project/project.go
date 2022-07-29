@@ -20,6 +20,7 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/shivamMg/trie"
 	log "github.com/sirupsen/logrus"
 )
@@ -33,13 +34,14 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 	// OPTIM: and has specific files for different php versions that should be excluded/handled appropriately.
 	stubs := path.Join(pathutils.Root(), "phpstorm-stubs")
 
-	symbolTrie := trie.New()
+	symbolTrie := symboltrie.New[*traversers.TrieNode]()
 	symbolTraverser := traversers.NewSymbol(symbolTrie)
 
 	roots := []string{root, stubs}
 	return &Project{
-		files: make(map[string]file),
-		roots: roots,
+		files:      make(map[string]file),
+		namespaces: make(map[string][]string),
+		roots:      roots,
 		parserConfig: conf.Config{
 			ErrorHandlerFunc: func(e *perrors.Error) {
 				// TODO: when we get a parse/syntax error, publish the error
@@ -59,21 +61,25 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 }
 
 type Project struct {
-	files        map[string]file
+	// Path to file map.
+	files map[string]file
+	// Namespace to file map.
+	namespaces map[string][]string
+
 	roots        []string
 	parserConfig conf.Config
 
 	// Symbol trie for global variables, classes, interfaces etc.
 	// End goal being: never needing to traverse the whole project to search
 	// for something.
-	symbolTrie      *trie.Trie
+	symbolTrie      *symboltrie.Trie[*traversers.TrieNode]
 	symbolTraverser *traversers.Symbol
 }
 
 type file struct {
 	symbolTrie *trie.Trie
 	content    string
-	namespaces []*string
+	namespaces []string
 	uses       []*ir.UseStmt
 	modified   time.Time
 }
@@ -103,7 +109,7 @@ func (p *Project) Parse() error {
 	start := time.Now()
 	defer func() {
 		log.Infof(
-			"Parsed %d files of %d root folders in %s\n.",
+			"Parsed %d files of %d root folders in %s\n",
 			len(p.files),
 			len(p.roots),
 			time.Since(start),
@@ -192,6 +198,16 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 
 	traverser := traversers.NewNamespaces()
 	irRootNode.Walk(traverser)
+
+	for _, namespace := range traverser.Namespaces {
+		namespaces, ok := p.namespaces[namespace]
+		if ok {
+			p.namespaces[namespace] = append(namespaces, path)
+			continue
+		}
+
+		p.namespaces[namespace] = []string{path}
+	}
 
 	p.files[path] = file{
 		content:    string(content),
@@ -311,9 +327,14 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 				return nil, ErrNoDefinitionFound
 			}
 
-			classLike, destPath := p.classLike(rootNode, typedNode)
+			// TODO: this should already be a pointer (file).
+			classLike, destPath := p.classLike(&file, rootNode, typedNode)
 			if classLike == nil {
 				return nil, ErrNoDefinitionFound
+			}
+
+			if destPath == "" {
+				destPath = path
 			}
 
 			destFile, ok := p.files[destPath]
@@ -372,31 +393,16 @@ func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.Functi
 		return nil, ""
 	}
 
-	opts := []func(*trie.SearchOptions){trie.WithMaxResults(1)}
-	results := p.symbolTrie.Search(strings.Split(name.Value, ""), opts...)
-	if len(results.Results) == 0 {
+	results := p.symbolTrie.SearchExact(name.Value)
+
+	if len(results) == 0 {
 		return nil, ""
 	}
 
-	res := results.Results[0]
-
-	// Only want exact matches.
-	if strings.Join(res.Key, "") != name.Value {
-		return nil, ""
-	}
-
-	node, ok := res.Value.(*traversers.TrieNode)
-	if !ok {
-		log.Errorf(
-			"Expected symbol tree node to be of type *traversers.TrieNode, got %T\n",
-			res.Value,
-		)
-		return nil, ""
-	}
-
-	// Only want functions.
-	if function, ok := node.Node.(*ir.FunctionStmt); ok {
-		return function, node.Path
+	for _, res := range results {
+		if function, ok := res.Node.(*ir.FunctionStmt); ok {
+			return function, res.Path
+		}
 	}
 
 	return nil, ""
@@ -423,7 +429,7 @@ func (p *Project) nameToFQN(root *ir.Root, name *ir.Name) *ir.Name {
 }
 
 // Returns either *ir.ClassStmt, *ir.InterfaceStmt or *ir.TraitStmt.
-func (p *Project) classLike(root *ir.Root, name *ir.Name) (ir.Node, string) {
+func (p *Project) classLike(sourceFile *file, root *ir.Root, name *ir.Name) (ir.Node, string) {
 	// OPTIM: first check the current file and included files (use statements), in most cases, that will match.
 	// OPTIM: and only if there is no match, search globally.
 	// OPTIM: there does need to be an index of path, to namespaces for this to work.
@@ -431,27 +437,75 @@ func (p *Project) classLike(root *ir.Root, name *ir.Name) (ir.Node, string) {
 	//
 	// OPTIM: could even have an index of global (stdlib) classlikes for easy access.
 
+	// TODO: abstract this common functionality.
 	fqn := p.nameToFQN(root, name)
+	namespace := strings.Trim(strings.TrimSuffix(fqn.Value, fqn.LastPart()), "\\")
+	classLikeName := fqn.LastPart()
 
 	traverser, err := traversers.NewClassLike(fqn)
 	if err != nil {
+		log.Error(err)
 		return nil, ""
 	}
 
-	for path, file := range p.files {
+	root.Walk(traverser)
+	if traverser.Result != nil {
+		return traverser.Result, ""
+	}
 
-		// TODO: Use the symbol trie for this, instead of parsing everything.
-		ast, err := file.parse(p.parserConfig)
-		if err != nil {
-			log.Error(fmt.Errorf("Error parsing %s: %w", path, err))
-			return nil, ""
+	// TODO: aliasses?
+	for _, usage := range sourceFile.uses {
+		usageNamespace := strings.Trim(
+			strings.TrimSuffix(usage.Use.Value, usage.Use.LastPart()),
+			"\\",
+		)
+
+		paths, ok := p.namespaces[usageNamespace]
+		if !ok {
+			log.Error(fmt.Errorf("Namespace %s is not indexed", usageNamespace))
+			continue
 		}
 
-		ast.Walk(traverser)
+		for _, path := range paths {
+			file, ok := p.files[path]
+			if !ok {
+				log.Error(fmt.Errorf("No file struct for path %s", path))
+				continue
+			}
 
-		if traverser.Result != nil {
-			return traverser.Result, path
+			ast, err := file.parse(p.parserConfig)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			ast.Walk(traverser)
+			if traverser.Result != nil {
+				return traverser.Result, path
+			}
 		}
+	}
+
+	results := p.symbolTrie.SearchExact(classLikeName)
+
+	if len(results) == 0 {
+		return nil, ""
+	}
+
+	for _, res := range results {
+		if res.Namespace != namespace {
+			continue
+		}
+
+		// Check is class like.
+		nodeKind := ir.GetNodeKind(res.Node)
+		if nodeKind != ir.KindClassStmt &&
+			nodeKind != ir.KindTraitStmt &&
+			nodeKind != ir.KindInterfaceStmt {
+			continue
+		}
+
+		return res.Node, res.Path
 	}
 
 	return nil, ""

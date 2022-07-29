@@ -6,14 +6,14 @@ import (
 
 func NewNamespaces() *Namespaces {
 	return &Namespaces{
-		Namespaces: make([]*string, 0),
+		Namespaces: make([]string, 0),
 		Uses:       make([]*ir.UseStmt, 0),
 	}
 }
 
 // Namespaces implements ir.Visitor.
 type Namespaces struct {
-	Namespaces []*string
+	Namespaces []string
 	Uses       []*ir.UseStmt
 }
 
@@ -25,7 +25,7 @@ func (n *Namespaces) EnterNode(node ir.Node) bool {
 
 	case *ir.NamespaceStmt:
 		if typedNode.NamespaceName != nil {
-			n.Namespaces = append(n.Namespaces, &typedNode.NamespaceName.Value)
+			n.Namespaces = append(n.Namespaces, typedNode.NamespaceName.Value)
 		}
 
 		return false
