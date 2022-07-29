@@ -13,8 +13,8 @@ type TrieNode struct {
 	Node      ir.Node
 }
 
-func NewSymbol(trie *trie.Trie, path string) *Symbol {
-	return &Symbol{trie: trie, path: path}
+func NewSymbol(trie *trie.Trie) *Symbol {
+	return &Symbol{trie: trie}
 }
 
 // Symbol implements ir.Visitor.
@@ -22,6 +22,11 @@ type Symbol struct {
 	trie             *trie.Trie
 	path             string
 	currentNamespace string
+}
+
+func (s *Symbol) SetPath(path string) {
+	s.path = path
+	s.currentNamespace = ""
 }
 
 func (s *Symbol) EnterNode(node ir.Node) bool {

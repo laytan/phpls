@@ -33,6 +33,9 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 	// OPTIM: and has specific files for different php versions that should be excluded/handled appropriately.
 	stubs := path.Join(pathutils.Root(), "phpstorm-stubs")
 
+	symbolTrie := trie.New()
+	symbolTraverser := traversers.NewSymbol(symbolTrie)
+
 	roots := []string{root, stubs}
 	return &Project{
 		files: make(map[string]file),
@@ -50,7 +53,8 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 				Minor: uint64(phpv.Minor),
 			},
 		},
-		symbolTrie: trie.New(),
+		symbolTrie:      symbolTrie,
+		symbolTraverser: symbolTraverser,
 	}
 }
 
@@ -62,7 +66,8 @@ type Project struct {
 	// Symbol trie for global variables, classes, interfaces etc.
 	// End goal being: never needing to traverse the whole project to search
 	// for something.
-	symbolTrie *trie.Trie
+	symbolTrie      *trie.Trie
+	symbolTraverser *traversers.Symbol
 }
 
 type file struct {
@@ -182,8 +187,8 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 		return errors.New("AST root node could not be converted to IR root node")
 	}
 
-	symbolTraverser := traversers.NewSymbol(p.symbolTrie, path)
-	irRootNode.Walk(symbolTraverser)
+	p.symbolTraverser.SetPath(path)
+	irRootNode.Walk(p.symbolTraverser)
 
 	traverser := traversers.NewNamespaces()
 	irRootNode.Walk(traverser)
