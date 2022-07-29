@@ -36,6 +36,36 @@ func (s *Trie[T]) SearchExact(key string) []T {
 	return trieNode.Nodes
 }
 
+type SearchResult[T any] struct {
+	Key   string
+	Value T
+}
+
+func SearchResultKeys[T any](results []*SearchResult[T]) []string {
+	keys := make([]string, len(results))
+	for i, result := range results {
+		keys[i] = result.Key
+	}
+
+	return keys
+}
+
+func (s *Trie[T]) SearchPrefix(key string, maxResults uint) []*SearchResult[T] {
+	opts := []func(*trie.SearchOptions){trie.WithMaxResults(int(maxResults))}
+	result := s.trie.Search(strings.Split(key, ""), opts...)
+
+	flatResults := make([]*SearchResult[T], len(result.Results))
+	for i, res := range result.Results {
+		trieNode := res.Value.(*trieNode[T])
+		flatResults[i] = &SearchResult[T]{
+			Key:   strings.Join(res.Key, ""),
+			Value: trieNode.Nodes[0],
+		}
+	}
+
+	return flatResults
+}
+
 // Puts the node at key in the trie, if this is a duplicate it stores it alongside it.
 func (s *Trie[T]) Put(key string, node T) {
 	s.mu.Lock()

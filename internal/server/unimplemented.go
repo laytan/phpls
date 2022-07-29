@@ -231,13 +231,6 @@ func (s *Server) WillSaveWaitUntil(
 	return nil, errorUnimplemented
 }
 
-func (s *Server) Completion(
-	context.Context,
-	*protocol.CompletionParams,
-) (*protocol.CompletionList, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *Server) ResolveCompletionItem(
 	context.Context,
 	*protocol.CompletionItem,

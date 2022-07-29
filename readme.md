@@ -29,6 +29,17 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
     - [ ] Constants (classLike & global)
     - [ ] Anonymous functions
     - [ ] Arrow functions
+- [ ] Completion
+    - [x] Class-like (interface, class & trait) names
+    - [x] Function names
+    - [ ] Variables names
+    - [ ] Local variables/functions
+    - [ ] Parameters
+    - [ ] Methods
+    - [ ] Properties
+    - [ ] Constants
+    - [ ] Namespaces
+    - [ ] PHP Keywords/language constructs
 
 ### Features to be implemented before v1
 
@@ -41,6 +52,9 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
 - Document symbols
 - Signature help
 - Completion
+    - **Incomplete files** (with syntax errors), challenging because the parser wants complete files
+    - Show details about completion items
+    - Automatic use statement on complete
 - Workspace symbols
 - Watching for changes outside editor (Did change watched files)
 

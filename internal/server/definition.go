@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
@@ -15,6 +16,9 @@ func (s *Server) Definition(
 	ctx context.Context,
 	params *protocol.DefinitionParams,
 ) (protocol.Definition, error) {
+	start := time.Now()
+	defer func() { log.Infof("Retrieving definition took %s\n", time.Since(start)) }()
+
 	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
 
 	pos, err := s.project.Definition(

@@ -68,11 +68,13 @@ func (s *Server) Initialize(
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				// OPTIM: Full is easier for now, but Incremental would be better
 				// OPTIM: for performance and a good improvement for later.
-				Change: protocol.Full,
-
+				Change:    protocol.Full,
 				OpenClose: true,
 			},
 			DefinitionProvider: true,
+			CompletionProvider: protocol.CompletionOptions{
+				TriggerCharacters: []string{"$", "-", ">"},
+			},
 		},
 		ServerInfo: serverInfo{
 			Name: "elephp",

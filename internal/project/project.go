@@ -27,7 +27,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var ErrNoDefinitionFound = errors.New("No definition found for symbol at given position")
+const maxCompletionResults = 10
+
+var (
+	ErrNoDefinitionFound   = errors.New("No definition found for symbol at given position")
+	ErrNoCompletionResults = errors.New("No completion results found for symbol at given position")
+)
 
 func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 	// OPTIM: parse phpstorm stubs once and store on filesystem or even in the binary because they won't change.
@@ -242,12 +247,8 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	return nil
 }
 
-func (p *Project) Definition(path string, pos *Position) (*Position, error) {
-	start := time.Now()
-	defer func() {
-		log.Infof("Retrieving definition took %s\n", time.Since(start))
-	}()
-
+func (p *Project) Complete(path string, pos *Position) ([]string, error) {
+	// TODO: abstract into something like p.GetFile(path).
 	file, ok := p.files[path]
 	if !ok {
 		if err := p.ParseFile(path, time.Now()); err != nil {
@@ -259,7 +260,43 @@ func (p *Project) Definition(path string, pos *Position) (*Position, error) {
 
 	ast, err := file.parse(p.parserConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing %s: %w", path, err)
+		return nil, fmt.Errorf("Error parsing %s for completion: %w", path, err)
+	}
+
+	apos := position.FromLocation(file.content, pos.Row, pos.Col)
+	nap := traversers.NewNodeAtPos(apos)
+	ast.Walk(nap)
+
+	if len(nap.Nodes) == 0 {
+		return nil, ErrNoCompletionResults
+	}
+
+	// TODO: other places (like symbol traverser) want to get a node's name to,
+	// TODO: abstract into something like GetNodeName(ir.Node).
+	var query string
+	switch typedNode := nap.Nodes[len(nap.Nodes)-1].(type) {
+	case *ir.Name:
+		query = typedNode.Value
+	default:
+	}
+
+	results := p.symbolTrie.SearchPrefix(query, maxCompletionResults)
+	return symboltrie.SearchResultKeys(results), nil
+}
+
+func (p *Project) Definition(path string, pos *Position) (*Position, error) {
+	file, ok := p.files[path]
+	if !ok {
+		if err := p.ParseFile(path, time.Now()); err != nil {
+			return nil, fmt.Errorf("Definition error: %w", err)
+		}
+
+		file = p.files[path]
+	}
+
+	ast, err := file.parse(p.parserConfig)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing %s for definitions: %w", path, err)
 	}
 
 	apos := position.FromLocation(file.content, pos.Row, pos.Col)
