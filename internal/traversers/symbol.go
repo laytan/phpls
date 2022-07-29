@@ -1,10 +1,8 @@
 package traversers
 
 import (
-	"strings"
-
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/shivamMg/trie"
+	"github.com/laytan/elephp/pkg/symboltrie"
 )
 
 type TrieNode struct {
@@ -13,13 +11,13 @@ type TrieNode struct {
 	Node      ir.Node
 }
 
-func NewSymbol(trie *trie.Trie) *Symbol {
+func NewSymbol(trie *symboltrie.Trie[*TrieNode]) *Symbol {
 	return &Symbol{trie: trie}
 }
 
 // Symbol implements ir.Visitor.
 type Symbol struct {
-	trie             *trie.Trie
+	trie             *symboltrie.Trie[*TrieNode]
 	path             string
 	currentNamespace string
 }
@@ -32,6 +30,8 @@ func (s *Symbol) SetPath(path string) {
 func (s *Symbol) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
 
+	// TODO: abstract away getting a node's name, like with ir.GetPosition.
+
 	case *ir.NamespaceStmt:
 		if typedNode.NamespaceName != nil {
 			s.currentNamespace = typedNode.NamespaceName.Value
@@ -41,11 +41,23 @@ func (s *Symbol) EnterNode(node ir.Node) bool {
 
 	case *ir.FunctionStmt:
 		if typedNode.FunctionName != nil {
-			s.trie.Put(
-				strings.Split(typedNode.FunctionName.Value, ""),
-				s.newTrieNode(node),
-			)
+			s.trie.Put(typedNode.FunctionName.Value, s.newTrieNode(node))
 		}
+
+		return false
+
+	case *ir.ClassStmt:
+		s.trie.Put(typedNode.ClassName.Value, s.newTrieNode(node))
+
+		return false
+
+	case *ir.InterfaceStmt:
+		s.trie.Put(typedNode.InterfaceName.Value, s.newTrieNode(node))
+
+		return false
+
+	case *ir.TraitStmt:
+		s.trie.Put(typedNode.TraitName.Value, s.newTrieNode(node))
 
 		return false
 

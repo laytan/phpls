@@ -16,6 +16,7 @@ func NewClassLike(name *ir.Name) (*ClassLike, error) {
 		return nil, ErrOnlyFQNSupported
 	}
 
+	// TODO: abstract retrieving namespace, class name etc. from fqn.
 	namespace := strings.Trim(strings.TrimSuffix(name.Value, name.LastPart()), partSeperator)
 
 	return &ClassLike{
