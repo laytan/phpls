@@ -20,6 +20,10 @@ func (p *Project) Complete(pos *position.Position) ([]string, error) {
 		return nil, fmt.Errorf("Error retrieving file content for %s", pos.Path)
 	}
 
+	// TODO: For completion to work with invalid/syntax errored files:
+	// We might be able to just use the file content (string) and get the line
+	// being worked on, and then parse the last identifier/word and complete that.
+
 	ast, err := file.parse(p.parserConfig)
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing %s for completion: %w", pos.Path, err)

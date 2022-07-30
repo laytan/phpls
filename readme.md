@@ -158,6 +158,34 @@ Linting:
 golangci-lint run
 ```
 
+## Use cases for seperate PHP process
+
+Some use cases have arrived for spawning a php process on startup that keeps 
+listening for requests outlined below for advanced features (that NEED php packages).
+
+I don't think this would slow the server down, because these will at most be sent 1 file
+which should be very fast, also having it open (not restarting the php process)
+everytime should make it fast enough.
+
+### PHPDoc
+
+We could try to use phpstan/phpdoc-parser
+(spawn seperate process with (tcp/pipe?) interface to Go code listening for parse requests)
+and with that, allow definition etc for tokens in the phpdoc.
+
+**I think this is a nice to have, hover can just send the raw phpdoc and signature back,
+for typing it might have value, but most modern code is using native type hints anyway.
+It would be a cool thing to have and set us apart from other PHP language servers though.**
+
+### Completion
+
+For completion we might want a seperate process, just like phpdoc listening for requests and
+parsing using microsoft/tolerant-php-parser. This should gracefully handle syntax errors and
+still give result that is workable.
+
+**We should first see if just taking the file content and the line that the user is editting,
+then splitting/parsing out the identifier that is being typed is enough though.**
+
 ## License
 
 Elephp is licensed with the [Apache 2](https://www.apache.org/licenses/LICENSE-2.0) license.
