@@ -23,7 +23,6 @@ import (
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symboltrie"
-	"github.com/shivamMg/trie"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,16 +35,12 @@ var (
 
 func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 	// OPTIM: parse phpstorm stubs once and store on filesystem or even in the binary because they won't change.
-	//
-	// OPTIM: This is also parsing tests for the specific stubs,
-	// OPTIM: and has specific files for different php versions that should be excluded/handled appropriately.
 	stubs := path.Join(pathutils.Root(), "phpstorm-stubs")
 
 	roots := []string{root, stubs}
 	return &Project{
-		files:      make(map[string]file),
-		namespaces: make(map[string][]string),
-		roots:      roots,
+		files: make(map[string]file),
+		roots: roots,
 		parserConfig: conf.Config{
 			ErrorHandlerFunc: func(e *perrors.Error) {
 				// TODO: when we get a parse/syntax error, publish the error
@@ -68,8 +63,6 @@ type Project struct {
 
 	// Path to file map.
 	files map[string]file
-	// Namespace to file map.
-	namespaces map[string][]string
 
 	roots        []string
 	parserConfig conf.Config
@@ -81,11 +74,8 @@ type Project struct {
 }
 
 type file struct {
-	symbolTrie *trie.Trie
-	content    string
-	namespaces []string
-	uses       []*ir.UseStmt
-	modified   time.Time
+	content  string
+	modified time.Time
 }
 
 func (f *file) parse(config conf.Config) (*ir.Root, error) {
@@ -166,13 +156,6 @@ func (p *Project) ParseRoot(root string) error {
 				log.Error(fmt.Errorf("Error reading file info of %s: %w", path, err))
 			}
 
-			// If we currently have this parsed and the file hasn't changed, don't parse it again.
-			// if existing, ok := p.files[path]; ok {
-			// 	if !existing.modified.Before(finfo.ModTime()) {
-			// 		return
-			// 	}
-			// }
-
 			if err := p.ParseFile(path, finfo.ModTime()); err != nil {
 				log.Error(fmt.Errorf("Error parsing file %s: %w", path, err))
 			}
@@ -221,27 +204,13 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	symbolTraverser.SetPath(path)
 	irRootNode.Walk(symbolTraverser)
 
-	traverser := traversers.NewNamespaces()
-	irRootNode.Walk(traverser)
-
 	// Writing/Reading from a map needs to be done by one go routine at a time.
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for _, namespace := range traverser.Namespaces {
-		namespaces, ok := p.namespaces[namespace]
-		if ok {
-			p.namespaces[namespace] = append(namespaces, path)
-			continue
-		}
-
-		p.namespaces[namespace] = []string{path}
-	}
 
 	p.files[path] = file{
-		content:    string(content),
-		namespaces: traverser.Namespaces,
-		uses:       traverser.Uses,
-		modified:   modTime,
+		content:  string(content),
+		modified: modTime,
 	}
 
 	return nil
@@ -468,7 +437,13 @@ func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.Functi
 	return nil, ""
 }
 
+// Resolves the fully qualified name for the given name node.
+//
+// This resolves, use statements, aliassed use statements are resolved to the
+// non-aliassed version.
+//
 // NOTE: the NameTkn stays the same, only the Value is changed to the FQN.
+// TODO: above point is confusing, we should just return a string here.
 func (p *Project) nameToFQN(root *ir.Root, name *ir.Name) *ir.Name {
 	if name.IsFullyQualified() {
 		return name
@@ -490,61 +465,10 @@ func (p *Project) nameToFQN(root *ir.Root, name *ir.Name) *ir.Name {
 
 // Returns either *ir.ClassStmt, *ir.InterfaceStmt or *ir.TraitStmt.
 func (p *Project) classLike(sourceFile *file, root *ir.Root, name *ir.Name) (ir.Node, string) {
-	// OPTIM: first check the current file and included files (use statements), in most cases, that will match.
-	// OPTIM: and only if there is no match, search globally.
-	// OPTIM: there does need to be an index of path, to namespaces for this to work.
-	// OPTIM: should we store the namespaces of a file in the file struct, would that be to much initial parsing?
-	//
-	// OPTIM: could even have an index of global (stdlib) classlikes for easy access.
-
 	// TODO: abstract this common functionality.
 	fqn := p.nameToFQN(root, name)
 	namespace := strings.Trim(strings.TrimSuffix(fqn.Value, fqn.LastPart()), "\\")
 	classLikeName := fqn.LastPart()
-
-	traverser, err := traversers.NewClassLike(fqn)
-	if err != nil {
-		log.Error(err)
-		return nil, ""
-	}
-
-	root.Walk(traverser)
-	if traverser.Result != nil {
-		return traverser.Result, ""
-	}
-
-	// TODO: aliasses?
-	for _, usage := range sourceFile.uses {
-		usageNamespace := strings.Trim(
-			strings.TrimSuffix(usage.Use.Value, usage.Use.LastPart()),
-			"\\",
-		)
-
-		paths, ok := p.namespaces[usageNamespace]
-		if !ok {
-			log.Error(fmt.Errorf("Namespace %s is not indexed", usageNamespace))
-			continue
-		}
-
-		for _, path := range paths {
-			file, ok := p.files[path]
-			if !ok {
-				log.Error(fmt.Errorf("No file struct for path %s", path))
-				continue
-			}
-
-			ast, err := file.parse(p.parserConfig)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-
-			ast.Walk(traverser)
-			if traverser.Result != nil {
-				return traverser.Result, path
-			}
-		}
-	}
 
 	results := p.symbolTrie.SearchExact(classLikeName)
 
