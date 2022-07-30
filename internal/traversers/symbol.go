@@ -2,17 +2,14 @@ package traversers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/symboltrie"
 )
 
 type TrieNode struct {
 	Path      string
 	Namespace string
-	Node      ir.Node
-}
-
-func NewSymbol(trie *symboltrie.Trie[*TrieNode]) *Symbol {
-	return &Symbol{trie: trie}
+	Symbol    symbol.Symbol
 }
 
 // Symbol implements ir.Visitor.
@@ -20,6 +17,10 @@ type Symbol struct {
 	trie             *symboltrie.Trie[*TrieNode]
 	path             string
 	currentNamespace string
+}
+
+func NewSymbol(trie *symboltrie.Trie[*TrieNode]) *Symbol {
+	return &Symbol{trie: trie}
 }
 
 func (s *Symbol) SetPath(path string) {
@@ -30,8 +31,6 @@ func (s *Symbol) SetPath(path string) {
 func (s *Symbol) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
 
-	// TODO: abstract away getting a node's name, like with ir.GetPosition.
-
 	case *ir.NamespaceStmt:
 		if typedNode.NamespaceName != nil {
 			s.currentNamespace = typedNode.NamespaceName.Value
@@ -40,24 +39,25 @@ func (s *Symbol) EnterNode(node ir.Node) bool {
 		return true
 
 	case *ir.FunctionStmt:
-		if typedNode.FunctionName != nil {
-			s.trie.Put(typedNode.FunctionName.Value, s.newTrieNode(node))
-		}
-
+		node := s.newTrieNode(symbol.NewFunction(typedNode))
+		s.trie.Put(node.Symbol.Identifier(), node)
 		return false
 
 	case *ir.ClassStmt:
-		s.trie.Put(typedNode.ClassName.Value, s.newTrieNode(node))
+		node := s.newTrieNode(symbol.NewClassLikeClass(typedNode))
+		s.trie.Put(node.Symbol.Identifier(), node)
 
 		return false
 
 	case *ir.InterfaceStmt:
-		s.trie.Put(typedNode.InterfaceName.Value, s.newTrieNode(node))
+		node := s.newTrieNode(symbol.NewClassLikeInterface(typedNode))
+		s.trie.Put(node.Symbol.Identifier(), node)
 
 		return false
 
 	case *ir.TraitStmt:
-		s.trie.Put(typedNode.TraitName.Value, s.newTrieNode(node))
+		node := s.newTrieNode(symbol.NewClassLikeTrait(typedNode))
+		s.trie.Put(node.Symbol.Identifier(), node)
 
 		return false
 
@@ -69,10 +69,10 @@ func (s *Symbol) EnterNode(node ir.Node) bool {
 
 func (s *Symbol) LeaveNode(ir.Node) {}
 
-func (s *Symbol) newTrieNode(node ir.Node) *TrieNode {
+func (s *Symbol) newTrieNode(node symbol.Symbol) *TrieNode {
 	return &TrieNode{
 		Path:      s.path,
 		Namespace: s.currentNamespace,
-		Node:      node,
+		Symbol:    node,
 	}
 }

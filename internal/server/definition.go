@@ -9,6 +9,7 @@ import (
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	"github.com/laytan/elephp/pkg/position"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,7 +24,7 @@ func (s *Server) Definition(
 
 	pos, err := s.project.Definition(
 		path,
-		&project.Position{
+		&position.Position{
 			Row: uint(params.Position.Line + 1),
 			Col: uint(params.Position.Character + 1),
 		},

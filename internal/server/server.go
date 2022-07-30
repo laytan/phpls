@@ -34,7 +34,7 @@ type Server struct {
 }
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call
-// OPTIM: to this method in every handler.
+// to this method in every handler.
 func (s *Server) isMethodAllowed(method string) error {
 	// If we are shutting down, we only allow an exit request.
 	if s.isShuttingDown && method != "Exit" {

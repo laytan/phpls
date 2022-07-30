@@ -29,7 +29,7 @@ func Root() string {
 	// NOTE: If we have nested packages in the future this needs adjustment.
 	if isInTests() {
 		// NOTE: Intentionally not setting root here so it gets evaluated every
-		// NOTE: call, as tests will have different wd's.
+		// call, as tests will have different wd's.
 		r := path.Join(wd, "..", "..")
 		log.Infof("Detected project root: %s\n", r)
 		return r

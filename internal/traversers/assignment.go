@@ -26,10 +26,12 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 				a.Assignment = assigned
 			}
 		}
+
 	case *ir.Parameter:
 		if typedNode.Variable.Name == a.variable.Name {
 			a.Assignment = typedNode.Variable
 		}
+
 	case *ir.GlobalStmt:
 		for _, varNode := range typedNode.Vars {
 			typedVar, ok := varNode.(*ir.SimpleVar)

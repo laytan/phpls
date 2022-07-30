@@ -21,17 +21,24 @@ import (
 	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	log "github.com/sirupsen/logrus"
 )
 
-const maxCompletionResults = 10
+type Project struct {
+	mu sync.Mutex
 
-var (
-	ErrNoDefinitionFound   = errors.New("No definition found for symbol at given position")
-	ErrNoCompletionResults = errors.New("No completion results found for symbol at given position")
-)
+	// Path to file map.
+	files map[string]*File
+
+	roots        []string
+	parserConfig conf.Config
+
+	// Symbol trie for global variables, classes, interfaces etc.
+	// End goal being: never needing to traverse the whole project to search
+	// for something.
+	symbolTrie *symboltrie.Trie[*traversers.TrieNode]
+}
 
 func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 	// OPTIM: parse phpstorm stubs once and store on filesystem or even in the binary because they won't change.
@@ -39,7 +46,7 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 
 	roots := []string{root, stubs}
 	return &Project{
-		files: make(map[string]file),
+		files: make(map[string]*File),
 		roots: roots,
 		parserConfig: conf.Config{
 			ErrorHandlerFunc: func(e *perrors.Error) {
@@ -56,47 +63,6 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 		},
 		symbolTrie: symboltrie.New[*traversers.TrieNode](),
 	}
-}
-
-type Project struct {
-	mu sync.Mutex
-
-	// Path to file map.
-	files map[string]file
-
-	roots        []string
-	parserConfig conf.Config
-
-	// Symbol trie for global variables, classes, interfaces etc.
-	// End goal being: never needing to traverse the whole project to search
-	// for something.
-	symbolTrie *symboltrie.Trie[*traversers.TrieNode]
-}
-
-type file struct {
-	content  string
-	modified time.Time
-}
-
-func (f *file) parse(config conf.Config) (*ir.Root, error) {
-	rootNode, err := parser.Parse([]byte(f.content), config)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing file into AST: %w", err)
-	}
-
-	irNode := irconv.ConvertNode(rootNode)
-	irRootNode, ok := irNode.(*ir.Root)
-	if !ok {
-		return nil, errors.New("AST root node could not be converted to IR root node")
-	}
-
-	return irRootNode, nil
-}
-
-type Position struct {
-	Row  uint
-	Col  uint
-	Path string
 }
 
 func (p *Project) Parse() error {
@@ -189,7 +155,6 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	}
 
 	// if strings.HasSuffix(path, "global-var.php") {
-	// 	// TODO: comment out.
 	// 	goDumper := dumper.NewDumper(os.Stdout).WithPositions()
 	// 	rootNode.Accept(goDumper)
 	// }
@@ -208,7 +173,7 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.files[path] = file{
+	p.files[path] = &File{
 		content:  string(content),
 		modified: modTime,
 	}
@@ -216,281 +181,15 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	return nil
 }
 
-func (p *Project) Complete(path string, pos *Position) ([]string, error) {
-	// TODO: abstract into something like p.GetFile(path).
+func (p *Project) GetFile(path string) *File {
 	file, ok := p.files[path]
 	if !ok {
 		if err := p.ParseFile(path, time.Now()); err != nil {
-			return nil, fmt.Errorf("Definition error: %w", err)
+			return nil
 		}
 
 		file = p.files[path]
 	}
 
-	ast, err := file.parse(p.parserConfig)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing %s for completion: %w", path, err)
-	}
-
-	apos := position.FromLocation(file.content, pos.Row, pos.Col)
-	nap := traversers.NewNodeAtPos(apos)
-	ast.Walk(nap)
-
-	if len(nap.Nodes) == 0 {
-		return nil, ErrNoCompletionResults
-	}
-
-	// TODO: other places (like symbol traverser) want to get a node's name to,
-	// TODO: abstract into something like GetNodeName(ir.Node).
-	var query string
-	switch typedNode := nap.Nodes[len(nap.Nodes)-1].(type) {
-	case *ir.Name:
-		query = typedNode.Value
-	default:
-	}
-
-	results := p.symbolTrie.SearchPrefix(query, maxCompletionResults)
-	return symboltrie.SearchResultKeys(results), nil
-}
-
-func (p *Project) Definition(path string, pos *Position) (*Position, error) {
-	file, ok := p.files[path]
-	if !ok {
-		if err := p.ParseFile(path, time.Now()); err != nil {
-			return nil, fmt.Errorf("Definition error: %w", err)
-		}
-
-		file = p.files[path]
-	}
-
-	ast, err := file.parse(p.parserConfig)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing %s for definitions: %w", path, err)
-	}
-
-	apos := position.FromLocation(file.content, pos.Row, pos.Col)
-	nap := traversers.NewNodeAtPos(apos)
-	ast.Walk(nap)
-
-	// Root.
-	var scope ir.Node
-	for i, node := range nap.Nodes {
-		// fmt.Printf("%T\n", node)
-		switch typedNode := node.(type) {
-		case *ir.Root:
-			scope = typedNode
-
-		case *ir.FunctionStmt:
-			scope = typedNode
-
-		case *ir.GlobalStmt:
-			rootNode, ok := nap.Nodes[0].(*ir.Root)
-			if !ok {
-				log.Errorln("First node was not the root node, this should not happen")
-				return nil, ErrNoDefinitionFound
-			}
-
-			globalVar, ok := nap.Nodes[i+1].(*ir.SimpleVar)
-			if !ok {
-				log.Errorln("Node after the global stmt was not a variable, which we expected")
-				return nil, ErrNoDefinitionFound
-			}
-
-			assignment := p.globalAssignment(rootNode, globalVar)
-			if assignment == nil {
-				return nil, ErrNoDefinitionFound
-			}
-
-			pos := ir.GetPosition(assignment)
-			_, col := position.ToLocation(file.content, uint(pos.StartPos))
-
-			return &Position{
-				Row: uint(pos.StartLine),
-				Col: col,
-			}, nil
-
-		case *ir.SimpleVar:
-			assignment := p.assignment(scope, typedNode)
-			if assignment == nil {
-				return nil, ErrNoDefinitionFound
-			}
-
-			pos := ir.GetPosition(assignment)
-			_, col := position.ToLocation(file.content, uint(pos.StartPos))
-
-			return &Position{
-				Row: uint(pos.StartLine),
-				Col: col,
-			}, nil
-
-		case *ir.FunctionCallExpr:
-			function, destPath := p.function(scope, typedNode)
-
-			if function == nil {
-				return nil, ErrNoDefinitionFound
-			}
-
-			if destPath == "" {
-				destPath = path
-			}
-
-			destFile, ok := p.files[destPath]
-			if !ok {
-				log.Errorf("Destination at %s is not in parsed files cache\n", path)
-				return nil, ErrNoDefinitionFound
-			}
-
-			pos := function.Position
-			_, col := position.ToLocation(destFile.content, uint(pos.StartPos))
-
-			return &Position{
-				Row:  uint(pos.StartLine),
-				Col:  col,
-				Path: destPath,
-			}, nil
-
-		case *ir.Name:
-			rootNode, ok := nap.Nodes[0].(*ir.Root)
-			if !ok {
-				log.Errorln("First node was not the root node, this should not happen")
-				return nil, ErrNoDefinitionFound
-			}
-
-			// TODO: this should already be a pointer (file).
-			classLike, destPath := p.classLike(&file, rootNode, typedNode)
-			if classLike == nil {
-				return nil, ErrNoDefinitionFound
-			}
-
-			if destPath == "" {
-				destPath = path
-			}
-
-			destFile, ok := p.files[destPath]
-			if !ok {
-				log.Errorf("Destination at %s is not in parsed files cache\n", destPath)
-				return nil, ErrNoDefinitionFound
-			}
-
-			pos := ir.GetPosition(classLike)
-			_, col := position.ToLocation(destFile.content, uint(pos.StartPos))
-
-			return &Position{
-				Row:  uint(pos.StartLine),
-				Col:  col,
-				Path: destPath,
-			}, nil
-		}
-	}
-
-	return nil, ErrNoDefinitionFound
-}
-
-func (p *Project) assignment(scope ir.Node, variable *ir.SimpleVar) *ir.SimpleVar {
-	// TODO: will in the future need to span multiple files, but lets be basic about this.
-
-	traverser := traversers.NewAssignment(variable)
-	scope.Walk(traverser)
-
-	return traverser.Assignment
-}
-
-func (p *Project) globalAssignment(root *ir.Root, globalVar *ir.SimpleVar) *ir.SimpleVar {
-	// First search the current file for the assignment.
-	traverser := traversers.NewGlobalAssignment(globalVar)
-	root.Walk(traverser)
-
-	// TODO: search the whole project if the global is not assigned here.
-
-	return traverser.Assignment
-}
-
-func (p *Project) function(scope ir.Node, call *ir.FunctionCallExpr) (*ir.FunctionStmt, string) {
-	traverser, err := traversers.NewFunction(call)
-	if err != nil {
-		return nil, ""
-	}
-
-	scope.Walk(traverser)
-	if traverser.Function != nil {
-		return traverser.Function, ""
-	}
-
-	// No definition found locally, searching globally.
-	name, ok := call.Function.(*ir.Name)
-	if !ok {
-		return nil, ""
-	}
-
-	results := p.symbolTrie.SearchExact(name.Value)
-
-	if len(results) == 0 {
-		return nil, ""
-	}
-
-	for _, res := range results {
-		if function, ok := res.Node.(*ir.FunctionStmt); ok {
-			return function, res.Path
-		}
-	}
-
-	return nil, ""
-}
-
-// Resolves the fully qualified name for the given name node.
-//
-// This resolves, use statements, aliassed use statements are resolved to the
-// non-aliassed version.
-//
-// NOTE: the NameTkn stays the same, only the Value is changed to the FQN.
-// TODO: above point is confusing, we should just return a string here.
-func (p *Project) nameToFQN(root *ir.Root, name *ir.Name) *ir.Name {
-	if name.IsFullyQualified() {
-		return name
-	}
-
-	traverser, err := traversers.NewFQN(name)
-	if err != nil {
-		return nil
-	}
-
-	root.Walk(traverser)
-
-	return &ir.Name{
-		Position: name.Position,
-		NameTkn:  name.NameTkn,
-		Value:    traverser.Result(),
-	}
-}
-
-// Returns either *ir.ClassStmt, *ir.InterfaceStmt or *ir.TraitStmt.
-func (p *Project) classLike(sourceFile *file, root *ir.Root, name *ir.Name) (ir.Node, string) {
-	// TODO: abstract this common functionality.
-	fqn := p.nameToFQN(root, name)
-	namespace := strings.Trim(strings.TrimSuffix(fqn.Value, fqn.LastPart()), "\\")
-	classLikeName := fqn.LastPart()
-
-	results := p.symbolTrie.SearchExact(classLikeName)
-
-	if len(results) == 0 {
-		return nil, ""
-	}
-
-	for _, res := range results {
-		if res.Namespace != namespace {
-			continue
-		}
-
-		// Check is class like.
-		nodeKind := ir.GetNodeKind(res.Node)
-		if nodeKind != ir.KindClassStmt &&
-			nodeKind != ir.KindTraitStmt &&
-			nodeKind != ir.KindInterfaceStmt {
-			continue
-		}
-
-		return res.Node, res.Path
-	}
-
-	return nil, ""
+	return file
 }

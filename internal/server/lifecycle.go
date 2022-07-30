@@ -67,7 +67,7 @@ func (s *Server) Initialize(
 		Capabilities: protocol.ServerCapabilities{
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				// OPTIM: Full is easier for now, but Incremental would be better
-				// OPTIM: for performance and a good improvement for later.
+				// For performance and a good improvement for later.
 				Change:    protocol.Full,
 				OpenClose: true,
 			},

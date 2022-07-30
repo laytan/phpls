@@ -30,7 +30,7 @@ func TestPosition(t *testing.T) {
 		t.Run(fmt.Sprint(pos), func(t *testing.T) {
 			is := is.New(t)
 
-			row, col := ToLocation(string(content), pos)
+			row, col := PosToLoc(string(content), pos)
 			is.Equal(row, loc[0])
 			is.Equal(col, loc[1])
 		})
@@ -40,7 +40,7 @@ func TestPosition(t *testing.T) {
 		t.Run(fmt.Sprint(want), func(t *testing.T) {
 			is := is.New(t)
 
-			pos := FromLocation(string(content), loc[0], loc[1])
+			pos := LocToPos(string(content), loc[0], loc[1])
 			is.Equal(pos, want)
 		})
 	}

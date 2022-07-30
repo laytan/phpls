@@ -8,6 +8,7 @@ import (
 
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/position"
 	"github.com/matryer/is"
 )
 
@@ -18,8 +19,8 @@ var (
 
 type testDefinitionsInput struct {
 	file        string
-	position    *Position
-	outPosition *Position
+	position    *position.Position
+	outPosition *position.Position
 }
 
 func TestDefinitions(t *testing.T) {
@@ -28,23 +29,23 @@ func TestDefinitions(t *testing.T) {
 	expectations := []testDefinitionsInput{
 		{
 			file:        "variable.php",
-			position:    &Position{Row: 7, Col: 8},
-			outPosition: &Position{Row: 5, Col: 1},
+			position:    &position.Position{Row: 7, Col: 8},
+			outPosition: &position.Position{Row: 5, Col: 1},
 		},
 		{
 			file:        "parameter.php",
-			position:    &Position{Row: 7, Col: 13},
-			outPosition: &Position{Row: 5, Col: 17},
+			position:    &position.Position{Row: 7, Col: 13},
+			outPosition: &position.Position{Row: 5, Col: 17},
 		},
 		{
 			file:        "function.php",
-			position:    &Position{Row: 7, Col: 1},
-			outPosition: &Position{Row: 3, Col: 1},
+			position:    &position.Position{Row: 7, Col: 1},
+			outPosition: &position.Position{Row: 3, Col: 1},
 		},
 		{
 			file:     "stdlib.php",
-			position: &Position{Row: 3, Col: 6},
-			outPosition: &Position{
+			position: &position.Position{Row: 3, Col: 6},
+			outPosition: &position.Position{
 				Row:  779,
 				Col:  1,
 				Path: path.Join(stubsFolder, "standard", "standard_8.php"),
@@ -52,31 +53,31 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     "global_var.php",
-			position: &Position{Row: 1, Col: 1},
+			position: &position.Position{Row: 1, Col: 1},
 		},
 		{
 			file:        "global_var.php",
-			position:    &Position{Row: 12, Col: 10},
-			outPosition: &Position{Row: 11, Col: 12},
+			position:    &position.Position{Row: 12, Col: 10},
+			outPosition: &position.Position{Row: 11, Col: 12},
 		},
 		{
 			file:        "global_var.php",
-			position:    &Position{Row: 11, Col: 12},
-			outPosition: &Position{Row: 2, Col: 1},
+			position:    &position.Position{Row: 11, Col: 12},
+			outPosition: &position.Position{Row: 2, Col: 1},
 		},
 		{
 			file:        "function.php",
-			position:    &Position{Row: 15, Col: 5},
-			outPosition: &Position{Row: 11, Col: 5},
+			position:    &position.Position{Row: 15, Col: 5},
+			outPosition: &position.Position{Row: 11, Col: 5},
 		},
 		{
 			file:     "function.php",
-			position: &Position{Row: 18, Col: 1},
+			position: &position.Position{Row: 18, Col: 1},
 		},
 		{
 			file:     "class.php",
-			position: &Position{Row: 12, Col: 19},
-			outPosition: &Position{
+			position: &position.Position{Row: 12, Col: 19},
+			outPosition: &position.Position{
 				Row:  165,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
@@ -84,13 +85,13 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:        "class.php",
-			position:    &Position{Row: 15, Col: 22},
-			outPosition: &Position{Row: 8, Col: 1},
+			position:    &position.Position{Row: 15, Col: 22},
+			outPosition: &position.Position{Row: 8, Col: 1},
 		},
 		{
 			file:     "class.php",
-			position: &Position{Row: 17, Col: 20},
-			outPosition: &Position{
+			position: &position.Position{Row: 17, Col: 20},
+			outPosition: &position.Position{
 				Row:  7,
 				Col:  1,
 				Path: path.Join(stubsFolder, "swoole", "Swoole", "WebSocket", "Server.php"),
@@ -98,8 +99,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     "class.php",
-			position: &Position{Row: 19, Col: 16},
-			outPosition: &Position{
+			position: &position.Position{Row: 19, Col: 16},
+			outPosition: &position.Position{
 				Row:  7,
 				Col:  1,
 				Path: path.Join(stubsFolder, "swoole", "Swoole", "Process.php"),
@@ -107,8 +108,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     path.Join("trait", "trait_user.php"),
-			position: &Position{Row: 7, Col: 9},
-			outPosition: &Position{
+			position: &position.Position{Row: 7, Col: 9},
+			outPosition: &position.Position{
 				Row:  3,
 				Col:  1,
 				Path: path.Join(definitionsFolder, "trait", "trait.php"),
@@ -116,8 +117,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     path.Join("trait", "trait_user.php"),
-			position: &Position{Row: 8, Col: 9},
-			outPosition: &Position{
+			position: &position.Position{Row: 8, Col: 9},
+			outPosition: &position.Position{
 				Row:  5,
 				Col:  1,
 				Path: path.Join(definitionsFolder, "trait", "trait_in_namespace.php"),
@@ -125,8 +126,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     path.Join("interface", "interface_user.php"),
-			position: &Position{Row: 5, Col: 43},
-			outPosition: &Position{
+			position: &position.Position{Row: 5, Col: 43},
+			outPosition: &position.Position{
 				Row:  3,
 				Col:  1,
 				Path: path.Join(definitionsFolder, "interface", "interface.php"),
@@ -134,8 +135,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     path.Join("interface", "interface_user.php"),
-			position: &Position{Row: 9, Col: 46},
-			outPosition: &Position{
+			position: &position.Position{Row: 9, Col: 46},
+			outPosition: &position.Position{
 				Row:  5,
 				Col:  1,
 				Path: path.Join(definitionsFolder, "interface", "interface_in_namespace.php"),
@@ -143,8 +144,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     path.Join("interface", "interface_user.php"),
-			position: &Position{Row: 13, Col: 43},
-			outPosition: &Position{
+			position: &position.Position{Row: 13, Col: 43},
+			outPosition: &position.Position{
 				Row:  13,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
@@ -152,18 +153,18 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:        path.Join("interface", "interface_user.php"),
-			position:    &Position{Row: 21, Col: 43},
-			outPosition: &Position{Row: 17, Col: 1},
+			position:    &position.Position{Row: 21, Col: 43},
+			outPosition: &position.Position{Row: 17, Col: 1},
 		},
 		{
 			file:        path.Join("interface", "interface_user.php"),
-			position:    &Position{Row: 25, Col: 45},
-			outPosition: &Position{Row: 17, Col: 1},
+			position:    &position.Position{Row: 25, Col: 45},
+			outPosition: &position.Position{Row: 17, Col: 1},
 		},
 		{
 			file:     path.Join("interface", "interface_user.php"),
-			position: &Position{Row: 25, Col: 75},
-			outPosition: &Position{
+			position: &position.Position{Row: 25, Col: 75},
+			outPosition: &position.Position{
 				Row:  13,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
@@ -171,8 +172,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     "extends.php",
-			position: &Position{Row: 5, Col: 32},
-			outPosition: &Position{
+			position: &position.Position{Row: 5, Col: 32},
+			outPosition: &position.Position{
 				Row:  165,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
@@ -180,8 +181,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     "extends.php",
-			position: &Position{Row: 9, Col: 42},
-			outPosition: &Position{
+			position: &position.Position{Row: 9, Col: 42},
+			outPosition: &position.Position{
 				Row:  7,
 				Col:  1,
 				Path: path.Join(stubsFolder, "swoole", "Swoole", "Client.php"),
@@ -189,11 +190,11 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file: "multiple_namespaces_in_one_file.php",
-			position: &Position{
+			position: &position.Position{
 				Row: 7,
 				Col: 47,
 			},
-			outPosition: &Position{
+			outPosition: &position.Position{
 				Row:  713,
 				Col:  1,
 				Path: path.Join(stubsFolder, "http", "http3.php"),
@@ -201,8 +202,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     "use.php",
-			position: &Position{Row: 3, Col: 5},
-			outPosition: &Position{
+			position: &position.Position{Row: 3, Col: 5},
+			outPosition: &position.Position{
 				Row:  7,
 				Col:  1,
 				Path: path.Join(stubsFolder, "swoole", "Swoole", "Client.php"),
@@ -210,8 +211,8 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:     "use.php",
-			position: &Position{Row: 4, Col: 6},
-			outPosition: &Position{
+			position: &position.Position{Row: 4, Col: 6},
+			outPosition: &position.Position{
 				Row:  165,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
@@ -279,7 +280,7 @@ func BenchmarkStdlibFunction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := project.Definition(
 			path.Join(definitionsFolder, "stdlib.php"),
-			&Position{Row: 3, Col: 6},
+			&position.Position{Row: 3, Col: 6},
 		)
 		is.NoErr(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/pkg/symbol"
 )
 
 func NewFunction(call *ir.FunctionCallExpr) (*Function, error) {
@@ -36,17 +37,20 @@ func (f *Function) EnterNode(node ir.Node) bool {
 		return false
 	}
 
+	// If the scope of the traverser is a function, the first call will be a
+	// function which we need to ignore.
+	kind := ir.GetNodeKind(node)
+	if f.currNodeIsRoot && kind == ir.KindFunctionStmt {
+		return true
+	}
+
 	if function, ok := node.(*ir.FunctionStmt); ok {
 		if function.FunctionName.Value == f.name.Value {
 			f.Function = function
 		}
+	}
 
-		// If the root node is a function, we need to return true so we
-		// check the nodes inside it.
-		if f.currNodeIsRoot {
-			return true
-		}
-
+	if symbol.IsScope(node) {
 		return false
 	}
 

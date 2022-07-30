@@ -3,16 +3,15 @@ package server
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	"github.com/laytan/elephp/pkg/position"
 	log "github.com/sirupsen/logrus"
 )
 
-// TODO: alot of duplication with definitions here.
 func (s *Server) Completion(
 	ctx context.Context,
 	params *protocol.CompletionParams,
@@ -20,11 +19,8 @@ func (s *Server) Completion(
 	start := time.Now()
 	defer func() { log.Infof("Retrieving completion took %s\n", time.Since(start)) }()
 
-	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
-	results, err := s.project.Complete(path, &project.Position{
-		Row: uint(params.Position.Line + 1),
-		Col: uint(params.Position.Character + 1),
-	})
+	pos := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
+	results, err := s.project.Complete(pos)
 	if err != nil {
 		if errors.Is(err, project.ErrNoCompletionResults) {
 			log.Warn(err)
