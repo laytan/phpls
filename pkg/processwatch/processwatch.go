@@ -5,10 +5,14 @@ import (
 	"runtime"
 	"syscall"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
+const exitCheckInterval = time.Second * 30
+
 func New(pid uint16, interval time.Duration, onExit func()) *Watcher {
-	watcher := Watcher{
+	watcher := &Watcher{
 		Pid:      pid,
 		Interval: interval,
 		OnExit:   onExit,
@@ -16,10 +20,24 @@ func New(pid uint16, interval time.Duration, onExit func()) *Watcher {
 
 	watcher.Start()
 
-	return &watcher
+	return watcher
 }
 
-// TODO: Way to stop watcher.
+func NewExiter(pid uint16) *Watcher {
+	watcher := &Watcher{
+		Pid:      pid,
+		Interval: exitCheckInterval,
+		OnExit: func() {
+			log.Warnf("Watched process with ID: %d has exited, exiting too\n", pid)
+			os.Exit(1)
+		},
+	}
+
+	watcher.Start()
+
+	return watcher
+}
+
 type Watcher struct {
 	Interval   time.Duration
 	OnExit     func()

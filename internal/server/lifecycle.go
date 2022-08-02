@@ -9,6 +9,7 @@ import (
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/processwatch"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -62,6 +63,11 @@ func (s *Server) Initialize(
 			log.Error(err)
 		}
 	}()
+
+	if params.ProcessID != 0 {
+		processwatch.NewExiter(uint16(params.ProcessID))
+		log.Infof("Monitoring process ID: %d\n", params.ProcessID)
+	}
 
 	return &protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{

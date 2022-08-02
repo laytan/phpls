@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/arl/statsviz"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
@@ -20,8 +19,6 @@ import (
 	// TODO: Check the difference between v1 and v2 of this.
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 )
-
-const clientPidPollingIntervalSeconds = 10
 
 func main() {
 	if os.Args[1] == "logs" {
@@ -46,11 +43,8 @@ func main() {
 	}
 
 	if pid, isset := config.ClientPid(); isset {
-		log.Infof("Starting process watch for pid: %d\n", pid)
-		processwatch.New(pid, time.Second*clientPidPollingIntervalSeconds, func() {
-			log.Infoln("The client process has exited, exiting elephp to")
-			os.Exit(1)
-		})
+		processwatch.NewExiter(pid)
+		log.Infof("Monitoring process ID: %d\n", pid)
 	}
 
 	if config.UseStatsviz() {
