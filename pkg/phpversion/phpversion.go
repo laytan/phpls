@@ -14,6 +14,7 @@ const (
 	versionBitSize           = 8
 )
 
+// PHPVersion struct is a representation of a PHP version with methods to retrieve it.
 type PHPVersion struct {
 	Major uint8
 	Minor uint8
