@@ -7,6 +7,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/elephp/pkg/symbol"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,7 +19,7 @@ func (p *Project) Definition(path string, pos *position.Position) (*position.Pos
 		return nil, fmt.Errorf("Error retrieving file content for %s", path)
 	}
 
-	ast, err := file.parse(p.parserConfig)
+	ast, err := file.Parse(p.ParserConfig)
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing %s for definitions: %w", path, err)
 	}
@@ -29,7 +30,16 @@ func (p *Project) Definition(path string, pos *position.Position) (*position.Pos
 
 	// Root.
 	var scope ir.Node
+	var classLikeScope ir.Node
 	for i, node := range nap.Nodes {
+		if symbol.IsScope(node) {
+			scope = node
+		}
+
+		if symbol.IsClassLike(node) {
+			classLikeScope = node
+		}
+
 		// fmt.Printf("%T\n", node)
 		switch typedNode := node.(type) {
 		case *ir.Root:
@@ -45,6 +55,7 @@ func (p *Project) Definition(path string, pos *position.Position) (*position.Pos
 				return nil, ErrNoDefinitionFound
 			}
 
+			// TODO: this might index out of bounds
 			globalVar, ok := nap.Nodes[i+1].(*ir.SimpleVar)
 			if !ok {
 				log.Errorln("Node after the global stmt was not a variable, which we expected")
@@ -65,7 +76,21 @@ func (p *Project) Definition(path string, pos *position.Position) (*position.Pos
 			}, nil
 
 		case *ir.SimpleVar:
-			assignment := p.assignment(scope, typedNode)
+			var assignment ir.Node
+			switch typedNode.Name {
+			case "this":
+				if classLikeScope == nil {
+					return nil, ErrNoDefinitionFound
+				}
+
+				assignment = classLikeScope
+
+			default:
+				if ass := p.assignment(scope, typedNode); ass != nil {
+					assignment = ass
+				}
+			}
+
 			if assignment == nil {
 				return nil, ErrNoDefinitionFound
 			}
@@ -111,7 +136,7 @@ func (p *Project) Definition(path string, pos *position.Position) (*position.Pos
 				return nil, ErrNoDefinitionFound
 			}
 
-			classLike, destPath := p.classLike(file, rootNode, typedNode)
+			classLike, destPath := p.classLike(rootNode, typedNode)
 			if classLike == nil {
 				return nil, ErrNoDefinitionFound
 			}
@@ -134,6 +159,53 @@ func (p *Project) Definition(path string, pos *position.Position) (*position.Pos
 				Col:  col,
 				Path: destPath,
 			}, nil
+
+		case *ir.MethodCallExpr:
+			if len(nap.Nodes) < i {
+				log.Errorln("No nodes found for given position that are more specific than the method call node")
+				return nil, ErrNoDefinitionFound
+			}
+
+			switch nextNode := nap.Nodes[i+1].(type) {
+			// If one index further is the variable, go to the definition of that variable.
+			// when we break here, the next node will be checked and it will match the
+			// variable arm of the switch.
+			case *ir.SimpleVar:
+
+				// If one index further is an identifier, go to the method definition.
+			case *ir.Identifier:
+				root, ok := nap.Nodes[0].(*ir.Root)
+				if !ok {
+					panic("First node not root")
+				}
+
+				method, destPath, err := p.method(root, classLikeScope, nextNode.Value)
+				if err != nil {
+					return nil, err
+				}
+
+				if method == nil {
+					return nil, ErrNoDefinitionFound
+				}
+
+				if destPath == "" {
+					destPath = path
+				}
+
+				file := p.GetFile(destPath)
+				if file == nil {
+					return nil, ErrNoDefinitionFound
+				}
+
+				pos := ir.GetPosition(method)
+				_, col := position.PosToLoc(file.content, uint(pos.StartPos))
+
+				return &position.Position{
+					Row:  uint(pos.StartLine),
+					Col:  col,
+					Path: destPath,
+				}, nil
+			}
 		}
 	}
 

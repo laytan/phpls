@@ -24,7 +24,7 @@ func (p *Project) Complete(pos *position.Position) ([]string, error) {
 	// We might be able to just use the file content (string) and get the line
 	// being worked on, and then parse the last identifier/word and complete that.
 
-	ast, err := file.parse(p.parserConfig)
+	ast, err := file.Parse(p.ParserConfig)
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing %s for completion: %w", pos.Path, err)
 	}

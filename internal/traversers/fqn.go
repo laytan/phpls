@@ -35,40 +35,41 @@ func (f *FQN) Name() string {
 	return parts[len(parts)-1]
 }
 
-func NewFQNTraverser(name *ir.Name) *FQNTraverser {
-	return &FQNTraverser{name: name}
+func NewFQNTraverser() *FQNTraverser {
+	return &FQNTraverser{}
 }
 
 // FQNTraverser implements ir.Visitor.
 type FQNTraverser struct {
-	name *ir.Name
-
-	// Context about the current file.
 	fileUses      []*ir.UseStmt
 	fileNamespace string
 }
 
-func (f *FQNTraverser) Result() *FQN {
+func (f *FQNTraverser) ResultFor(name *ir.Name) *FQN {
+	if name.IsFullyQualified() {
+		return NewFQN(name.Value)
+	}
+
 	// If any use statement ends with the class name, use that.
 	for _, usage := range f.fileUses {
 		if usage.Alias != nil {
-			if usage.Alias.Value == f.name.LastPart() {
+			if usage.Alias.Value == name.LastPart() {
 				return NewFQN(partSeperator + usage.Use.Value)
 			}
 		}
 
-		if usage.Use.LastPart() == f.name.LastPart() {
+		if usage.Use.LastPart() == name.LastPart() {
 			return NewFQN(partSeperator + usage.Use.Value)
 		}
 	}
 
 	// Else use namespace+class name.
 	if f.fileNamespace != "" {
-		return NewFQN(partSeperator + f.fileNamespace + partSeperator + f.name.LastPart())
+		return NewFQN(partSeperator + f.fileNamespace + partSeperator + name.LastPart())
 	}
 
 	// Else use class name.
-	return NewFQN(partSeperator + f.name.LastPart())
+	return NewFQN(partSeperator + name.LastPart())
 }
 
 func (f *FQNTraverser) EnterNode(node ir.Node) bool {

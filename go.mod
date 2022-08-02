@@ -6,6 +6,7 @@ require (
 	github.com/VKCOM/noverify v0.5.3
 	github.com/VKCOM/php-parser v0.8.2
 	github.com/arl/statsviz v0.4.1
+	github.com/emirpasic/gods v1.18.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2

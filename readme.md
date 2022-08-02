@@ -25,6 +25,10 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
     - [x] Local variables
     - [x] Parameters
     - [ ] Methods
+        - [x] On $this
+        - [ ] On arbitrary variables
+        - [ ] Static
+        - [ ] Final methods
     - [ ] Properties
     - [ ] Constants (classLike & global)
     - [ ] Anonymous functions
