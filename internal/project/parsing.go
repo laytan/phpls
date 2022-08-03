@@ -15,7 +15,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/visitor/dumper"
-	"github.com/laytan/elephp/internal/traversers"
+	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
 )
 

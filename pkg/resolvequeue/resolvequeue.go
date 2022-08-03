@@ -5,8 +5,8 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/emirpasic/gods/queues/linkedlistqueue"
-	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
 )
 

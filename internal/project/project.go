@@ -8,10 +8,10 @@ import (
 	"github.com/VKCOM/php-parser/pkg/conf"
 	perrors "github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/version"
-	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/symboltrie"
+	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
 )
 

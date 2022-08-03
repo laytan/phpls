@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
 )
 

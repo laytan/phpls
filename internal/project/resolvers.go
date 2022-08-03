@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/traversers"
 )
 
 // Resolves the fully qualified name for the given name node.

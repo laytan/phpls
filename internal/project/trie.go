@@ -2,7 +2,7 @@ package project
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/traversers"
+	"github.com/laytan/elephp/pkg/traversers"
 )
 
 func (p *Project) FindNodeInTrie(

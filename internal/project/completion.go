@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/laytan/elephp/internal/traversers"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/symboltrie"
+	"github.com/laytan/elephp/pkg/traversers"
 )
 
 const maxCompletionResults = 10
