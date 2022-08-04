@@ -43,7 +43,7 @@ type resolveQueue struct {
 }
 
 func (r *resolveQueue) parse(node *Node) {
-	r.Queue.Enqueue(node)
+	r.insert(node)
 
 	uses, extends, implements := r.Resolve(node)
 
@@ -55,7 +55,18 @@ func (r *resolveQueue) parse(node *Node) {
 		r.parse(extend)
 	}
 
-	r.Implements = append(r.Implements, implements...)
+	for _, implement := range implements {
+		r.parse(implement)
+	}
+}
+
+func (r *resolveQueue) insert(node *Node) {
+	if node.Kind == ir.KindClassImplementsStmt {
+		r.Implements = append(r.Implements, node)
+		return
+	}
+
+	r.Queue.Enqueue(node)
 }
 
 func (r *resolveQueue) Resolve(
