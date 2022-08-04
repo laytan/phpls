@@ -31,8 +31,6 @@ func (s *Server) Initialize(
 		return nil, lsperrors.ErrRequestFailed("LSP Server is already initialized")
 	}
 
-	// OPTIM: might need to keep track of given 'processId' and exit when it dies.
-
 	// NOTE: Are we sending strings? There is a 'locale' param that we might want to support (translations).
 
 	// TODO: store 'capabilities' of client and use when necessary, (maybe wrap in nice access methods).
