@@ -320,11 +320,9 @@ func TestDefinitions(t *testing.T) {
 				is := is.New(t)
 
 				testPath := path.Join(definitionsFolder, test.file)
+				test.position.Path = testPath
 
-				pos, err := project.Definition(
-					testPath,
-					test.position,
-				)
+				pos, err := project.Definition(test.position)
 
 				// Error is expected when no out position is given.
 				if test.outPosition == nil {
@@ -367,10 +365,11 @@ func BenchmarkStdlibFunction(b *testing.B) {
 	is.NoErr(err)
 
 	for i := 0; i < b.N; i++ {
-		_, err := project.Definition(
-			path.Join(definitionsFolder, "stdlib.php"),
-			&position.Position{Row: 3, Col: 6},
-		)
+		_, err := project.Definition(&position.Position{
+			Row:  3,
+			Col:  6,
+			Path: path.Join(definitionsFolder, "stdlib.php"),
+		})
 		is.NoErr(err)
 	}
 }

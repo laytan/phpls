@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
@@ -20,15 +19,8 @@ func (s *Server) Definition(
 	start := time.Now()
 	defer func() { log.Infof("Retrieving definition took %s\n", time.Since(start)) }()
 
-	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
-
-	pos, err := s.project.Definition(
-		path,
-		&position.Position{
-			Row: uint(params.Position.Line + 1),
-			Col: uint(params.Position.Character + 1),
-		},
-	)
+	target := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
+	pos, err := s.project.Definition(target)
 	if err != nil {
 		if errors.Is(err, project.ErrNoDefinitionFound) {
 			log.Warn(err)
@@ -39,23 +31,5 @@ func (s *Server) Definition(
 		return nil, lsperrors.ErrRequestFailed(err.Error())
 	}
 
-	uri := params.TextDocument.URI
-	if pos.Path != "" {
-		uri = protocol.DocumentURI("file://" + pos.Path)
-	}
-
-	// TODO: Create helpers for creating this from a position.
-	return []protocol.Location{{
-		URI: uri,
-		Range: protocol.Range{
-			Start: protocol.Position{
-				Line:      uint32(pos.Row) - 1,
-				Character: uint32(pos.Col) - 1,
-			},
-			End: protocol.Position{
-				Line:      uint32(pos.Row) - 1,
-				Character: uint32(pos.Col) - 1,
-			},
-		},
-	}}, nil
+	return pos.ToLSPLocation(), nil
 }

@@ -13,7 +13,9 @@ import (
 
 var ErrNoDefinitionFound = errors.New("No definition found for symbol at given position")
 
-func (p *Project) Definition(path string, pos *position.Position) (*position.Position, error) {
+func (p *Project) Definition(pos *position.Position) (*position.Position, error) {
+	path := pos.Path
+
 	file := p.GetFile(path)
 	if file == nil {
 		return nil, fmt.Errorf("Error retrieving file content for %s", path)
