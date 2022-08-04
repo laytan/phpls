@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	if os.Args[1] == "logs" {
+	if len(os.Args) > 1 && os.Args[1] == "logs" {
 		if err := logging.Tail(); err != nil {
 			panic(err)
 		}
