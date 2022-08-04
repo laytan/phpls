@@ -6,8 +6,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var root string
@@ -31,7 +29,6 @@ func Root() string {
 		// NOTE: Intentionally not setting root here so it gets evaluated every
 		// call, as tests will have different wd's.
 		r := path.Join(wd, "..", "..")
-		log.Infof("Detected project root: %s\n", r)
 		return r
 	}
 
@@ -40,7 +37,6 @@ func Root() string {
 	// but os.Getwd would return the root.
 	if _, err := os.Stat(path.Join(wd, "go.mod")); !os.IsNotExist(err) {
 		root = wd
-		log.Infof("Detected project root: %s\n", root)
 		return root
 	}
 
@@ -57,7 +53,6 @@ func Root() string {
 	}
 
 	root = path.Dir(ex)
-	log.Infof("Detected project root: %s\n", root)
 	return root
 }
 

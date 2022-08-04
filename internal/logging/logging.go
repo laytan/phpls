@@ -21,27 +21,35 @@ func Configure(con config.Config) {
 		logrus.SetReportCaller(true)
 	}
 
-	logrus.SetFormatter(
-		&logrus.TextFormatter{
-			ForceColors:   true,
-			DisableQuote:  true,
-			PadLevelText:  true,
-			FullTimestamp: true,
-		},
-	)
+	formatter := &logrus.TextFormatter{
+		DisableQuote: true,
+		PadLevelText: true,
+	}
 
 	switch con.LogOutput() {
 	case config.LogOutputFile:
+		logsPath := path.Join(pathutils.Root(), "logs", "elephp.log")
+		fmt.Printf(
+			"Logs are being printed to %s, run with `--log=stderr` if that is not desired\n",
+			logsPath,
+		)
+
+		formatter.FullTimestamp = true
+
 		logrus.SetOutput(&lumberjack.Logger{
-			Filename:   path.Join(pathutils.Root(), "logs", "elephp.log"),
+			Filename:   logsPath,
 			MaxBackups: maxLogFiles,
 			LocalTime:  true,
 		})
+
 	case config.LogOutputStderr:
 		// Default configuration for logrus.
 	}
+
+	logrus.SetFormatter(formatter)
 }
 
+// TODO: remove this feature.
 func Tail() error {
 	t, err := tail.TailFile(
 		path.Join(pathutils.Root(), "logs", "elephp.log"),
