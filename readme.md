@@ -106,7 +106,7 @@ Make sure you have git and go(1.18) installed.
 
 ```bash
 git clone --recurse-submodules https://github.com/laytan/elephp.git
-go build -o elephp cmd/main.go
+make build
 ```
 
 Symlink the executable to a folder that's in your path, example:
@@ -151,9 +151,9 @@ You can keep an eye on the logs by running `elephp logs`, this will tail the log
 
 ## Development
 
-Run all tests with coverage:
+Run all tests:
 ```bash
-go test ./... --cover -timeout=1s
+make test
 ```
 
 Linting:
