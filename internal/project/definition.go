@@ -51,6 +51,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			scope = typedNode
 
 		case *ir.GlobalStmt:
+			// TODO: can't we just use 'ast' here?
 			rootNode, ok := nap.Nodes[0].(*ir.Root)
 			if !ok {
 				log.Errorln("First node was not the root node, this should not happen")
@@ -132,6 +133,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			}, nil
 
 		case *ir.Name:
+			// TODO: can't we just use 'ast' here?
 			rootNode, ok := nap.Nodes[0].(*ir.Root)
 			if !ok {
 				log.Errorln("First node was not the root node, this should not happen")
@@ -176,12 +178,55 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 				// If one index further is an identifier, go to the method definition.
 			case *ir.Identifier:
+				// TODO: can't we just use 'ast' here?
 				root, ok := nap.Nodes[0].(*ir.Root)
 				if !ok {
 					panic("First node not root")
 				}
 
 				method, destPath, err := p.method(root, classLikeScope, nextNode.Value)
+				if err != nil {
+					return nil, err
+				}
+
+				if method == nil {
+					return nil, ErrNoDefinitionFound
+				}
+
+				if destPath == "" {
+					destPath = path
+				}
+
+				file := p.GetFile(destPath)
+				if file == nil {
+					return nil, ErrNoDefinitionFound
+				}
+
+				pos := ir.GetPosition(method)
+				_, col := position.PosToLoc(file.content, uint(pos.StartPos))
+
+				return &position.Position{
+					Row:  uint(pos.StartLine),
+					Col:  col,
+					Path: destPath,
+				}, nil
+			}
+
+		case *ir.PropertyFetchExpr:
+			if len(nap.Nodes) < i {
+				log.Errorln("No nodes found for given position that are more specific than the property fetch node")
+				return nil, ErrNoDefinitionFound
+			}
+
+			switch nap.Nodes[i+1].(type) {
+			// If one index further is the variable, go to the definition of that variable.
+			// when we break here, the next node will be checked and it will match the
+			// variable arm of the switch.
+			case *ir.SimpleVar:
+
+				// If one index further is an identifier, go to the method definition.
+			case *ir.Identifier:
+				method, destPath, err := p.property(ast, classLikeScope, typedNode)
 				if err != nil {
 					return nil, err
 				}

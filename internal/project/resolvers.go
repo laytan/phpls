@@ -125,8 +125,105 @@ func (p *Project) method(
 	classLikeScope ir.Node,
 	method string,
 ) (*ir.ClassMethodStmt, string, error) {
+	var result *ir.ClassMethodStmt
+	var resultPath string
+
+	err := p.walkResolveQueue(root, classLikeScope, func(wc *walkContext) (bool, error) {
+		traverser := traversers.NewMethod(method, wc.QueueNode.FQN.Name(), wc.Privacy)
+		wc.IR.Walk(traverser)
+
+		if traverser.Method != nil {
+			result = traverser.Method
+			resultPath = wc.TrieNode.Path
+
+			return true, nil
+		}
+
+		return false, nil
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("Error retrieving method definition for %s: %w", method, err)
+	}
+
+	return result, resultPath, nil
+}
+
+func (p *Project) property(
+	root *ir.Root,
+	classLikeScope ir.Node,
+	stmt *ir.PropertyFetchExpr,
+) (*ir.PropertyListStmt, string, error) {
+	objectVar, ok := stmt.Variable.(*ir.SimpleVar)
+	if !ok {
+		return nil, "", fmt.Errorf(
+			"Property definition: unexpected variable node of type %T",
+			stmt.Variable,
+		)
+	}
+
+	propName, ok := stmt.Property.(*ir.Identifier)
+	if !ok {
+		return nil, "", fmt.Errorf(
+			"Property definition: unexpected property node of type %T",
+			stmt.Property,
+		)
+	}
+
+	var classScope *ir.ClassStmt
+	switch objectVar.Name {
+	// TODO: add others, and merge this common logic with 'methods'&'assignment'.
+	case "this":
+		classScope, ok = classLikeScope.(*ir.ClassStmt)
+		if !ok {
+			return nil, "", fmt.Errorf(
+				"Property definition: found $this, but scope %T is not a class",
+				classLikeScope,
+			)
+		}
+
+	default:
+		panic("Unimplemented")
+		// TODO: make work on arbitrary variables.
+		// assTraverser := traversers.NewAssignment(objectVar)
+		// variableScope.Walk(assTraverser)
+	}
+
+	var result *ir.PropertyListStmt
+	var resultPath string
+	err := p.walkResolveQueue(root, classScope, func(wc *walkContext) (bool, error) {
+		traverser := traversers.NewProperty(propName.Value, wc.QueueNode.FQN.Name(), wc.Privacy)
+		wc.IR.Walk(traverser)
+
+		if traverser.Property != nil {
+			result = traverser.Property
+			resultPath = wc.TrieNode.Path
+
+			return true, nil
+		}
+
+		return false, nil
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("Property definition: %w", err)
+	}
+
+	return result, resultPath, nil
+}
+
+type walkContext struct {
+	QueueNode *resolvequeue.Node
+	TrieNode  *traversers.TrieNode
+	File      *File
+	Privacy   phprivacy.Privacy
+	IR        *ir.Root
+}
+
+func (p *Project) walkResolveQueue(
+	root *ir.Root,
+	classLikeScope ir.Node,
+	walker func(*walkContext) (bool, error),
+) error {
 	fqn := p.FQN(root, &ir.Name{Value: symbol.GetIdentifier(classLikeScope)})
-	fmt.Printf("Trying to get method %s of %s\n", method, fqn.String())
 	resolveQueue := resolvequeue.New(
 		&rootRetriever{project: p},
 		&resolvequeue.Node{FQN: fqn, Kind: ir.GetNodeKind(classLikeScope)},
@@ -138,9 +235,8 @@ func (p *Project) method(
 		isCurr = false
 	}() {
 		file, symbol := p.FindFileAndSymbolInTrie(res.FQN, res.Kind)
-
 		if file == nil {
-			return nil, "", fmt.Errorf("Can't get file for FQN: %s", res.FQN.String())
+			return fmt.Errorf("Can't get file for FQN: %s", res.FQN.String())
 		}
 
 		var privacy phprivacy.Privacy
@@ -160,16 +256,18 @@ func (p *Project) method(
 
 		ast := p.ParseFileCached(file)
 		if ast == nil {
-			return nil, "", fmt.Errorf("Error parsing ast for %s", file.path)
+			return fmt.Errorf("Error parsing ast for %s", file.path)
 		}
 
-		traverser := traversers.NewMethod(method, res.FQN.Name(), privacy)
-		ast.Walk(traverser)
+		done, err := walker(&walkContext{res, symbol, file, privacy, ast})
+		if err != nil {
+			return err
+		}
 
-		if traverser.Method != nil {
-			return traverser.Method, symbol.Path, nil
+		if done {
+			break
 		}
 	}
 
-	return nil, "", nil
+	return nil
 }

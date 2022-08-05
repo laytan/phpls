@@ -307,6 +307,17 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
 			},
 		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 12, Col: 23},
+			outPosition: &position.Position{Row: 8, Col: 5},
+		},
+		// TODO:
+		// {
+		// 	file:        path.Join("properties", "properties.php"),
+		// 	position:    &position.Position{Row: 18, Col: 50},
+		// 	outPosition: &position.Position{Row: 8, Col: 5},
+		// },
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())
