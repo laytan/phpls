@@ -112,9 +112,9 @@ func (r *rootRetriever) RetrieveRoot(n *resolvequeue.Node) (*ir.Root, error) {
 		return nil, fmt.Errorf("No file indexed for FQN %s", n.FQN)
 	}
 
-	ast, err := file.Parse(r.project.ParserConfig)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing file for FQN %s: %w", n.FQN, err)
+	ast := r.project.ParseFileCached(file)
+	if ast == nil {
+		return nil, fmt.Errorf("Error parsing file for FQN %s", n.FQN)
 	}
 
 	return ast, nil
@@ -158,9 +158,9 @@ func (p *Project) method(
 			privacy = phprivacy.PrivacyPrivate
 		}
 
-		ast, err := file.Parse(p.ParserConfig)
-		if err != nil {
-			return nil, "", err
+		ast := p.ParseFileCached(file)
+		if ast == nil {
+			return nil, "", fmt.Errorf("Error parsing ast for %s", file.path)
 		}
 
 		traverser := traversers.NewMethod(method, res.FQN.Name(), privacy)

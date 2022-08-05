@@ -21,9 +21,9 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 		return nil, fmt.Errorf("Error retrieving file content for %s", path)
 	}
 
-	ast, err := file.Parse(p.ParserConfig)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing %s for definitions: %w", path, err)
+	ast := p.ParseFileCached(file)
+	if ast == nil {
+		return nil, fmt.Errorf("Error parsing %s for definitions", path)
 	}
 
 	apos := position.LocToPos(file.content, pos.Row, pos.Col)

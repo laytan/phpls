@@ -23,10 +23,9 @@ func (p *Project) Complete(pos *position.Position) ([]string, error) {
 	// TODO: For completion to work with invalid/syntax errored files:
 	// We might be able to just use the file content (string) and get the line
 	// being worked on, and then parse the last identifier/word and complete that.
-
-	ast, err := file.Parse(p.ParserConfig)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing %s for completion: %w", pos.Path, err)
+	ast := p.ParseFileCached(file)
+	if ast == nil {
+		return nil, fmt.Errorf("Error parsing %s for completion", pos.Path)
 	}
 
 	apos := position.LocToPos(file.content, pos.Row, pos.Col)

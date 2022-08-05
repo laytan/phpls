@@ -130,7 +130,23 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	p.files[path] = &File{
 		content:  string(content),
 		modified: modTime,
+		path:     path,
 	}
 
 	return nil
+}
+
+func (p *Project) ParseFileCached(file *File) *ir.Root {
+	if file == nil {
+		return nil
+	}
+
+	return p.cache.Cached(file.path, func() *ir.Root {
+		root, err := file.parse(p.ParserConfig)
+		if err != nil {
+			log.Error(err)
+		}
+
+		return root
+	})
 }

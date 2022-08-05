@@ -29,6 +29,7 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
         - [ ] On arbitrary variables
         - [ ] Static
         - [ ] Final methods
+        - [ ] @method PhpDoc
     - [ ] Properties
     - [ ] Constants (classLike & global)
     - [ ] Anonymous functions

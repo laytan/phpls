@@ -5,15 +5,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/conf"
 	perrors "github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/version"
+	"github.com/laytan/elephp/pkg/datasize"
+	"github.com/laytan/elephp/pkg/lfudacache"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
 )
+
+const cacheSize = datasize.MegaByte * 100
 
 type Project struct {
 	mu sync.Mutex
@@ -28,6 +33,8 @@ type Project struct {
 	// End goal being: never needing to traverse the whole project to search
 	// for something.
 	symbolTrie *symboltrie.Trie[*traversers.TrieNode]
+
+	cache *lfudacache.Cache[string, *ir.Root]
 }
 
 func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
@@ -52,6 +59,7 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 			},
 		},
 		symbolTrie: symboltrie.New[*traversers.TrieNode](),
+		cache:      lfudacache.New[string, *ir.Root](cacheSize),
 	}
 }
 

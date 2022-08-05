@@ -124,7 +124,7 @@ linters-settings:
             arguments:
               - maxLitCount: "3"
                 allowStrs: '""'
-                allowInts: "0,1,2"
+                allowInts: "0,1,2,100"
                 allowFloats: "0.0,0.,1.0,1.,2.0,2."
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#atomic
           - name: atomic
