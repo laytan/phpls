@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/emirpasic/gods/queues/linkedlistqueue"
+	"github.com/laytan/elephp/pkg/queue"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
@@ -24,7 +24,7 @@ func New(rootRetriever RootRetriever, node *Node) *resolveQueue {
 		rootRetriever: rootRetriever,
 
 		// OPTIM: migth want to create a basic queue ourself, we are now pulling in this package, only for a queue.
-		Queue:      linkedlistqueue.New(),
+		Queue:      queue.New[*Node](),
 		Implements: []*Node{},
 	}
 
@@ -36,7 +36,7 @@ func New(rootRetriever RootRetriever, node *Node) *resolveQueue {
 type resolveQueue struct {
 	rootRetriever RootRetriever
 
-	Queue *linkedlistqueue.Queue
+	Queue *queue.Queue[*Node]
 
 	// Order doesnt really matter so don't really nead a queue.
 	Implements []*Node

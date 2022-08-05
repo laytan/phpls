@@ -131,12 +131,12 @@ func (p *Project) method(
 		&rootRetriever{project: p},
 		&resolvequeue.Node{FQN: fqn, Kind: ir.GetNodeKind(classLikeScope)},
 	)
-	fmt.Println(resolveQueue.Queue.String())
 
-	it := resolveQueue.Queue.Iterator()
-	for it.Next() {
-		res := it.Value().(*resolvequeue.Node)
-
+	isCurr := true
+	for res := resolveQueue.Queue.Dequeue(); res != nil; func() {
+		res = resolveQueue.Queue.Dequeue()
+		isCurr = false
+	}() {
 		file, symbol := p.FindFileAndSymbolInTrie(res.FQN, res.Kind)
 
 		if file == nil {
@@ -150,7 +150,7 @@ func (p *Project) method(
 			// if not, search for protected and public privacy.
 			privacy = phprivacy.PrivacyProtected
 
-			if it.Index() == 0 {
+			if isCurr {
 				privacy = phprivacy.PrivacyPrivate
 			}
 		default:
