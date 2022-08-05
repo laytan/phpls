@@ -51,13 +51,6 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			scope = typedNode
 
 		case *ir.GlobalStmt:
-			// TODO: can't we just use 'ast' here?
-			rootNode, ok := nap.Nodes[0].(*ir.Root)
-			if !ok {
-				log.Errorln("First node was not the root node, this should not happen")
-				return nil, ErrNoDefinitionFound
-			}
-
 			// TODO: this might index out of bounds
 			globalVar, ok := nap.Nodes[i+1].(*ir.SimpleVar)
 			if !ok {
@@ -65,7 +58,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 				return nil, ErrNoDefinitionFound
 			}
 
-			assignment := p.globalAssignment(rootNode, globalVar)
+			assignment := p.globalAssignment(ast, globalVar)
 			if assignment == nil {
 				return nil, ErrNoDefinitionFound
 			}
@@ -133,14 +126,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			}, nil
 
 		case *ir.Name:
-			// TODO: can't we just use 'ast' here?
-			rootNode, ok := nap.Nodes[0].(*ir.Root)
-			if !ok {
-				log.Errorln("First node was not the root node, this should not happen")
-				return nil, ErrNoDefinitionFound
-			}
-
-			classLike, destPath := p.classLike(rootNode, typedNode)
+			classLike, destPath := p.classLike(ast, typedNode)
 			if classLike == nil {
 				return nil, ErrNoDefinitionFound
 			}
@@ -178,13 +164,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 				// If one index further is an identifier, go to the method definition.
 			case *ir.Identifier:
-				// TODO: can't we just use 'ast' here?
-				root, ok := nap.Nodes[0].(*ir.Root)
-				if !ok {
-					panic("First node not root")
-				}
-
-				method, destPath, err := p.method(root, classLikeScope, nextNode.Value)
+				method, destPath, err := p.method(ast, classLikeScope, nextNode.Value)
 				if err != nil {
 					return nil, err
 				}
