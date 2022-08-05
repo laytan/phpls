@@ -64,7 +64,7 @@ func TestConfigConnType(t *testing.T) {
 
 type pidTestInput struct {
 	args  []string
-	pid   uint16
+	pid   uint
 	ok    bool
 	error bool
 }
@@ -92,8 +92,9 @@ func TestClientPid(t *testing.T) {
 			ok:   true,
 		},
 		{
-			args:  []string{"--clientProcessId=65536"},
-			error: true,
+			args: []string{"--clientProcessId=65536"},
+			pid:  65536,
+			ok:   true,
 		},
 	}
 

@@ -36,7 +36,7 @@ func New() Config {
 
 type Config interface {
 	Initialize() error
-	ClientPid() (uint16, bool)
+	ClientPid() (uint, bool)
 	ConnType() (connection.ConnType, error)
 	ConnURL() string
 	UseStatsviz() bool
@@ -54,7 +54,7 @@ func (c *lsConfig) Initialize() error {
 	return err //nolint:wrapcheck
 }
 
-func (c *lsConfig) ClientPid() (uint16, bool) {
+func (c *lsConfig) ClientPid() (uint, bool) {
 	isset := c.opts.ClientProcessID != 0
 	return c.opts.ClientProcessID, isset
 }

@@ -63,8 +63,8 @@ func (s *Server) Initialize(
 	}()
 
 	if params.ProcessID != 0 {
-		processwatch.NewExiter(uint16(params.ProcessID))
-		log.Infof("Monitoring process ID: %d\n", params.ProcessID)
+		processwatch.NewExiter(uint(params.ProcessID))
+		log.Infof("Monitoring process ID: %d\n", uint(params.ProcessID))
 	}
 
 	return &protocol.InitializeResult{

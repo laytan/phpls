@@ -1,7 +1,7 @@
 package config
 
 type opts struct {
-	ClientProcessID uint16    `long:"clientProcessId" description:"Process ID that when terminated, terminates the language server"`
+	ClientProcessID uint      `long:"clientProcessId" description:"Process ID that when terminated, terminates the language server"`
 	UseStdio        bool      `long:"stdio"           description:"Communicate over stdio"`
 	UseWs           bool      `long:"ws"              description:"Communicate over websockets"`
 	UseTCP          bool      `long:"tcp"             description:"Communicate over TCP"`

@@ -11,7 +11,7 @@ import (
 
 const exitCheckInterval = time.Second * 30
 
-func New(pid uint16, interval time.Duration, onExit func()) *Watcher {
+func New(pid uint, interval time.Duration, onExit func()) *Watcher {
 	watcher := &Watcher{
 		Pid:      pid,
 		Interval: interval,
@@ -23,7 +23,7 @@ func New(pid uint16, interval time.Duration, onExit func()) *Watcher {
 	return watcher
 }
 
-func NewExiter(pid uint16) *Watcher {
+func NewExiter(pid uint) *Watcher {
 	watcher := &Watcher{
 		Pid:      pid,
 		Interval: exitCheckInterval,
@@ -41,7 +41,7 @@ func NewExiter(pid uint16) *Watcher {
 type Watcher struct {
 	Interval   time.Duration
 	OnExit     func()
-	Pid        uint16
+	Pid        uint
 	isWatching bool
 }
 
@@ -63,7 +63,7 @@ func (w *Watcher) Start() {
 	}()
 }
 
-func IsProcessRunning(pid uint16) bool {
+func IsProcessRunning(pid uint) bool {
 	proc, err := os.FindProcess(int(pid))
 	if err != nil {
 		return false
