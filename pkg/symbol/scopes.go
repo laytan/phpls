@@ -16,6 +16,12 @@ var (
 		ir.KindTraitStmt:     true,
 		ir.KindInterfaceStmt: true,
 	}
+
+	ClassLikeScopes = []ir.NodeKind{
+		ir.KindClassStmt,
+		ir.KindTraitStmt,
+		ir.KindInterfaceStmt,
+	}
 )
 
 func IsScope(node ir.Node) bool {

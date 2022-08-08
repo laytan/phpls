@@ -206,7 +206,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 				// If one index further is an identifier, go to the method definition.
 			case *ir.Identifier:
-				method, destPath, err := p.property(ast, classLikeScope, typedNode)
+				method, destPath, err := p.property(ast, classLikeScope, scope, typedNode)
 				if err != nil {
 					return nil, err
 				}

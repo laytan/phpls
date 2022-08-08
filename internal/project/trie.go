@@ -9,17 +9,24 @@ func (p *Project) FindNodeInTrie(
 	fqn *traversers.FQN,
 	kind ir.NodeKind,
 ) *traversers.TrieNode {
+	return p.FindNodeInTrieMultiKinds(fqn, []ir.NodeKind{kind})
+}
+
+func (p *Project) FindNodeInTrieMultiKinds(
+	fqn *traversers.FQN,
+	kinds []ir.NodeKind,
+) *traversers.TrieNode {
 	results := p.symbolTrie.SearchExact(fqn.Name())
 	for _, res := range results {
 		if res.Namespace != fqn.Namespace() {
 			continue
 		}
 
-		if res.Symbol.NodeKind() != kind {
-			continue
+		for _, kind := range kinds {
+			if res.Symbol.NodeKind() == kind {
+				return res
+			}
 		}
-
-		return res
 	}
 
 	return nil

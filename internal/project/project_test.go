@@ -309,15 +309,37 @@ func TestDefinitions(t *testing.T) {
 		},
 		{
 			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 12, Col: 23},
-			outPosition: &position.Position{Row: 8, Col: 5},
+			position:    &position.Position{Row: 13, Col: 17},
+			outPosition: &position.Position{Row: 5, Col: 1},
 		},
-		// TODO:
-		// {
-		// 	file:        path.Join("properties", "properties.php"),
-		// 	position:    &position.Position{Row: 18, Col: 50},
-		// 	outPosition: &position.Position{Row: 8, Col: 5},
-		// },
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 13, Col: 23},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 18, Col: 50},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:     path.Join("properties", "properties.php"),
+			position: &position.Position{Row: 19, Col: 24},
+		},
+		{
+			file:     path.Join("properties", "properties.php"),
+			position: &position.Position{Row: 20, Col: 24},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 26, Col: 18},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 32, Col: 21},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())
@@ -334,6 +356,8 @@ func TestDefinitions(t *testing.T) {
 				test.position.Path = testPath
 
 				pos, err := project.Definition(test.position)
+				fmt.Println(pos)
+				fmt.Println(err)
 
 				// Error is expected when no out position is given.
 				if test.outPosition == nil {

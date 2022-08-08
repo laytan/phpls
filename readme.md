@@ -31,6 +31,9 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
         - [ ] Final methods
         - [ ] @method PhpDoc
     - [ ] Properties
+        - [x] On $this
+        - [x] On variables created using new X()
+        - [x] On variables with a @var phpdoc
     - [ ] Constants (classLike & global)
     - [ ] Anonymous functions
     - [ ] Arrow functions

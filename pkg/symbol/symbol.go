@@ -14,6 +14,21 @@ type Symbol interface {
 	Identifier() string
 }
 
+func New(node ir.Node) Symbol {
+	switch typedNode := node.(type) {
+	case *ir.FunctionStmt:
+		return NewFunction(typedNode)
+	case *ir.ClassStmt:
+		return NewClassLikeClass(typedNode)
+	case *ir.TraitStmt:
+		return NewClassLikeTrait(typedNode)
+	case *ir.InterfaceStmt:
+		return NewClassLikeInterface(typedNode)
+	default:
+		return nil
+	}
+}
+
 type baseSymbol struct {
 	position   *position.Position
 	identifier string

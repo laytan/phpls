@@ -12,6 +12,7 @@ func NewAssignment(variable *ir.SimpleVar) *Assignment {
 type Assignment struct {
 	variable   *ir.SimpleVar
 	Assignment *ir.SimpleVar
+	Scope      ir.Node
 }
 
 func (a *Assignment) EnterNode(node ir.Node) bool {
@@ -24,12 +25,14 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 		if assigned, ok := typedNode.Variable.(*ir.SimpleVar); ok {
 			if assigned.Name == a.variable.Name {
 				a.Assignment = assigned
+				a.Scope = typedNode
 			}
 		}
 
 	case *ir.Parameter:
 		if typedNode.Variable.Name == a.variable.Name {
 			a.Assignment = typedNode.Variable
+			a.Scope = typedNode
 		}
 
 	case *ir.GlobalStmt:
@@ -41,6 +44,7 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 
 			if typedVar.Name == a.variable.Name {
 				a.Assignment = typedVar
+				a.Scope = typedNode
 			}
 		}
 	}

@@ -38,27 +38,9 @@ func (s *Symbol) EnterNode(node ir.Node) bool {
 
 		return true
 
-	case *ir.FunctionStmt:
-		node := s.newTrieNode(symbol.NewFunction(typedNode))
+	case *ir.FunctionStmt, *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
+		node := s.newTrieNode(symbol.New(typedNode))
 		s.trie.Put(node.Symbol.Identifier(), node)
-		return false
-
-	case *ir.ClassStmt:
-		node := s.newTrieNode(symbol.NewClassLikeClass(typedNode))
-		s.trie.Put(node.Symbol.Identifier(), node)
-
-		return false
-
-	case *ir.InterfaceStmt:
-		node := s.newTrieNode(symbol.NewClassLikeInterface(typedNode))
-		s.trie.Put(node.Symbol.Identifier(), node)
-
-		return false
-
-	case *ir.TraitStmt:
-		node := s.newTrieNode(symbol.NewClassLikeTrait(typedNode))
-		s.trie.Put(node.Symbol.Identifier(), node)
-
 		return false
 
 	default:
