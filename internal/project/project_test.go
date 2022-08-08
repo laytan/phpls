@@ -46,7 +46,7 @@ func TestDefinitions(t *testing.T) {
 			file:     "stdlib.php",
 			position: &position.Position{Row: 3, Col: 6},
 			outPosition: &position.Position{
-				Row:  779,
+				Row:  785,
 				Col:  1,
 				Path: path.Join(stubsFolder, "standard", "standard_8.php"),
 			},
