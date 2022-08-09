@@ -3,17 +3,18 @@ package project
 import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/elephp/pkg/typer"
 )
 
 func (p *Project) FindNodeInTrie(
-	fqn *traversers.FQN,
+	fqn *typer.FQN,
 	kind ir.NodeKind,
 ) *traversers.TrieNode {
 	return p.FindNodeInTrieMultiKinds(fqn, []ir.NodeKind{kind})
 }
 
 func (p *Project) FindNodeInTrieMultiKinds(
-	fqn *traversers.FQN,
+	fqn *typer.FQN,
 	kinds []ir.NodeKind,
 ) *traversers.TrieNode {
 	results := p.symbolTrie.SearchExact(fqn.Name())
@@ -32,7 +33,7 @@ func (p *Project) FindNodeInTrieMultiKinds(
 	return nil
 }
 
-func (p *Project) FindFileInTrie(fqn *traversers.FQN, kind ir.NodeKind) *File {
+func (p *Project) FindFileInTrie(fqn *typer.FQN, kind ir.NodeKind) *File {
 	node := p.FindNodeInTrie(fqn, kind)
 	if node == nil {
 		return nil
@@ -42,7 +43,7 @@ func (p *Project) FindFileInTrie(fqn *traversers.FQN, kind ir.NodeKind) *File {
 }
 
 func (p *Project) FindFileAndSymbolInTrie(
-	fqn *traversers.FQN,
+	fqn *typer.FQN,
 	kind ir.NodeKind,
 ) (*File, *traversers.TrieNode) {
 	node := p.FindNodeInTrie(fqn, kind)

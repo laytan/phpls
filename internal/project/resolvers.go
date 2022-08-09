@@ -11,6 +11,7 @@ import (
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/elephp/pkg/typer"
 )
 
 var (
@@ -22,12 +23,12 @@ var (
 //
 // This resolves, use statements, aliassed use statements are resolved to the
 // non-aliassed version.
-func (p *Project) FQN(root *ir.Root, name *ir.Name) *traversers.FQN {
+func (p *Project) FQN(root *ir.Root, name *ir.Name) *typer.FQN {
 	if name.IsFullyQualified() {
-		return traversers.NewFQN(name.Value)
+		return typer.NewFQN(name.Value)
 	}
 
-	traverser := traversers.NewFQNTraverser()
+	traverser := typer.NewFQNTraverser()
 	root.Walk(traverser)
 
 	return traverser.ResultFor(name)

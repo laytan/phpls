@@ -1,4 +1,4 @@
-package traversers
+package typer
 
 import (
 	"strconv"

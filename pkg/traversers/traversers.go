@@ -1,3 +1,0 @@
-package traversers
-
-const partSeperator = "\\"

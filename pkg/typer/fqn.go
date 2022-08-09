@@ -1,4 +1,4 @@
-package traversers
+package typer
 
 import (
 	"strings"
@@ -6,6 +6,8 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/symbol"
 )
+
+const partSeperator = `\`
 
 type FQN struct {
 	// Examples: \DateTime, \Test\DateTime.

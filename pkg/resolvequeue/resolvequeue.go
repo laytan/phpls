@@ -6,7 +6,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/queue"
 	"github.com/laytan/elephp/pkg/symbol"
-	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/elephp/pkg/typer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,7 +15,7 @@ type RootRetriever interface {
 }
 
 type Node struct {
-	FQN  *traversers.FQN
+	FQN  *typer.FQN
 	Kind ir.NodeKind
 }
 
@@ -87,7 +87,7 @@ func (r *resolveQueue) Resolve(
 		implements = make([]*Node, len(traverser.Implements))
 	)
 
-	fqnTraverser := traversers.NewFQNTraverser()
+	fqnTraverser := typer.NewFQNTraverser()
 	root.Walk(fqnTraverser)
 
 	for i, use := range traverser.Uses {

@@ -9,8 +9,17 @@ var allRegex = regexp.MustCompile(`@(\w+) ?(.*)`)
 
 type PhpDoxer interface {
 	All(string) map[string]string
+
+	// TODO: just return a string, besides unions you also have intersection (&) which
+	// TODO: can not be supported by just returning a slice.
 	Var(string) []string
+	// TODO: just return a string, besides unions you also have intersection (&) which
+	// TODO: can not be supported by just returning a slice.
 	Return(string) []string
+}
+
+func New() PhpDoxer {
+	return &phpdoxer{}
 }
 
 type phpdoxer struct{}
