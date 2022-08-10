@@ -39,7 +39,7 @@ func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (Type, error) {
 	docReturn := t.docIterReturn(funcOrMeth)
 	if len(docReturn) > 0 {
 		// TODO: Give class
-		parsedT, err := ParseUnion(nil, docReturn)
+		parsedT, err := ParseUnion(docReturn)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +65,7 @@ func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (Type, error) {
 
 	trav := NewFQNTraverser()
 	root.Walk(trav)
-	return &TypeClassLike{FQN: trav.ResultFor(name)}, nil
+	return &TypeClassLike{Name: trav.ResultFor(name).String()}, nil
 }
 
 func (t *typer) Param(Root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) (Type, error) {
