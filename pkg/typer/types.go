@@ -31,6 +31,8 @@ const (
 	KindPrecedence
 	KindUnion
 	KindIntersection
+	KindKeyOf
+	KindValueOf
 )
 
 type Type interface {
@@ -360,4 +362,37 @@ func (t *TypeIntersection) String() string {
 
 func (t *TypeIntersection) Kind() TypeKind {
 	return KindIntersection
+}
+
+type TypeKeyOf struct {
+	Class *TypeClassLike
+	Const string
+}
+
+func (t *TypeKeyOf) String() string {
+	return fmt.Sprintf("key-of<%s::%s>", t.Class.String(), t.Const)
+}
+
+func (t *TypeKeyOf) Kind() TypeKind {
+	return KindKeyOf
+}
+
+type TypeValueOf struct {
+	Class *TypeClassLike
+
+	// If IsEnum is true, Const is an empty string.
+	Const  string
+	IsEnum bool
+}
+
+func (t *TypeValueOf) String() string {
+	if t.IsEnum {
+		return fmt.Sprintf("value-of<%s>", t.Class.String())
+	}
+
+	return fmt.Sprintf("value-of<%s::%s>", t.Class.String(), t.Const)
+}
+
+func (t *TypeValueOf) Kind() TypeKind {
+	return KindValueOf
 }

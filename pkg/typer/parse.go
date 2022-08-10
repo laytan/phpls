@@ -37,6 +37,17 @@ var (
 	// Regex from https://www.php.net/manual/en/language.oop5.basic.php,
 	// with added \ because we want to match namespaces too.
 	identifierRegex = regexp.MustCompile(`^[a-zA-Z_\x80-\xff\\][a-zA-Z0-9_\x80-\xff\\]*$`)
+
+	keyOfRegex     = regexp.MustCompile(`^key-of<([\w\\]+)::(\w+)>$`)
+	keyOfRgxClassG = 1
+	keyOfRgxConstG = 2
+
+	valueOfRegex     = regexp.MustCompile(`^value-of<([\w\\]+)::(\w+)>$`)
+	valueOfRgxClassG = 1
+	valueOfRgxConstG = 2
+
+	valueOfEnumRegex    = regexp.MustCompile(`^value-of<([\w\\]+)>$`)
+	valueOfEnumRgxEnumG = 1
 )
 
 // TODO: type aliasses
@@ -124,6 +135,18 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseIdentifier(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseKeyOf(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseValueOf(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseValueOfEnum(value); match {
 		return rType, rErr
 	}
 
@@ -374,4 +397,40 @@ func parseIdentifier(value string) (bool, Type, error) {
 	fullyQualified := strings.HasPrefix(value, `\`)
 
 	return true, &TypeClassLike{Name: value, FullyQualified: fullyQualified}, nil
+}
+
+func parseKeyOf(value string) (bool, Type, error) {
+	keyOfMatch := keyOfRegex.FindStringSubmatch(value)
+	if len(keyOfMatch) < 3 {
+		return false, nil, nil
+	}
+
+	return true, &TypeKeyOf{
+		Class: &TypeClassLike{Name: keyOfMatch[keyOfRgxClassG]},
+		Const: keyOfMatch[keyOfRgxConstG],
+	}, nil
+}
+
+func parseValueOf(value string) (bool, Type, error) {
+	valueOfMatch := valueOfRegex.FindStringSubmatch(value)
+	if len(valueOfMatch) < 3 {
+		return false, nil, nil
+	}
+
+	return true, &TypeValueOf{
+		Class: &TypeClassLike{Name: valueOfMatch[valueOfRgxClassG]},
+		Const: valueOfMatch[valueOfRgxConstG],
+	}, nil
+}
+
+func parseValueOfEnum(value string) (bool, Type, error) {
+	valueOfEnumMatch := valueOfEnumRegex.FindStringSubmatch(value)
+	if len(valueOfEnumMatch) < 2 {
+		return false, nil, nil
+	}
+
+	return true, &TypeValueOf{
+		Class:  &TypeClassLike{Name: valueOfEnumMatch[valueOfEnumRgxEnumG]},
+		IsEnum: true,
+	}, nil
 }

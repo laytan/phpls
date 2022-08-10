@@ -229,6 +229,51 @@ func TestParse(t *testing.T) {
 			args:    "blabla-string",
 			wantErr: true,
 		},
+		{
+			name: "key-of",
+			args: "key-of<Foo::BAR>",
+			want: &TypeKeyOf{
+				Class: &TypeClassLike{Name: "Foo"},
+				Const: "BAR",
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "key-of namespaced",
+			args: `key-of<\Foo\FooBar::BAR>`,
+			want: &TypeKeyOf{
+				Class: &TypeClassLike{Name: `\Foo\FooBar`},
+				Const: "BAR",
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "value-of",
+			args: "value-of<Foo::BAR>",
+			want: &TypeValueOf{
+				Class: &TypeClassLike{Name: "Foo"},
+				Const: "BAR",
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "value-of namespaced",
+			args: `value-of<\Foo\FooBar::BAR>`,
+			want: &TypeValueOf{
+				Class: &TypeClassLike{Name: `\Foo\FooBar`},
+				Const: "BAR",
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "value-of enum",
+			args: `value-of<Foo>`,
+			want: &TypeValueOf{
+				Class:  &TypeClassLike{Name: `Foo`},
+				IsEnum: true,
+			},
+			wantEqualStrings: true,
+		},
 	}
 
 	for _, tt := range tests {
