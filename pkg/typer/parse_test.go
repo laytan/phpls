@@ -6,13 +6,9 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	type args struct {
-		class *FQN
-		value string
-	}
 	tests := []struct {
 		name             string
-		args             args
+		args             string
 		want             Type
 		wantErr          bool
 		wantEqualStrings bool
@@ -23,29 +19,29 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:             "mixed",
-			args:             args{nil, "mixed"},
+			args:             "mixed",
 			want:             &TypeMixed{},
 			wantEqualStrings: true,
 		},
 		{
 			name:             "union",
-			args:             args{nil, "array|string"},
+			args:             "array|string",
 			want:             &TypeUnion{Left: &TypeArray{}, Right: &TypeString{}},
 			wantEqualStrings: true,
 		},
 		{
 			name: "this",
-			args: args{&FQN{value: `\Test`}, "$this"},
-			want: &TypeClassLike{FQN: &FQN{value: `\Test`}},
+			args: "$this",
+			want: &TypeClassLike{Name: "$this"},
 		},
 		{
 			name: "static",
-			args: args{&FQN{value: `\Test`}, "static"},
-			want: &TypeClassLike{FQN: &FQN{value: `\Test`}},
+			args: "static",
+			want: &TypeClassLike{Name: "static"},
 		},
 		{
 			name: "intersection",
-			args: args{nil, "non-empty-array&positive-int"},
+			args: "non-empty-array&positive-int",
 			want: &TypeIntersection{
 				Left:  &TypeArray{NonEmpty: true},
 				Right: &TypeInt{HasPositiveConstraint: true},
@@ -54,7 +50,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "precedenced union & intersection",
-			args: args{nil, "(negative-int|string)&array"},
+			args: "(negative-int|string)&array",
 			want: &TypeIntersection{
 				Left: &TypePrecedence{
 					Type: &TypeUnion{
@@ -68,7 +64,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "precedenced union at end & intersection",
-			args: args{nil, "array&(negative-int|string)"},
+			args: "array&(negative-int|string)",
 			want: &TypeIntersection{
 				Left: &TypeArray{},
 				Right: &TypePrecedence{
@@ -82,7 +78,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "precedenced union in middle & intersection",
-			args: args{nil, "array&(negative-int|string)|int"},
+			args: "array&(negative-int|string)|int",
 			want: &TypeIntersection{
 				Left: &TypeArray{},
 				Right: &TypeUnion{
@@ -99,7 +95,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name: "double precedence",
-			args: args{nil, "array&(negative-int|string)|(int|false)"},
+			args: "array&(negative-int|string)|(int|false)",
 			// NOTE: this is in a weird order but is technically correct.
 			want: &TypeUnion{
 				Left: &TypeIntersection{
@@ -120,11 +116,98 @@ func TestParse(t *testing.T) {
 			},
 			wantEqualStrings: true,
 		},
+		{
+			name:             "complex int",
+			args:             "int<3, 5>",
+			want:             &TypeInt{Min: "3", Max: "5"},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "complex int min",
+			args:             "int<min, 5>",
+			want:             &TypeInt{Min: "min", Max: "5"},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "complex int max",
+			args:             "int<3, max>",
+			want:             &TypeInt{Min: "3", Max: "max"},
+			wantEqualStrings: true,
+		},
+		{
+			name:    "int, invalid min: 'max'",
+			args:    "int<max, 0>",
+			wantErr: true,
+		},
+		{
+			name:    "int, invalid max: 'min'",
+			args:    "int<min, min>",
+			wantErr: true,
+		},
+		{
+			name:             "int, using negative",
+			args:             "int<min, -1>",
+			want:             &TypeInt{Min: "min", Max: "-1"},
+			wantEqualStrings: true,
+		},
+		{
+			name:    "int, min after max",
+			args:    "int<0, -1>",
+			wantErr: true,
+		},
+		{
+			name:             "complex array",
+			args:             "array<string>",
+			want:             &TypeArray{ItemType: &TypeString{}},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "complex array nonempty",
+			args:             "non-empty-array<string>",
+			want:             &TypeArray{NonEmpty: true, ItemType: &TypeString{}},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "complex array key value",
+			args:             "array<string, int>",
+			want:             &TypeArray{ItemType: &TypeInt{}, KeyType: &TypeString{}},
+			wantEqualStrings: true,
+		},
+		{
+			name: "complex array key value nonempty",
+			args: "non-empty-array<string, int>",
+			want: &TypeArray{
+				NonEmpty: true,
+				ItemType: &TypeInt{},
+				KeyType:  &TypeString{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name:    "complex array weird prefix",
+			args:    "non-array<string>",
+			wantErr: true,
+		},
+		{
+			name: "complex type array",
+			args: "string[]",
+			want: &TypeArray{ItemType: &TypeString{}},
+		},
+		{
+			name: "complex type array class",
+			args: `\Test\Class[]`,
+			want: &TypeArray{ItemType: &TypeClassLike{Name: `\Test\Class`, FullyQualified: true}},
+		},
+		{
+			name: "complex type array class non-qualified",
+			args: `Class[]`,
+			want: &TypeArray{ItemType: &TypeClassLike{Name: `Class`}},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Parse(tt.args.class, tt.args.value)
+			got, err := Parse(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -134,22 +217,17 @@ func TestParse(t *testing.T) {
 				t.Errorf("Parse() = %v, want %v", got, tt.want)
 			}
 
-			if tt.wantEqualStrings && got.String() != tt.args.value {
-				t.Errorf("Parse().String() = %v, want %v", got.String(), tt.args.value)
+			if tt.wantEqualStrings && got.String() != tt.args {
+				t.Errorf("Parse().String() = %v, want %v", got.String(), tt.args)
 			}
 		})
 	}
 }
 
 func TestParseUnion(t *testing.T) {
-	type args struct {
-		class *FQN
-		value []string
-	}
-
 	tests := []struct {
 		name    string
-		args    args
+		args    []string
 		want    Type
 		wantErr bool
 	}{
@@ -158,24 +236,18 @@ func TestParseUnion(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "one item",
-			args: args{
-				value: []string{"string"},
-			},
+			name:    "one item",
+			args:    []string{"string"},
 			wantErr: true,
 		},
 		{
 			name: "basic",
-			args: args{
-				value: []string{"string", "null"},
-			},
+			args: []string{"string", "null"},
 			want: &TypeUnion{Left: &TypeString{}, Right: &TypeNull{}},
 		},
 		{
 			name: "complex",
-			args: args{
-				value: []string{"string", "false&true", "(int&array)&true"},
-			},
+			args: []string{"string", "false&true", "(int&array)&true"},
 			want: &TypeUnion{
 				Left: &TypeString{},
 				Right: &TypeUnion{
@@ -199,7 +271,7 @@ func TestParseUnion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseUnion(tt.args.class, tt.args.value)
+			got, err := ParseUnion(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseUnion() error = %v, wantErr %v", err, tt.wantErr)
 				return

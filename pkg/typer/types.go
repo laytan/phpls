@@ -59,20 +59,21 @@ func (t *TypeNull) Kind() TypeKind {
 }
 
 type TypeClassLike struct {
-	FQN *FQN
+	Name           string
+	FullyQualified bool
 }
 
 func (t *TypeClassLike) String() string {
-	return t.FQN.String()
+	return t.Name
 }
 
 func (t *TypeClassLike) Kind() TypeKind {
 	return KindClassLike
 }
 
-// TODO: support phpstan's array signatures: https://phpstan.org/writing-php-code/phpdoc-types#general-arrays.
 // TODO: support phpstan's array shapes: https://phpstan.org/writing-php-code/phpdoc-types#array-shapes.
 type TypeArray struct {
+	KeyType  Type
 	ItemType Type
 	NonEmpty bool
 }
@@ -83,11 +84,15 @@ func (t *TypeArray) String() string {
 		nonEmptyPrefix = "non-empty-"
 	}
 
-	if t.ItemType == nil {
+	if t.ItemType == nil && t.KeyType == nil {
 		return fmt.Sprintf("%sarray", nonEmptyPrefix)
 	}
 
-	return fmt.Sprintf("%sarray<%s>", nonEmptyPrefix, t.ItemType.String())
+	if t.KeyType == nil {
+		return fmt.Sprintf("%sarray<%s>", nonEmptyPrefix, t.ItemType.String())
+	}
+
+	return fmt.Sprintf("%sarray<%s, %s>", nonEmptyPrefix, t.KeyType.String(), t.ItemType.String())
 }
 
 func (t *TypeArray) Kind() TypeKind {
