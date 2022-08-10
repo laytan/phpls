@@ -289,7 +289,7 @@ func ParseUnion(value []string) (Type, error) {
 
 func parseComplexInt(value string) (bool, Type, error) {
 	intMatch := intRegex.FindStringSubmatch(value)
-	if len(intMatch) < 3 {
+	if len(intMatch) < intRgxMaxG+1 {
 		return false, nil, nil
 	}
 
@@ -336,7 +336,7 @@ func parseComplexInt(value string) (bool, Type, error) {
 
 func parseComplexArray(value string) (bool, Type, error) {
 	arrMatch := arrRegex.FindStringSubmatch(value)
-	if len(arrMatch) < 4 {
+	if len(arrMatch) < arrRgxValG+1 {
 		return false, nil, nil
 	}
 
@@ -376,7 +376,7 @@ func parseComplexArray(value string) (bool, Type, error) {
 
 func parseComplexTypeArray(value string) (bool, Type, error) {
 	arrMatch := typeArrRegex.FindStringSubmatch(value)
-	if len(arrMatch) != 2 {
+	if len(arrMatch) != typeArrRgxTypeG+1 {
 		return false, nil, nil
 	}
 
@@ -401,7 +401,7 @@ func parseIdentifier(value string) (bool, Type, error) {
 
 func parseKeyOf(value string) (bool, Type, error) {
 	keyOfMatch := keyOfRegex.FindStringSubmatch(value)
-	if len(keyOfMatch) < 3 {
+	if len(keyOfMatch) < keyOfRgxConstG+1 {
 		return false, nil, nil
 	}
 
@@ -413,7 +413,7 @@ func parseKeyOf(value string) (bool, Type, error) {
 
 func parseValueOf(value string) (bool, Type, error) {
 	valueOfMatch := valueOfRegex.FindStringSubmatch(value)
-	if len(valueOfMatch) < 3 {
+	if len(valueOfMatch) < valueOfRgxConstG+1 {
 		return false, nil, nil
 	}
 
@@ -425,7 +425,7 @@ func parseValueOf(value string) (bool, Type, error) {
 
 func parseValueOfEnum(value string) (bool, Type, error) {
 	valueOfEnumMatch := valueOfEnumRegex.FindStringSubmatch(value)
-	if len(valueOfEnumMatch) < 2 {
+	if len(valueOfEnumMatch) < valueOfEnumRgxEnumG+1 {
 		return false, nil, nil
 	}
 
