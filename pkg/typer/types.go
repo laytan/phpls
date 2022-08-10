@@ -224,12 +224,38 @@ func (t *TypeInt) Kind() TypeKind {
 	return KindInt
 }
 
+type StringConstraint uint
+
+const (
+	StringConstraintNone StringConstraint = iota
+	StringConstraintClass
+	StringConstraintCallable
+	StringConstraintNumeric
+	StringConstraintNonEmpty
+	stringConstraintLiteral
+)
+
 // TODO: support phpstan's advanced string types: https://phpstan.org/writing-php-code/phpdoc-types#other-advanced-string-types.
 // TODO: support phpstan's class-string: https://phpstan.org/writing-php-code/phpdoc-types#class-string.
-type TypeString struct{}
+type TypeString struct {
+	Constraint StringConstraint
+}
 
 func (t *TypeString) String() string {
-	return "string"
+	switch t.Constraint {
+	case StringConstraintClass:
+		return "class-string"
+	case StringConstraintCallable:
+		return "callable-string"
+	case StringConstraintNumeric:
+		return "numeric-string"
+	case StringConstraintNonEmpty:
+		return "non-empty-string"
+	case stringConstraintLiteral:
+		return "literal-string"
+	default:
+		return "string"
+	}
 }
 
 func (t *TypeString) Kind() TypeKind {

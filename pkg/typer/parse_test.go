@@ -203,6 +203,32 @@ func TestParse(t *testing.T) {
 			args: `Class[]`,
 			want: &TypeArray{ItemType: &TypeClassLike{Name: `Class`}},
 		},
+		{
+			name: "string constraints",
+			args: `string|class-string|callable-string|numeric-string|non-empty-string|literal-string`,
+			want: &TypeUnion{
+				Left: &TypeString{Constraint: StringConstraintNone},
+				Right: &TypeUnion{
+					Left: &TypeString{Constraint: StringConstraintClass},
+					Right: &TypeUnion{
+						Left: &TypeString{Constraint: StringConstraintCallable},
+						Right: &TypeUnion{
+							Left: &TypeString{Constraint: StringConstraintNumeric},
+							Right: &TypeUnion{
+								Left:  &TypeString{Constraint: StringConstraintNonEmpty},
+								Right: &TypeString{Constraint: stringConstraintLiteral},
+							},
+						},
+					},
+				},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name:    "weird string",
+			args:    "blabla-string",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

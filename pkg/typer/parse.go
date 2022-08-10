@@ -73,14 +73,18 @@ func Parse(value string) (Type, error) {
 		return &TypeInt{HasPositiveConstraint: true}, nil
 	case "negative-int":
 		return &TypeInt{HasNegativeConstraint: true}, nil
-	case "string",
-		"class-string",
-		"callable-string",
-		"numeric-string",
-		"non-empty-string",
-		"literal-string":
-		// TODO: show the constraints in the struct somehow, maybe a constraint field?
+	case "string":
 		return &TypeString{}, nil
+	case "class-string":
+		return &TypeString{Constraint: StringConstraintClass}, nil
+	case "callable-string":
+		return &TypeString{Constraint: StringConstraintCallable}, nil
+	case "numeric-string":
+		return &TypeString{Constraint: StringConstraintNumeric}, nil
+	case "non-empty-string":
+		return &TypeString{Constraint: StringConstraintNonEmpty}, nil
+	case "literal-string":
+		return &TypeString{Constraint: stringConstraintLiteral}, nil
 	case "object":
 		return &TypeObject{}, nil
 	case "scalar":
