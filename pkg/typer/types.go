@@ -103,11 +103,37 @@ func (t *TypeArray) Kind() TypeKind {
 
 // TODO: support phpstan's iterable signatures: array signatures: https://phpstan.org/writing-php-code/phpdoc-types#iterables.
 type TypeIterable struct {
+	// Is nil when the doc had 'iterable<x,y>' instead of 'Type<x, y>'.
+	IterableType Type
+	// Is nil when it was created like this: 'iterable<x>'
+	KeyType Type
+	// Is nil when it was created like this: 'iterable'
 	ItemType Type
 }
 
 func (t *TypeIterable) String() string {
-	return fmt.Sprintf("iterable<%s>", t.ItemType.String())
+	if t.IterableType == nil && t.KeyType == nil && t.ItemType == nil {
+		return "iterable"
+	}
+
+	if t.KeyType == nil && t.IterableType == nil {
+		return fmt.Sprintf("iterable<%s>", t.ItemType.String())
+	}
+
+	if t.KeyType == nil {
+		return fmt.Sprintf("%s<%s>", t.IterableType.String(), t.ItemType.String())
+	}
+
+	if t.IterableType == nil {
+		return fmt.Sprintf("iterable<%s, %s>", t.KeyType.String(), t.ItemType.String())
+	}
+
+	return fmt.Sprintf(
+		"%s<%s, %s>",
+		t.IterableType.String(),
+		t.KeyType.String(),
+		t.ItemType.String(),
+	)
 }
 
 func (t *TypeIterable) Kind() TypeKind {

@@ -48,6 +48,13 @@ var (
 
 	valueOfEnumRegex    = regexp.MustCompile(`^value-of<([\w\\]+)>$`)
 	valueOfEnumRgxEnumG = 1
+
+	iterableRegex = regexp.MustCompile(
+		`^([a-zA-Z_\x80-\xff\\][a-zA-Z0-9_\x80-\xff\\]*)<(\w+),? ?(\w*)>$`,
+	)
+	iterRgxNameG = 1
+	iterRgxKeyG  = 2
+	iterRgxValG  = 3
 )
 
 // TODO: type aliasses
@@ -147,6 +154,10 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseValueOfEnum(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseIterable(value); match {
 		return rType, rErr
 	}
 
@@ -341,12 +352,7 @@ func parseComplexArray(value string) (bool, Type, error) {
 	}
 
 	if arrMatch[arrRgxPreG] != "array" && arrMatch[arrRgxPreG] != "non-empty-array" {
-		return true, nil, fmt.Errorf(
-			"Unexpected array type prefix %s for array type %s (expected 'array' or 'non-empty-array'): %w",
-			arrMatch[arrRgxPreG],
-			value,
-			ErrParse,
-		)
+		return false, nil, nil
 	}
 
 	nonEmpty := arrMatch[arrRgxPreG] == "non-empty-array"
@@ -432,5 +438,66 @@ func parseValueOfEnum(value string) (bool, Type, error) {
 	return true, &TypeValueOf{
 		Class:  &TypeClassLike{Name: valueOfEnumMatch[valueOfEnumRgxEnumG]},
 		IsEnum: true,
+	}, nil
+}
+
+// NOTE: iterables have some different rules depending on implementation of interfaces,
+// NOTE: see: https://phpstan.org/writing-php-code/phpdoc-types#iterables for details.
+// TODO: this is currently not supported and is going to be hard to support.
+func parseIterable(value string) (bool, Type, error) {
+	iterableMatch := iterableRegex.FindStringSubmatch(value)
+	if len(iterableMatch) < iterRgxValG+1 {
+		return false, nil, nil
+	}
+
+	var iterType Type
+	iterTypeRaw := iterableMatch[iterRgxNameG]
+	if iterTypeRaw != "iterable" {
+		res, err := Parse(iterTypeRaw)
+		if err != nil {
+			return true, nil, fmt.Errorf(
+				"Error parsing iterable type %s of type %s: %w",
+				iterTypeRaw,
+				value,
+				err,
+			)
+		}
+
+		iterType = res
+	}
+
+	keyTypeRaw := iterableMatch[iterRgxKeyG]
+	keyType, err := Parse(keyTypeRaw)
+	if err != nil {
+		return true, nil, fmt.Errorf(
+			"Error parsing iterable key type %s of type %s: %w",
+			keyTypeRaw,
+			value,
+			err,
+		)
+	}
+
+	valTypeRaw := iterableMatch[iterRgxValG]
+	if len(valTypeRaw) == 0 {
+		return true, &TypeIterable{
+			IterableType: iterType,
+			ItemType:     keyType,
+		}, nil
+	}
+
+	valType, err := Parse(valTypeRaw)
+	if err != nil {
+		return true, nil, fmt.Errorf(
+			"Error parsing iterable value type %s of type %s: %w",
+			valTypeRaw,
+			value,
+			err,
+		)
+	}
+
+	return true, &TypeIterable{
+		IterableType: iterType,
+		KeyType:      keyType,
+		ItemType:     valType,
 	}, nil
 }

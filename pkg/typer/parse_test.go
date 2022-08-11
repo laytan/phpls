@@ -274,6 +274,43 @@ func TestParse(t *testing.T) {
 			},
 			wantEqualStrings: true,
 		},
+		{
+			name:             "iterable",
+			args:             "iterable",
+			want:             &TypeIterable{},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "iterable with type",
+			args:             "iterable<int>",
+			want:             &TypeIterable{ItemType: &TypeInt{}},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "iterable with key and value type",
+			args:             "iterable<string, int>",
+			want:             &TypeIterable{KeyType: &TypeString{}, ItemType: &TypeInt{}},
+			wantEqualStrings: true,
+		},
+		{
+			name: "iterable with custom class",
+			args: "Test<int, int>",
+			want: &TypeIterable{
+				IterableType: &TypeClassLike{Name: "Test"},
+				KeyType:      &TypeInt{},
+				ItemType:     &TypeInt{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "iterable with custom class+namespace",
+			args: `\Test\Test<int>`,
+			want: &TypeIterable{
+				IterableType: &TypeClassLike{Name: `\Test\Test`, FullyQualified: true},
+				ItemType:     &TypeInt{},
+			},
+			wantEqualStrings: true,
+		},
 	}
 
 	for _, tt := range tests {
