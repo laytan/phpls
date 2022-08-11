@@ -66,7 +66,7 @@ var (
 	strLiteralRegex = regexp.MustCompile(`^['"]([^"']*)['"]$`)
 	strLitRgxValG   = 1
 
-	classConstRegex = regexp.MustCompile(`^([\w\\]+)::(\w+)$`)
+	classConstRegex = regexp.MustCompile(`^([\w\\]+)::([\*\w]+)$`)
 	clsCnstRgxClsG  = 1
 	clsCnstRgxCnstG = 2
 
@@ -77,12 +77,17 @@ var (
 	callableRegex = regexp.MustCompile(`^callable\((.*)\): ?(.*)$`)
 	clbleRgxPrmsG = 1
 	clbleRgxRtrnG = 2
+
+	intMaskRegex  = regexp.MustCompile(`^int-mask<([\d,\s]+)>$`)
+	intMskRgxVlsG = 1
+
+	intMaskOfRegex  = regexp.MustCompile(`^int-mask-of<(.*)>$`)
+	intMskOfRgxTypG = 1
 )
 
 // TODO: type aliasses
 // TODO: generics
 // TODO: conditional types
-// TODO: integer masks
 
 func Parse(value string) (Type, error) {
 	if len(value) == 0 {
@@ -207,6 +212,14 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseCallable(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseIntMask(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseIntMaskOf(value); match {
 		return rType, rErr
 	}
 
@@ -727,4 +740,51 @@ func parseCallable(value string) (bool, Type, error) {
 		Parameters: params,
 		Return:     returnType,
 	}, nil
+}
+
+func parseIntMask(value string) (bool, Type, error) {
+	match := intMaskRegex.FindStringSubmatch(value)
+	if len(match) < intMskRgxVlsG+1 {
+		return false, nil, nil
+	}
+
+	valuesRaw := strings.Split(match[intMskRgxVlsG], ",")
+	values := make([]int, len(valuesRaw))
+	for i, v := range valuesRaw {
+		v = strings.TrimSpace(v)
+		intVal, err := strconv.Atoi(v)
+		if err != nil {
+			return true, nil, fmt.Errorf(
+				"Error parsing int-mask, %s of %s is not an int: %w",
+				v,
+				value,
+				err,
+			)
+		}
+
+		values[i] = intVal
+	}
+
+	return true, &TypeIntMask{
+		Values: values,
+	}, nil
+}
+
+func parseIntMaskOf(value string) (bool, Type, error) {
+	match := intMaskOfRegex.FindStringSubmatch(value)
+	if len(match) < intMskOfRgxTypG+1 {
+		return false, nil, nil
+	}
+
+	typeVal, err := Parse(match[intMskOfRgxTypG])
+	if err != nil {
+		return true, nil, fmt.Errorf(
+			"Error parsing type %s of %s: %w",
+			match[intMskOfRgxTypG],
+			value,
+			err,
+		)
+	}
+
+	return true, &TypeIntMaskOf{Type: typeVal}, nil
 }

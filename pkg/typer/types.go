@@ -38,6 +38,8 @@ const (
 	KindFloatLiteral
 	KindIntLiteral
 	KindConstant
+	KindIntMask
+	KindIntMaskOf
 )
 
 type Type interface {
@@ -549,4 +551,33 @@ func (t *TypeConstant) String() string {
 
 func (t *TypeConstant) Kind() TypeKind {
 	return KindConstant
+}
+
+type TypeIntMask struct {
+	Values []int
+}
+
+func (t *TypeIntMask) String() string {
+	values := make([]string, len(t.Values))
+	for i, v := range t.Values {
+		values[i] = fmt.Sprintf("%d", v)
+	}
+
+	return fmt.Sprintf("int-mask<%s>", strings.Join(values, ", "))
+}
+
+func (t *TypeIntMask) Kind() TypeKind {
+	return KindIntMask
+}
+
+type TypeIntMaskOf struct {
+	Type Type
+}
+
+func (t *TypeIntMaskOf) String() string {
+	return fmt.Sprintf("int-mask-of<%s>", t.Type.String())
+}
+
+func (t *TypeIntMaskOf) Kind() TypeKind {
+	return KindIntMaskOf
 }

@@ -399,6 +399,15 @@ func TestParse(t *testing.T) {
 			wantEqualStrings: true,
 		},
 		{
+			name: "class constant wildcard",
+			args: "Foo::SOME_*",
+			want: &TypeConstant{
+				Class: &TypeClassLike{Name: "Foo"},
+				Const: "SOME_*",
+			},
+			wantEqualStrings: true,
+		},
+		{
 			name: "class constant namespaced",
 			args: `Foo\Bar::SOME_CONSTANT`,
 			want: &TypeConstant{
@@ -527,6 +536,37 @@ func TestParse(t *testing.T) {
 					{Type: &TypeFloat{}, Variadic: true},
 				},
 				Return: &TypePrecedence{Type: &TypeUnion{Left: &TypeInt{}, Right: &TypeNull{}}},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "int-mask",
+			args:             "int-mask<1, 2, 4>",
+			want:             &TypeIntMask{Values: []int{1, 2, 4}},
+			wantEqualStrings: true,
+		},
+		{
+			name: "int-mask-of union",
+			args: "int-mask-of<1|2|4>",
+			want: &TypeIntMaskOf{
+				Type: &TypeUnion{
+					Left: &TypeIntLiteral{Value: 1},
+					Right: &TypeUnion{
+						Left:  &TypeIntLiteral{Value: 2},
+						Right: &TypeIntLiteral{Value: 4},
+					},
+				},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "int-mask-of class constants",
+			args: "int-mask-of<Foo::INT_*>",
+			want: &TypeIntMaskOf{
+				Type: &TypeConstant{
+					Class: &TypeClassLike{Name: "Foo"},
+					Const: "INT_*",
+				},
 			},
 			wantEqualStrings: true,
 		},
