@@ -61,13 +61,17 @@ var (
 
 	arrShapeRegexStep1 = regexp.MustCompile(`^array{(.*)}$`)
 	arrShapeRgxValsG   = 1
+
+	// TODO: this will fail for: 'foo\'s' or "foo's" or "foo\"s" etc.
+	strLiteralRegex = regexp.MustCompile(`^['"]([^"']*)['"]$`)
+	strLitRgxValG   = 1
 )
 
 // TODO: type aliasses
 // TODO: generics
 // TODO: conditional types
 //
-// TODO: literals and constants
+// TODO: constants
 // TODO: global constants
 // TODO: integer masks
 // TODO: complex callable
@@ -171,6 +175,18 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseArrayShape(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseIntLiteral(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseFloatLiteral(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseStringLiteral(value); match {
 		return rType, rErr
 	}
 
@@ -580,4 +596,31 @@ func parseArrayShape(value string) (bool, Type, error) {
 	}
 
 	return true, &TypeArrayShape{Values: vals}, nil
+}
+
+func parseStringLiteral(value string) (bool, Type, error) {
+	match := strLiteralRegex.FindStringSubmatch(value)
+	if len(match) < strLitRgxValG+1 {
+		return false, nil, nil
+	}
+
+	return true, &TypeStringLiteral{Value: match[strLitRgxValG]}, nil
+}
+
+func parseIntLiteral(value string) (bool, Type, error) {
+	val, err := strconv.Atoi(value)
+	if err != nil {
+		return false, nil, nil
+	}
+
+	return true, &TypeIntLiteral{Value: val}, nil
+}
+
+func parseFloatLiteral(value string) (bool, Type, error) {
+	val, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return false, nil, nil
+	}
+
+	return true, &TypeFloatLiteral{Value: val}, nil
 }

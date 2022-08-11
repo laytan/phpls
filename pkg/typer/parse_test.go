@@ -369,6 +369,25 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:             "string literal single quote",
+			args:             "'foo'",
+			want:             &TypeStringLiteral{Value: "foo"},
+			wantEqualStrings: true,
+		},
+		{
+			name: "string literal double quote",
+			args: `"foo"`,
+			want: &TypeStringLiteral{Value: "foo"},
+		},
+		{
+			name: "string literal union",
+			args: "'foo'|'bar'",
+			want: &TypeUnion{
+				Left:  &TypeStringLiteral{Value: "foo"},
+				Right: &TypeStringLiteral{Value: "bar"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -380,7 +399,7 @@ func TestParse(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Parse() = %v, want %v", got, tt.want)
+				t.Errorf("Parse() = %#v, want %#v", got, tt.want)
 			}
 
 			if tt.wantEqualStrings && got.String() != tt.args {

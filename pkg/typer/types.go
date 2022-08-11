@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// TODO: support phpstan's literals and constants https://phpstan.org/writing-php-code/phpdoc-types#literals-and-constants.
+// TODO: support phpstan's constants https://phpstan.org/writing-php-code/phpdoc-types#literals-and-constants.
 // TODO: support phpstan's generics: https://phpstan.org/writing-php-code/phpdoc-types#generics.
 // TODO: support phpstan's conditional return types: https://phpstan.org/writing-php-code/phpdoc-types#conditional-return-types.
 
@@ -35,6 +35,9 @@ const (
 	KindValueOf
 	KindArrayShape
 	KindArrayShapeValue
+	KindStringLiteral
+	KindFloatLiteral
+	KindIntLiteral
 )
 
 type Type interface {
@@ -467,4 +470,40 @@ func (t *TypeArrayShape) String() string {
 
 func (t *TypeArrayShape) Kind() TypeKind {
 	return KindArrayShape
+}
+
+type TypeStringLiteral struct {
+	Value string
+}
+
+func (t *TypeStringLiteral) String() string {
+	return fmt.Sprintf("'%s'", t.Value)
+}
+
+func (t *TypeStringLiteral) Kind() TypeKind {
+	return KindStringLiteral
+}
+
+type TypeIntLiteral struct {
+	Value int
+}
+
+func (t *TypeIntLiteral) String() string {
+	return fmt.Sprintf("%d", t.Value)
+}
+
+func (t *TypeIntLiteral) Kind() TypeKind {
+	return KindIntLiteral
+}
+
+type TypeFloatLiteral struct {
+	Value float64
+}
+
+func (t *TypeFloatLiteral) String() string {
+	return fmt.Sprintf("%f", t.Value)
+}
+
+func (t *TypeFloatLiteral) Kind() TypeKind {
+	return KindFloatLiteral
 }
