@@ -73,16 +73,16 @@ var (
 	// TODO: This should not match when there is a class with this name, but
 	// TODO: that is very hard to check in this situation.
 	globalConstRegex = regexp.MustCompile(`^[_A-Z]*$`)
+
+	callableRegex = regexp.MustCompile(`^callable\((.*)\): ?(.*)$`)
+	clbleRgxPrmsG = 1
+	clbleRgxRtrnG = 2
 )
 
 // TODO: type aliasses
 // TODO: generics
 // TODO: conditional types
-//
-// TODO: constants
-// TODO: global constants
 // TODO: integer masks
-// TODO: complex callable
 
 func Parse(value string) (Type, error) {
 	if len(value) == 0 {
@@ -131,7 +131,7 @@ func Parse(value string) (Type, error) {
 	case "non-empty-array":
 		return &TypeArray{NonEmpty: true}, nil
 	case "callable":
-		return &TypeCallable{Return: &TypeVoid{}}, nil
+		return &TypeCallable{}, nil
 	case "void":
 		return &TypeVoid{}, nil
 	case "array-key":
@@ -203,6 +203,10 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseStringLiteral(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseCallable(value); match {
 		return rType, rErr
 	}
 
@@ -661,4 +665,66 @@ func parseGlobalConst(value string) (bool, Type, error) {
 	}
 
 	return true, &TypeConstant{Const: value}, nil
+}
+
+func parseCallable(value string) (bool, Type, error) {
+	match := callableRegex.FindStringSubmatch(value)
+	if len(match) < clbleRgxRtrnG+1 {
+		return false, nil, nil
+	}
+
+	returnType, err := Parse(match[clbleRgxRtrnG])
+	if err != nil {
+		return true, nil, fmt.Errorf(
+			"Error parsing callable return type %s of %s: %w",
+			match[clbleRgxRtrnG],
+			value,
+			err,
+		)
+	}
+
+	params := []*CallableParameter{}
+	for _, param := range strings.Split(match[clbleRgxPrmsG], ",") {
+		if strings.TrimSpace(param) == "" {
+			continue
+		}
+
+		variadic := strings.Contains(param, "...")
+		byRef := strings.Contains(param, "&")
+		optional := strings.Contains(param, "=")
+
+		param = strings.ReplaceAll(param, " ", "")
+		param = strings.ReplaceAll(param, "&", "")
+		param = strings.ReplaceAll(param, ".", "")
+		param = strings.ReplaceAll(param, "=", "")
+
+		parts := strings.Split(param, "$")
+		name := ""
+		if len(parts) > 1 {
+			name += "$" + parts[1]
+		}
+
+		paramType, err := Parse(parts[0])
+		if err != nil {
+			return true, nil, fmt.Errorf(
+				"Error parsing parameter %s of callable %s: %w",
+				param,
+				value,
+				err,
+			)
+		}
+
+		params = append(params, &CallableParameter{
+			Optional: optional,
+			Variadic: variadic,
+			ByRef:    byRef,
+			Type:     paramType,
+			Name:     name,
+		})
+	}
+
+	return true, &TypeCallable{
+		Parameters: params,
+		Return:     returnType,
+	}, nil
 }

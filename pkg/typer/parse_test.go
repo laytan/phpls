@@ -421,6 +421,115 @@ func TestParse(t *testing.T) {
 			want:             &TypeClassLike{Name: "SOME_CONSTANt"},
 			wantEqualStrings: true,
 		},
+		{
+			name:             "callable",
+			args:             "callable",
+			want:             &TypeCallable{},
+			wantEqualStrings: true,
+		},
+		{
+			name: "callable returns",
+			args: "callable(): string",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{},
+				Return:     &TypeString{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "callable parameter",
+			args: "callable(int): int",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{{Type: &TypeInt{}}},
+				Return:     &TypeInt{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "callable double parameter",
+			args: "callable(int, string): int",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{
+					{Type: &TypeInt{}},
+					{Type: &TypeString{}},
+				},
+				Return: &TypeInt{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "callable double parameter with optional",
+			args: "callable(int, int=): int",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{
+					{Type: &TypeInt{}},
+					{Type: &TypeInt{}, Optional: true},
+				},
+				Return: &TypeInt{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name:    "callable without return (not allowed)",
+			args:    "callable(int, int=)",
+			wantErr: true,
+		},
+		{
+			name: "callable with parameter names",
+			args: "callable(int $foo, int $bar): void",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{
+					{Type: &TypeInt{}, Name: "$foo"},
+					{Type: &TypeInt{}, Name: "$bar"},
+				},
+				Return: &TypeVoid{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "callable with parameter names, no spaces",
+			args: "callable(int$foo,int$bar):void",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{
+					{Type: &TypeInt{}, Name: "$foo"},
+					{Type: &TypeInt{}, Name: "$bar"},
+				},
+				Return: &TypeVoid{},
+			},
+		},
+		{
+			name: "callable with parameter passed by reference",
+			args: "callable(string &$foo): mixed",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{
+					{Type: &TypeString{}, ByRef: true, Name: "$foo"},
+				},
+				Return: &TypeMixed{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "callable with variadic args, returning union",
+			args: "callable(float ...$floats): (int|null)",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{
+					{Type: &TypeFloat{}, Name: "$floats", Variadic: true},
+				},
+				Return: &TypePrecedence{Type: &TypeUnion{Left: &TypeInt{}, Right: &TypeNull{}}},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "callable with variadic args, returning union",
+			args: "callable(float...): (int|null)",
+			want: &TypeCallable{
+				Parameters: []*CallableParameter{
+					{Type: &TypeFloat{}, Variadic: true},
+				},
+				Return: &TypePrecedence{Type: &TypeUnion{Left: &TypeInt{}, Right: &TypeNull{}}},
+			},
+			wantEqualStrings: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -432,7 +541,7 @@ func TestParse(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Parse() = %#v, want %#v", got, tt.want)
+				t.Errorf("Parse() = %v, want %v", got, tt.want)
 			}
 
 			if tt.wantEqualStrings && got.String() != tt.args {

@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// TODO: support phpstan's constants https://phpstan.org/writing-php-code/phpdoc-types#literals-and-constants.
 // TODO: support phpstan's generics: https://phpstan.org/writing-php-code/phpdoc-types#generics.
 // TODO: support phpstan's conditional return types: https://phpstan.org/writing-php-code/phpdoc-types#conditional-return-types.
 
@@ -145,26 +144,51 @@ func (t *TypeIterable) Kind() TypeKind {
 }
 
 type CallableParameter struct {
-	IsOptional bool
-	Type       Type
+	Optional bool
+	Variadic bool
+	ByRef    bool
+	Type     Type
+	Name     string
 }
 
 func (c *CallableParameter) String() string {
 	res := c.Type.String()
-	if c.IsOptional {
+
+	if c.Variadic && c.Name == "" {
+		res += "..."
+	}
+
+	if c.Optional {
 		res += "="
+	}
+
+	if c.Name != "" {
+		res += " "
+
+		if c.Variadic {
+			res += "..."
+		}
+
+		if c.ByRef {
+			res += "&"
+		}
+
+		res += c.Name
 	}
 
 	return res
 }
 
-// TODO: support variadic parameters.
 type TypeCallable struct {
-	Parameters []CallableParameter
+	Parameters []*CallableParameter
 	Return     Type
 }
 
 func (t *TypeCallable) String() string {
+	if t.Return == nil {
+		return "callable"
+	}
+
 	params := make([]string, len(t.Parameters))
 	for i, param := range t.Parameters {
 		params[i] = param.String()
