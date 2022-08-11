@@ -58,18 +58,20 @@ var (
 	iterRgxNameG = 1
 	iterRgxKeyG  = 2
 	iterRgxValG  = 3
+
+	arrShapeRegexStep1 = regexp.MustCompile(`^array{(.*)}$`)
+	arrShapeRgxValsG   = 1
 )
 
 // TODO: type aliasses
 // TODO: generics
 // TODO: conditional types
-// TODO: array shapes
+//
 // TODO: literals and constants
 // TODO: global constants
 // TODO: integer masks
 // TODO: complex callable
 
-// TODO: pass in ir.Root and class scope, use class scope with $this and static.
 func Parse(value string) (Type, error) {
 	if len(value) == 0 {
 		return nil, fmt.Errorf("Empty phpdoc given: %w", ErrParse)
@@ -165,6 +167,10 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseIterable(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseArrayShape(value); match {
 		return rType, rErr
 	}
 
@@ -521,4 +527,57 @@ func parseConstrainedClassString(value string) (bool, Type, error) {
 		Constraint:  StringConstraintClass,
 		GenericOver: &TypeClassLike{Name: match[constrClsStrNameG], FullyQualified: fullyQualified},
 	}, nil
+}
+
+// PERF: this can probably be heavily optimized, running a lot of replaces, splits, and string checks here.
+func parseArrayShape(value string) (bool, Type, error) {
+	match := arrShapeRegexStep1.FindStringSubmatch(value)
+	if len(match) < arrShapeRgxValsG+1 {
+		return false, nil, nil
+	}
+
+	values := match[arrShapeRgxValsG]
+	values = strings.ReplaceAll(values, "'", "")
+	values = strings.ReplaceAll(values, `"`, "")
+	values = strings.ReplaceAll(values, " ", "")
+
+	indiVals := strings.Split(values, ",")
+	vals := make([]*TypeArrayShapeValue, len(indiVals))
+	for i, val := range indiVals {
+		keyval := strings.Split(val, ":")
+		if len(keyval) == 1 {
+			valType, err := Parse(keyval[0])
+			if err != nil {
+				return true, nil, fmt.Errorf(
+					"Error parsing array shape value %s of shape %s: %w",
+					keyval[0],
+					value,
+					err,
+				)
+			}
+
+			vals[i] = &TypeArrayShapeValue{Key: fmt.Sprintf("%d", i), Type: valType}
+			continue
+		}
+
+		key := keyval[0]
+		optional := strings.HasSuffix(key, "?")
+		key = strings.TrimSuffix(key, "?")
+
+		val := keyval[1]
+		valType, err := Parse(val)
+		if err != nil {
+			return true, nil, fmt.Errorf(
+				"Error parsing array shape value %s of shape %s: %w",
+				val,
+				value,
+				err,
+			)
+		}
+
+		vals[i] = &TypeArrayShapeValue{Key: key, Type: valType, Optional: optional}
+
+	}
+
+	return true, &TypeArrayShape{Values: vals}, nil
 }

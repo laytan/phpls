@@ -329,6 +329,46 @@ func TestParse(t *testing.T) {
 			},
 			wantEqualStrings: true,
 		},
+		{
+			name: "array shape 1",
+			args: `array{'foo': int, "bar": string}`,
+			want: &TypeArrayShape{
+				Values: []*TypeArrayShapeValue{
+					{Key: "foo", Type: &TypeInt{}},
+					{Key: "bar", Type: &TypeString{}},
+				},
+			},
+		},
+		{
+			name: "array shape 2",
+			args: `array{0: int, 1?: int}`,
+			want: &TypeArrayShape{
+				Values: []*TypeArrayShapeValue{
+					{Key: "0", Type: &TypeInt{}},
+					{Key: "1", Type: &TypeInt{}, Optional: true},
+				},
+			},
+		},
+		{
+			name: "array shape 3",
+			args: `array{int, int}`,
+			want: &TypeArrayShape{
+				Values: []*TypeArrayShapeValue{
+					{Key: "0", Type: &TypeInt{}},
+					{Key: "1", Type: &TypeInt{}},
+				},
+			},
+		},
+		{
+			name: "array shape 4",
+			args: `array{foo:int, bar: string}`,
+			want: &TypeArrayShape{
+				Values: []*TypeArrayShapeValue{
+					{Key: "foo", Type: &TypeInt{}},
+					{Key: "bar", Type: &TypeString{}},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

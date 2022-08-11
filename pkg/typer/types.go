@@ -33,6 +33,8 @@ const (
 	KindIntersection
 	KindKeyOf
 	KindValueOf
+	KindArrayShape
+	KindArrayShapeValue
 )
 
 type Type interface {
@@ -73,7 +75,6 @@ func (t *TypeClassLike) Kind() TypeKind {
 	return KindClassLike
 }
 
-// TODO: support phpstan's array shapes: https://phpstan.org/writing-php-code/phpdoc-types#array-shapes.
 type TypeArray struct {
 	KeyType  Type
 	ItemType Type
@@ -101,7 +102,6 @@ func (t *TypeArray) Kind() TypeKind {
 	return KindArray
 }
 
-// TODO: support phpstan's iterable signatures: array signatures: https://phpstan.org/writing-php-code/phpdoc-types#iterables.
 type TypeIterable struct {
 	// Is nil when the doc had 'iterable<x,y>' instead of 'Type<x, y>'.
 	IterableType Type
@@ -263,8 +263,6 @@ const (
 	stringConstraintLiteral
 )
 
-// TODO: support phpstan's advanced string types: https://phpstan.org/writing-php-code/phpdoc-types#other-advanced-string-types.
-// TODO: support phpstan's class-string: https://phpstan.org/writing-php-code/phpdoc-types#class-string.
 type TypeString struct {
 	Constraint StringConstraint
 
@@ -428,4 +426,45 @@ func (t *TypeValueOf) String() string {
 
 func (t *TypeValueOf) Kind() TypeKind {
 	return KindValueOf
+}
+
+type TypeArrayShapeValue struct {
+	// Can be an int disguised as a string
+	Key      string
+	Type     Type
+	Optional bool
+}
+
+func (t *TypeArrayShapeValue) String() string {
+	key := t.Key
+	if key != "" {
+		if t.Optional {
+			key += "?"
+		}
+
+		key += ": "
+	}
+
+	return fmt.Sprintf("%s%s", key, t.Type.String())
+}
+
+func (t *TypeArrayShapeValue) Kind() TypeKind {
+	return KindArrayShapeValue
+}
+
+type TypeArrayShape struct {
+	Values []*TypeArrayShapeValue
+}
+
+func (t *TypeArrayShape) String() string {
+	values := make([]string, len(t.Values))
+	for i, v := range t.Values {
+		values[i] = v.String()
+	}
+
+	return fmt.Sprintf("array{%s}", strings.Join(values, ", "))
+}
+
+func (t *TypeArrayShape) Kind() TypeKind {
+	return KindArrayShape
 }
