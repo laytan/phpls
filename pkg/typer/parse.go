@@ -65,6 +65,14 @@ var (
 	// TODO: this will fail for: 'foo\'s' or "foo's" or "foo\"s" etc.
 	strLiteralRegex = regexp.MustCompile(`^['"]([^"']*)['"]$`)
 	strLitRgxValG   = 1
+
+	classConstRegex = regexp.MustCompile(`^([\w\\]+)::(\w+)$`)
+	clsCnstRgxClsG  = 1
+	clsCnstRgxCnstG = 2
+
+	// TODO: This should not match when there is a class with this name, but
+	// TODO: that is very hard to check in this situation.
+	globalConstRegex = regexp.MustCompile(`^[_A-Z]*$`)
 )
 
 // TODO: type aliasses
@@ -147,6 +155,14 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseComplexTypeArray(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseClassConst(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseGlobalConst(value); match {
 		return rType, rErr
 	}
 
@@ -623,4 +639,26 @@ func parseFloatLiteral(value string) (bool, Type, error) {
 	}
 
 	return true, &TypeFloatLiteral{Value: val}, nil
+}
+
+func parseClassConst(value string) (bool, Type, error) {
+	match := classConstRegex.FindStringSubmatch(value)
+	if len(match) < clsCnstRgxCnstG+1 {
+		return false, nil, nil
+	}
+
+	fullyQualified := match[clsCnstRgxClsG][0:1] == `\`
+	return true, &TypeConstant{
+		Class: &TypeClassLike{Name: match[clsCnstRgxClsG], FullyQualified: fullyQualified},
+		Const: match[clsCnstRgxCnstG],
+	}, nil
+}
+
+func parseGlobalConst(value string) (bool, Type, error) {
+	match := globalConstRegex.MatchString(value)
+	if !match {
+		return false, nil, nil
+	}
+
+	return true, &TypeConstant{Const: value}, nil
 }

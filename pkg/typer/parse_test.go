@@ -387,6 +387,39 @@ func TestParse(t *testing.T) {
 				Left:  &TypeStringLiteral{Value: "foo"},
 				Right: &TypeStringLiteral{Value: "bar"},
 			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "class constant",
+			args: "Foo::SOME_CONSTANT",
+			want: &TypeConstant{
+				Class: &TypeClassLike{Name: "Foo"},
+				Const: "SOME_CONSTANT",
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "class constant namespaced",
+			args: `Foo\Bar::SOME_CONSTANT`,
+			want: &TypeConstant{
+				Class: &TypeClassLike{Name: `Foo\Bar`},
+				Const: "SOME_CONSTANT",
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "global constant",
+			args: "SOME_CONSTANT",
+			want: &TypeConstant{
+				Const: "SOME_CONSTANT",
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name:             "global constant wrong (require uppercase)",
+			args:             "SOME_CONSTANt",
+			want:             &TypeClassLike{Name: "SOME_CONSTANt"},
+			wantEqualStrings: true,
 		},
 	}
 

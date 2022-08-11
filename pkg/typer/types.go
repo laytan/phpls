@@ -38,6 +38,7 @@ const (
 	KindStringLiteral
 	KindFloatLiteral
 	KindIntLiteral
+	KindConstant
 )
 
 type Type interface {
@@ -506,4 +507,22 @@ func (t *TypeFloatLiteral) String() string {
 
 func (t *TypeFloatLiteral) Kind() TypeKind {
 	return KindFloatLiteral
+}
+
+type TypeConstant struct {
+	Class *TypeClassLike
+	Const string
+}
+
+func (t *TypeConstant) String() string {
+	classStr := ""
+	if t.Class != nil {
+		classStr = t.Class.String() + "::"
+	}
+
+	return classStr + t.Const
+}
+
+func (t *TypeConstant) Kind() TypeKind {
+	return KindConstant
 }
