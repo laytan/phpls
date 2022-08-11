@@ -253,9 +253,9 @@ func Parse(value string) (Type, error) {
 		right = &TypePrecedence{Type: inner}
 		if af != nil {
 			switch symAf {
-			case "|":
+			case unionSymbol:
 				right = &TypeUnion{Left: right, Right: af}
-			case "&":
+			case intersectionSymbol:
 				right = &TypeIntersection{Left: right, Right: af}
 			default:
 				return nil, fmt.Errorf(
@@ -268,9 +268,9 @@ func Parse(value string) (Type, error) {
 
 		if bef != nil {
 			switch symBef {
-			case "|":
+			case unionSymbol:
 				return &TypeUnion{Left: bef, Right: right}, nil
-			case "&":
+			case intersectionSymbol:
 				return &TypeIntersection{Left: bef, Right: right}, nil
 			default:
 				return nil, fmt.Errorf(
@@ -284,8 +284,8 @@ func Parse(value string) (Type, error) {
 		return right, nil
 	}
 
-	ui := strings.Index(value, "|")
-	ii := strings.Index(value, "&")
+	ui := strings.Index(value, unionSymbol)
+	ii := strings.Index(value, intersectionSymbol)
 
 	if ui != -1 && (ui < ii || ii == -1) {
 		left, err := Parse(value[:ui])
@@ -703,11 +703,11 @@ func parseCallable(value string) (bool, Type, error) {
 		}
 
 		variadic := strings.Contains(param, "...")
-		byRef := strings.Contains(param, "&")
+		byRef := strings.Contains(param, byRefSymbol)
 		optional := strings.Contains(param, "=")
 
 		param = strings.ReplaceAll(param, " ", "")
-		param = strings.ReplaceAll(param, "&", "")
+		param = strings.ReplaceAll(param, byRefSymbol, "")
 		param = strings.ReplaceAll(param, ".", "")
 		param = strings.ReplaceAll(param, "=", "")
 

@@ -8,6 +8,12 @@ import (
 // TODO: support phpstan's generics: https://phpstan.org/writing-php-code/phpdoc-types#generics.
 // TODO: support phpstan's conditional return types: https://phpstan.org/writing-php-code/phpdoc-types#conditional-return-types.
 
+const (
+	unionSymbol        = "|"
+	intersectionSymbol = "&"
+	byRefSymbol        = "&"
+)
+
 type TypeKind uint
 
 const (
@@ -172,7 +178,7 @@ func (c *CallableParameter) String() string {
 		}
 
 		if c.ByRef {
-			res += "&"
+			res += byRefSymbol
 		}
 
 		res += c.Name
