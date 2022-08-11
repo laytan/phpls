@@ -267,11 +267,18 @@ const (
 // TODO: support phpstan's class-string: https://phpstan.org/writing-php-code/phpdoc-types#class-string.
 type TypeString struct {
 	Constraint StringConstraint
+
+	// Can only be set when Constraint is ConstraintClass.
+	GenericOver *TypeClassLike
 }
 
 func (t *TypeString) String() string {
 	switch t.Constraint {
 	case StringConstraintClass:
+		if t.GenericOver != nil {
+			return fmt.Sprintf("class-string<%s>", t.GenericOver.String())
+		}
+
 		return "class-string"
 	case StringConstraintCallable:
 		return "callable-string"

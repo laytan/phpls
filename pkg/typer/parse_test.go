@@ -225,6 +225,24 @@ func TestParse(t *testing.T) {
 			wantEqualStrings: true,
 		},
 		{
+			name: "generic class string",
+			args: "class-string<Foo>",
+			want: &TypeString{
+				Constraint:  StringConstraintClass,
+				GenericOver: &TypeClassLike{Name: "Foo"},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "generic class string",
+			args: `class-string<\Test\Foo>`,
+			want: &TypeString{
+				Constraint:  StringConstraintClass,
+				GenericOver: &TypeClassLike{Name: `\Test\Foo`, FullyQualified: true},
+			},
+			wantEqualStrings: true,
+		},
+		{
 			name:    "weird string",
 			args:    "blabla-string",
 			wantErr: true,

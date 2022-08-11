@@ -49,6 +49,9 @@ var (
 	valueOfEnumRegex    = regexp.MustCompile(`^value-of<([\w\\]+)>$`)
 	valueOfEnumRgxEnumG = 1
 
+	constrainedClassStringRegex = regexp.MustCompile(`^class-string<([\w\\]+)>$`)
+	constrClsStrNameG           = 1
+
 	iterableRegex = regexp.MustCompile(
 		`^([a-zA-Z_\x80-\xff\\][a-zA-Z0-9_\x80-\xff\\]*)<(\w+),? ?(\w*)>$`,
 	)
@@ -154,6 +157,10 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseValueOfEnum(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseConstrainedClassString(value); match {
 		return rType, rErr
 	}
 
@@ -499,5 +506,19 @@ func parseIterable(value string) (bool, Type, error) {
 		IterableType: iterType,
 		KeyType:      keyType,
 		ItemType:     valType,
+	}, nil
+}
+
+func parseConstrainedClassString(value string) (bool, Type, error) {
+	match := constrainedClassStringRegex.FindStringSubmatch(value)
+	if len(match) < constrClsStrNameG+1 {
+		return false, nil, nil
+	}
+
+	fullyQualified := match[constrClsStrNameG][0:1] == `\`
+
+	return true, &TypeString{
+		Constraint:  StringConstraintClass,
+		GenericOver: &TypeClassLike{Name: match[constrClsStrNameG], FullyQualified: fullyQualified},
 	}, nil
 }
