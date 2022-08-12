@@ -78,10 +78,20 @@ func (t *TypeNull) Kind() TypeKind {
 type TypeClassLike struct {
 	Name           string
 	FullyQualified bool
+	GenericOver    []Type
 }
 
 func (t *TypeClassLike) String() string {
-	return t.Name
+	if len(t.GenericOver) == 0 {
+		return t.Name
+	}
+
+	genStr := make([]string, len(t.GenericOver))
+	for i, gen := range t.GenericOver {
+		genStr[i] = gen.String()
+	}
+
+	return fmt.Sprintf("%s<%s>", t.Name, strings.Join(genStr, ", "))
 }
 
 func (t *TypeClassLike) Kind() TypeKind {
@@ -116,8 +126,6 @@ func (t *TypeArray) Kind() TypeKind {
 }
 
 type TypeIterable struct {
-	// Is nil when the doc had 'iterable<x,y>' instead of 'Type<x, y>'.
-	IterableType Type
 	// Is nil when it was created like this: 'iterable<x>'
 	KeyType Type
 	// Is nil when it was created like this: 'iterable'
@@ -125,25 +133,16 @@ type TypeIterable struct {
 }
 
 func (t *TypeIterable) String() string {
-	if t.IterableType == nil && t.KeyType == nil && t.ItemType == nil {
+	if t.KeyType == nil && t.ItemType == nil {
 		return "iterable"
 	}
 
-	if t.KeyType == nil && t.IterableType == nil {
+	if t.KeyType == nil {
 		return fmt.Sprintf("iterable<%s>", t.ItemType.String())
 	}
 
-	if t.KeyType == nil {
-		return fmt.Sprintf("%s<%s>", t.IterableType.String(), t.ItemType.String())
-	}
-
-	if t.IterableType == nil {
-		return fmt.Sprintf("iterable<%s, %s>", t.KeyType.String(), t.ItemType.String())
-	}
-
 	return fmt.Sprintf(
-		"%s<%s, %s>",
-		t.IterableType.String(),
+		"iterable<%s, %s>",
 		t.KeyType.String(),
 		t.ItemType.String(),
 	)

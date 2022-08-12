@@ -53,11 +53,10 @@ var (
 	constrClsStrNameG           = 1
 
 	iterableRegex = regexp.MustCompile(
-		`^([a-zA-Z_\x80-\xff\\][a-zA-Z0-9_\x80-\xff\\]*)<(\w+),? ?(\w*)>$`,
+		`^iterable<(\w+),? ?(\w*)>$`,
 	)
-	iterRgxNameG = 1
-	iterRgxKeyG  = 2
-	iterRgxValG  = 3
+	iterRgxKeyG = 1
+	iterRgxValG = 2
 
 	arrShapeRegexStep1 = regexp.MustCompile(`^array{(.*)}$`)
 	arrShapeRgxValsG   = 1
@@ -95,6 +94,10 @@ var (
 	genericTemplateRegex = regexp.MustCompile(`^(\$?[\w]+) *of *([\w\\]+)$`)
 	genTemRgxNameG       = 1
 	genTemRgxOfG         = 2
+
+	genericClassRegex = regexp.MustCompile(`^([a-zA-Z_\x80-\xff\\][a-zA-Z0-9_\x80-\xff\\]*)<(.*)>$`)
+	genClsRgxNameG    = 1
+	genClsRgxGenOverG = 2
 )
 
 // TODO: type aliasses
@@ -242,6 +245,10 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseGenericTemplate(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseGenericClass(value); match {
 		return rType, rErr
 	}
 
@@ -525,29 +532,10 @@ func parseValueOfEnum(value string) (bool, Type, error) {
 	}, nil
 }
 
-// NOTE: iterables have some different rules depending on implementation of interfaces,
-// NOTE: see: https://phpstan.org/writing-php-code/phpdoc-types#iterables for details.
-// TODO: this is currently not supported and is going to be hard to support.
 func parseIterable(value string) (bool, Type, error) {
 	iterableMatch := iterableRegex.FindStringSubmatch(value)
 	if len(iterableMatch) < iterRgxValG+1 {
 		return false, nil, nil
-	}
-
-	var iterType Type
-	iterTypeRaw := iterableMatch[iterRgxNameG]
-	if iterTypeRaw != "iterable" {
-		res, err := Parse(iterTypeRaw)
-		if err != nil {
-			return true, nil, fmt.Errorf(
-				"Error parsing iterable type %s of type %s: %w",
-				iterTypeRaw,
-				value,
-				err,
-			)
-		}
-
-		iterType = res
 	}
 
 	keyTypeRaw := iterableMatch[iterRgxKeyG]
@@ -564,8 +552,7 @@ func parseIterable(value string) (bool, Type, error) {
 	valTypeRaw := iterableMatch[iterRgxValG]
 	if len(valTypeRaw) == 0 {
 		return true, &TypeIterable{
-			IterableType: iterType,
-			ItemType:     keyType,
+			ItemType: keyType,
 		}, nil
 	}
 
@@ -580,9 +567,8 @@ func parseIterable(value string) (bool, Type, error) {
 	}
 
 	return true, &TypeIterable{
-		IterableType: iterType,
-		KeyType:      keyType,
-		ItemType:     valType,
+		KeyType:  keyType,
+		ItemType: valType,
 	}, nil
 }
 
@@ -870,5 +856,32 @@ func parseGenericTemplate(value string) (bool, Type, error) {
 	return true, &TypeGenericTemplate{
 		Name: match[genTemRgxNameG],
 		Of:   &TypeClassLike{Name: match[genTemRgxOfG], FullyQualified: fullyQualified},
+	}, nil
+}
+
+func parseGenericClass(value string) (bool, Type, error) {
+	match := genericClassRegex.FindStringSubmatch(value)
+	if len(match) < genClsRgxGenOverG+1 {
+		return false, nil, nil
+	}
+
+	name := match[genClsRgxNameG]
+	fullyQualified := name[0:1] == `\`
+
+	rawGenOver := strings.Split(match[genClsRgxGenOverG], ",")
+	genOver := make([]Type, len(rawGenOver))
+	for i, v := range rawGenOver {
+		parsed, err := Parse(v)
+		if err != nil {
+			return true, nil, fmt.Errorf("Error parsing generic type %s of %s: %w", v, value, err)
+		}
+
+		genOver[i] = parsed
+	}
+
+	return true, &TypeClassLike{
+		Name:           name,
+		FullyQualified: fullyQualified,
+		GenericOver:    genOver,
 	}, nil
 }

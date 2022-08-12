@@ -311,21 +311,21 @@ func TestParse(t *testing.T) {
 			wantEqualStrings: true,
 		},
 		{
-			name: "iterable with custom class",
+			name: "custom class",
 			args: "Test<int, int>",
-			want: &TypeIterable{
-				IterableType: &TypeClassLike{Name: "Test"},
-				KeyType:      &TypeInt{},
-				ItemType:     &TypeInt{},
+			want: &TypeClassLike{
+				Name:        "Test",
+				GenericOver: []Type{&TypeInt{}, &TypeInt{}},
 			},
 			wantEqualStrings: true,
 		},
 		{
-			name: "iterable with custom class+namespace",
+			name: "custom class+namespace",
 			args: `\Test\Test<int>`,
-			want: &TypeIterable{
-				IterableType: &TypeClassLike{Name: `\Test\Test`, FullyQualified: true},
-				ItemType:     &TypeInt{},
+			want: &TypeClassLike{
+				Name:           `\Test\Test`,
+				FullyQualified: true,
+				GenericOver:    []Type{&TypeInt{}},
 			},
 			wantEqualStrings: true,
 		},
@@ -604,6 +604,29 @@ func TestParse(t *testing.T) {
 				Of:   &TypeClassLike{Name: `\Exception`, FullyQualified: true},
 			},
 			wantEqualStrings: true,
+		},
+		{
+			name: "generic class",
+			args: `\Generator<int, string>`,
+			want: &TypeClassLike{
+				FullyQualified: true,
+				Name:           `\Generator`,
+				GenericOver:    []Type{&TypeInt{}, &TypeString{}},
+			},
+		},
+		{
+			name: "generic class multiple",
+			args: `\Generator<int, string, int, Bar>`,
+			want: &TypeClassLike{
+				FullyQualified: true,
+				Name:           `\Generator`,
+				GenericOver: []Type{
+					&TypeInt{},
+					&TypeString{},
+					&TypeInt{},
+					&TypeClassLike{Name: "Bar"},
+				},
+			},
 		},
 	}
 
