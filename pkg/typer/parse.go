@@ -15,7 +15,9 @@ const (
 )
 
 var (
-	ErrParse = errors.New("Could not parse type out of PHPDoc")
+	ErrParse   = errors.New("Could not parse type out of PHPDoc")
+	ErrUnknown = errors.New("No parsing rules matched the given PHPDoc")
+	ErrEmpty   = errors.New("Given PHPDoc string is empty")
 
 	precRegex   = regexp.MustCompile(`^(.*)\((.*)\)(.*)$`)
 	precRgxBefG = 1
@@ -108,7 +110,7 @@ func Parse(value string) (Type, error) {
 	value = strings.TrimSpace(value)
 
 	if len(value) == 0 {
-		return nil, fmt.Errorf("Empty phpdoc given: %w", ErrParse)
+		return nil, ErrEmpty
 	}
 
 	switch value {
@@ -350,7 +352,7 @@ func Parse(value string) (Type, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("Unsupported type %s: %w", value, ErrParse)
+	return nil, fmt.Errorf("%s: %w", value, ErrUnknown)
 }
 
 func ParseUnion(value []string) (Type, error) {

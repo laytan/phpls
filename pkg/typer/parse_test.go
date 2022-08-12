@@ -1,6 +1,7 @@
 package typer
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -11,11 +12,19 @@ func TestParse(t *testing.T) {
 		args             string
 		want             Type
 		wantErr          bool
+		wantSpecificErr  error
 		wantEqualStrings bool
 	}{
 		{
-			name:    "empty",
-			wantErr: true,
+			name:            "empty",
+			wantErr:         true,
+			wantSpecificErr: ErrEmpty,
+		},
+		{
+			name:            "what is this",
+			args:            "array<",
+			wantErr:         true,
+			wantSpecificErr: ErrUnknown,
 		},
 		{
 			name:             "mixed",
@@ -613,6 +622,7 @@ func TestParse(t *testing.T) {
 				Name:           `\Generator`,
 				GenericOver:    []Type{&TypeInt{}, &TypeString{}},
 			},
+			wantEqualStrings: true,
 		},
 		{
 			name: "generic class multiple",
@@ -627,15 +637,24 @@ func TestParse(t *testing.T) {
 					&TypeClassLike{Name: "Bar"},
 				},
 			},
+			wantEqualStrings: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+
+				if tt.wantSpecificErr != nil {
+					if !errors.Is(err, tt.wantSpecificErr) {
+						t.Errorf("Parse() error %v, wantErr %v", err, tt.wantSpecificErr)
+					}
+				}
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
