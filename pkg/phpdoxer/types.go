@@ -1,4 +1,4 @@
-package typer
+package phpdoxer
 
 import (
 	"fmt"

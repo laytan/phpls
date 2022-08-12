@@ -11,14 +11,14 @@ import (
 
 type Typer interface {
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Returns(root *ir.Root, funcOrMeth ir.Node) (Type, error)
+	Returns(root *ir.Root, funcOrMeth ir.Node) (phpdoxer.Type, error)
 
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) (Type, error)
+	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) (phpdoxer.Type, error)
 
 	// Scope should be the method/function the variable is used in, if it is used
 	// globally, this can be left nil.
-	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) (Type, error)
+	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) (phpdoxer.Type, error)
 }
 
 var (
@@ -30,7 +30,7 @@ type typer struct {
 	doxer phpdoxer.PhpDoxer
 }
 
-func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (Type, error) {
+func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (phpdoxer.Type, error) {
 	kind := ir.GetNodeKind(funcOrMeth)
 	if kind != ir.KindClassMethodStmt && kind != ir.KindFunctionStmt {
 		return nil, fmt.Errorf("Type %T: %w", funcOrMeth, ErrUnsupportedFuncOrMethod)
@@ -39,7 +39,7 @@ func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (Type, error) {
 	docReturn := t.docIterReturn(funcOrMeth)
 	if len(docReturn) > 0 {
 		// TODO: Give class
-		parsedT, err := ParseUnion(docReturn)
+		parsedT, err := phpdoxer.ParseUnion(docReturn)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (Type, error) {
 
 	hintReturn := t.returnTypeHint(funcOrMeth)
 	if hintReturn == nil {
-		return &TypeMixed{}, nil
+		return &phpdoxer.TypeMixed{}, nil
 	}
 
 	// TODO: a scalar (booll, string etc.) is not a name node.
@@ -65,14 +65,22 @@ func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (Type, error) {
 
 	trav := NewFQNTraverser()
 	root.Walk(trav)
-	return &TypeClassLike{Name: trav.ResultFor(name).String()}, nil
+	return &phpdoxer.TypeClassLike{Name: trav.ResultFor(name).String()}, nil
 }
 
-func (t *typer) Param(Root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) (Type, error) {
+func (t *typer) Param(
+	Root *ir.Root,
+	funcOrMeth ir.Node,
+	param *ir.Parameter,
+) (phpdoxer.Type, error) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (t *typer) Variable(Root *ir.Root, variable *ir.SimpleVar, scope ir.Node) (Type, error) {
+func (t *typer) Variable(
+	Root *ir.Root,
+	variable *ir.SimpleVar,
+	scope ir.Node,
+) (phpdoxer.Type, error) {
 	panic("not implemented") // TODO: Implement
 }
 
