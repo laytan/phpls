@@ -46,6 +46,8 @@ const (
 	KindConstant
 	KindIntMask
 	KindIntMaskOf
+	KindConditionalReturn
+	KindGenericTemplate
 )
 
 type Type interface {
@@ -586,4 +588,46 @@ func (t *TypeIntMaskOf) String() string {
 
 func (t *TypeIntMaskOf) Kind() TypeKind {
 	return KindIntMaskOf
+}
+
+type ConditionalReturnCondition struct {
+	Left  string
+	Right Type
+}
+
+func (c *ConditionalReturnCondition) String() string {
+	return fmt.Sprintf("%s is %s", c.Left, c.Right.String())
+}
+
+type TypeConditionalReturn struct {
+	Condition *ConditionalReturnCondition
+	IfTrue    Type
+	IfFalse   Type
+}
+
+func (t *TypeConditionalReturn) String() string {
+	return fmt.Sprintf(
+		"(%s ? %s : %s)",
+		t.Condition.String(),
+		t.IfTrue.String(),
+		t.IfFalse.String(),
+	)
+}
+
+func (t *TypeConditionalReturn) Kind() TypeKind {
+	return KindConditionalReturn
+}
+
+// NOTE: this only matches something like: T of \Exception, not T, that would be a TypeClassLike.
+type TypeGenericTemplate struct {
+	Name string
+	Of   *TypeClassLike
+}
+
+func (t *TypeGenericTemplate) String() string {
+	return fmt.Sprintf("%s of %s", t.Name, t.Of.String())
+}
+
+func (t *TypeGenericTemplate) Kind() TypeKind {
+	return KindGenericTemplate
 }

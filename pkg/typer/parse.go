@@ -83,13 +83,27 @@ var (
 
 	intMaskOfRegex  = regexp.MustCompile(`^int-mask-of<(.*)>$`)
 	intMskOfRgxTypG = 1
+
+	conditionalReturnRegex = regexp.MustCompile(
+		`^\( *(\$?[\w]+) *is *(\S+) *\? *(\S+) *: *(\S+) *\)$`,
+	)
+	cndRetRgxPrmG   = 1
+	cndRetRgxCheckG = 2
+	cndRetRgxTrueG  = 3
+	cndRetRgxFalseG = 4
+
+	genericTemplateRegex = regexp.MustCompile(`^(\$?[\w]+) *of *([\w\\]+)$`)
+	genTemRgxNameG       = 1
+	genTemRgxOfG         = 2
 )
 
 // TODO: type aliasses
-// TODO: generics
-// TODO: conditional types
 
+// TODO: const and classlike types are basically the same format, to parse those
+// TODO: correctly we need context of the actual project, which we don't have here.
 func Parse(value string) (Type, error) {
+	value = strings.TrimSpace(value)
+
 	if len(value) == 0 {
 		return nil, fmt.Errorf("Empty phpdoc given: %w", ErrParse)
 	}
@@ -220,6 +234,14 @@ func Parse(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseIntMaskOf(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseConditionalReturn(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseGenericTemplate(value); match {
 		return rType, rErr
 	}
 
@@ -787,4 +809,66 @@ func parseIntMaskOf(value string) (bool, Type, error) {
 	}
 
 	return true, &TypeIntMaskOf{Type: typeVal}, nil
+}
+
+// NOTE: be careful because a generic like T used in the check, if true
+// NOTE: or if false part could come out as a TypeConstant instead of a TypeClassLike.
+func parseConditionalReturn(value string) (bool, Type, error) {
+	match := conditionalReturnRegex.FindStringSubmatch(value)
+	if len(match) < cndRetRgxFalseG+1 {
+		return false, nil, nil
+	}
+
+	right, err := Parse(match[cndRetRgxCheckG])
+	if err != nil {
+		return true, nil, fmt.Errorf(
+			"Error parsing check type %s of conditional return %s: %w",
+			match[cndRetRgxCheckG],
+			value,
+			err,
+		)
+	}
+
+	ifTrue, err := Parse(match[cndRetRgxTrueG])
+	if err != nil {
+		return true, nil, fmt.Errorf(
+			"Error parsing true type %s of conditional return %s: %w",
+			match[cndRetRgxTrueG],
+			value,
+			err,
+		)
+	}
+
+	ifFalse, err := Parse(match[cndRetRgxFalseG])
+	if err != nil {
+		return true, nil, fmt.Errorf(
+			"Error parsing false type %s of conditional return %s: %w",
+			match[cndRetRgxFalseG],
+			value,
+			err,
+		)
+	}
+
+	return true, &TypeConditionalReturn{
+		Condition: &ConditionalReturnCondition{
+			Left:  match[cndRetRgxPrmG],
+			Right: right,
+		},
+		IfTrue:  ifTrue,
+		IfFalse: ifFalse,
+	}, nil
+}
+
+func parseGenericTemplate(value string) (bool, Type, error) {
+	match := genericTemplateRegex.FindStringSubmatch(value)
+	if len(match) < genTemRgxOfG+1 {
+		return false, nil, nil
+	}
+
+	fullyQualified := match[genTemRgxOfG][0:1] == `\`
+
+	return true, &TypeGenericTemplate{
+		Name: match[genTemRgxNameG],
+		Of:   &TypeClassLike{Name: match[genTemRgxOfG], FullyQualified: fullyQualified},
+	}, nil
 }

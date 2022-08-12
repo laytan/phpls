@@ -570,6 +570,41 @@ func TestParse(t *testing.T) {
 			},
 			wantEqualStrings: true,
 		},
+		{
+			name: "conditional return with parameter",
+			args: "($foo is int ? int : string)",
+			want: &TypeConditionalReturn{
+				Condition: &ConditionalReturnCondition{
+					Left:  "$foo",
+					Right: &TypeInt{},
+				},
+				IfTrue:  &TypeInt{},
+				IfFalse: &TypeString{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "conditional return with generic type",
+			args: "(T is array ? array<T> : null)",
+			want: &TypeConditionalReturn{
+				Condition: &ConditionalReturnCondition{
+					Left:  "T",
+					Right: &TypeArray{},
+				},
+				IfTrue:  &TypeArray{ItemType: &TypeConstant{Const: "T"}},
+				IfFalse: &TypeNull{},
+			},
+			wantEqualStrings: true,
+		},
+		{
+			name: "generic template",
+			args: `T of \Exception`,
+			want: &TypeGenericTemplate{
+				Name: "T",
+				Of:   &TypeClassLike{Name: `\Exception`, FullyQualified: true},
+			},
+			wantEqualStrings: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -581,7 +616,7 @@ func TestParse(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Parse() = %v, want %v", got, tt.want)
+				t.Errorf("Parse() = %#v, want %v", got, tt.want)
 			}
 
 			if tt.wantEqualStrings && got.String() != tt.args {
