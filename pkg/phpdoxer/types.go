@@ -12,6 +12,8 @@ const (
 	unionSymbol        = "|"
 	intersectionSymbol = "&"
 	byRefSymbol        = "&"
+	namespaceSeperator = `\`
+	typeSeperator      = ","
 )
 
 type TypeKind uint
@@ -91,7 +93,7 @@ func (t *TypeClassLike) String() string {
 		genStr[i] = gen.String()
 	}
 
-	return fmt.Sprintf("%s<%s>", t.Name, strings.Join(genStr, ", "))
+	return fmt.Sprintf("%s<%s>", t.Name, strings.Join(genStr, typeSeperator+" "))
 }
 
 func (t *TypeClassLike) Kind() TypeKind {
@@ -203,7 +205,11 @@ func (t *TypeCallable) String() string {
 		params[i] = param.String()
 	}
 
-	return fmt.Sprintf("callable(%s): %s", strings.Join(params, ", "), t.Return.String())
+	return fmt.Sprintf(
+		"callable(%s): %s",
+		strings.Join(params, typeSeperator+" "),
+		t.Return.String(),
+	)
 }
 
 func (t *TypeCallable) Kind() TypeKind {
@@ -499,7 +505,7 @@ func (t *TypeArrayShape) String() string {
 		values[i] = v.String()
 	}
 
-	return fmt.Sprintf("array{%s}", strings.Join(values, ", "))
+	return fmt.Sprintf("array{%s}", strings.Join(values, typeSeperator+" "))
 }
 
 func (t *TypeArrayShape) Kind() TypeKind {
@@ -570,7 +576,7 @@ func (t *TypeIntMask) String() string {
 		values[i] = fmt.Sprintf("%d", v)
 	}
 
-	return fmt.Sprintf("int-mask<%s>", strings.Join(values, ", "))
+	return fmt.Sprintf("int-mask<%s>", strings.Join(values, typeSeperator+" "))
 }
 
 func (t *TypeIntMask) Kind() TypeKind {

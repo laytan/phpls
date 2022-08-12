@@ -493,7 +493,7 @@ func parseIdentifier(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	fullyQualified := strings.HasPrefix(value, `\`)
+	fullyQualified := strings.HasPrefix(value, namespaceSeperator)
 
 	return true, &TypeClassLike{Name: value, FullyQualified: fullyQualified}, nil
 }
@@ -580,7 +580,7 @@ func parseConstrainedClassString(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	fullyQualified := match[constrClsStrNameG][0:1] == `\`
+	fullyQualified := match[constrClsStrNameG][0:1] == namespaceSeperator
 
 	return true, &TypeString{
 		Constraint:  StringConstraintClass,
@@ -600,7 +600,7 @@ func parseArrayShape(value string) (bool, Type, error) {
 	values = strings.ReplaceAll(values, `"`, "")
 	values = strings.ReplaceAll(values, " ", "")
 
-	indiVals := strings.Split(values, ",")
+	indiVals := strings.Split(values, typeSeperator)
 	vals := make([]*TypeArrayShapeValue, len(indiVals))
 	for i, val := range indiVals {
 		keyval := strings.Split(val, ":")
@@ -674,7 +674,7 @@ func parseClassConst(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	fullyQualified := match[clsCnstRgxClsG][0:1] == `\`
+	fullyQualified := match[clsCnstRgxClsG][0:1] == namespaceSeperator
 	return true, &TypeConstant{
 		Class: &TypeClassLike{Name: match[clsCnstRgxClsG], FullyQualified: fullyQualified},
 		Const: match[clsCnstRgxCnstG],
@@ -707,7 +707,7 @@ func parseCallable(value string) (bool, Type, error) {
 	}
 
 	params := []*CallableParameter{}
-	for _, param := range strings.Split(match[clbleRgxPrmsG], ",") {
+	for _, param := range strings.Split(match[clbleRgxPrmsG], typeSeperator) {
 		if strings.TrimSpace(param) == "" {
 			continue
 		}
@@ -758,7 +758,7 @@ func parseIntMask(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	valuesRaw := strings.Split(match[intMskRgxVlsG], ",")
+	valuesRaw := strings.Split(match[intMskRgxVlsG], typeSeperator)
 	values := make([]int, len(valuesRaw))
 	for i, v := range valuesRaw {
 		v = strings.TrimSpace(v)
@@ -853,7 +853,7 @@ func parseGenericTemplate(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	fullyQualified := match[genTemRgxOfG][0:1] == `\`
+	fullyQualified := match[genTemRgxOfG][0:1] == namespaceSeperator
 
 	return true, &TypeGenericTemplate{
 		Name: match[genTemRgxNameG],
@@ -868,9 +868,9 @@ func parseGenericClass(value string) (bool, Type, error) {
 	}
 
 	name := match[genClsRgxNameG]
-	fullyQualified := name[0:1] == `\`
+	fullyQualified := name[0:1] == namespaceSeperator
 
-	rawGenOver := strings.Split(match[genClsRgxGenOverG], ",")
+	rawGenOver := strings.Split(match[genClsRgxGenOverG], typeSeperator)
 	genOver := make([]Type, len(rawGenOver))
 	for i, v := range rawGenOver {
 		parsed, err := Parse(v)
