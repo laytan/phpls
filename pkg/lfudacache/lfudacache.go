@@ -2,7 +2,6 @@ package lfudacache
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 
@@ -36,16 +35,16 @@ type Cache[K comparable, V any] struct {
 	currentSize datasize.Size
 	currentAge  uint
 
-	entries map[K]*Entry[K, V]
-	scores  []*Entry[K, V]
+	lookup map[K]*Entry[K, V]
+	head   *Entry[K, V]
+	tail   *Entry[K, V]
 }
 
 // Creates a new cache with some sane defaults.
 func New[K comparable, V any](targetSize datasize.Size) *Cache[K, V] {
 	return &Cache[K, V]{
 		targetSize:               targetSize,
-		entries:                  make(map[K]*Entry[K, V]),
-		scores:                   make([]*Entry[K, V], 0),
+		lookup:                   make(map[K]*Entry[K, V]),
 		minItemsInCache:          defaultMinItemsInCache,
 		scoreAgeMultiplier:       defaultScoreAgeMultiplier,
 		scoreFrequencyMultiplier: defaultScoreFrequencyMultiplier,
@@ -60,14 +59,10 @@ func (c *Cache[K, V]) Put(key K, value V) {
 	// Check if map has it,
 	// If it does, remove it but keep the timesused for the new entry.
 	timesUsed := uint(1)
-	if entry, ok := c.entries[key]; ok {
+	if entry, ok := c.lookup[key]; ok {
 		timesUsed = entry.timesUsed
 
-		i := c.findIndex(entry)
-		c.removeScore(i)
-
-		c.currentSize -= entry.size
-		delete(c.entries, key)
+		c.remove(entry)
 	}
 
 	bSize := datasize.Size(size.Of(value))
@@ -87,16 +82,11 @@ func (c *Cache[K, V]) Put(key K, value V) {
 			break
 		}
 
-		removeKey := c.scores[0].Key
-		removeEntry := c.entries[removeKey]
-
-		c.scores = c.scores[1:len(c.scores)]
-		c.currentSize -= removeEntry.size
-		delete(c.entries, removeKey)
-		log.Infof("Removed entry with key %v out of cache\n", removeKey)
+		log.Infof("Removed entry with key %v out of cache\n", c.tail.Key)
+		c.remove(c.tail)
 	}
 
-	entry := &Entry[K, V]{
+	c.insert(&Entry[K, V]{
 		size:                     bSize,
 		lastUsedAge:              c.currentAge,
 		timesUsed:                timesUsed,
@@ -104,14 +94,9 @@ func (c *Cache[K, V]) Put(key K, value V) {
 		Value:                    value,
 		scoreAgeMultiplier:       c.scoreAgeMultiplier,
 		scoreFrequencyMultiplier: c.scoreFrequencyMultiplier,
-	}
-
-	i := c.findIndexFor(entry.Score())
-	c.insertScore(i, entry)
-	c.entries[entry.Key] = entry
-
+	})
 	c.currentAge++
-	c.currentSize += bSize
+
 	log.Infof("New size of cache: %s\n", c.currentSize.String())
 }
 
@@ -120,17 +105,13 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if entry, ok := c.entries[key]; ok {
-		i := c.findIndex(entry)
-
+	if entry, ok := c.lookup[key]; ok {
 		entry.lastUsedAge = c.currentAge
 		entry.timesUsed++
 		c.currentAge++
 
-		// Re-insert it based on new score.
-		c.removeScore(i)
-		i = c.findIndexFor(entry.Score())
-		c.insertScore(i, entry)
+		c.remove(entry)
+		c.insert(entry)
 
 		return entry.Value, true
 	}
@@ -144,92 +125,109 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 // the entry into the cache for next calls.
 func (c *Cache[K, V]) Cached(key K, valueCreator func() V) V {
 	if v, ok := c.Get(key); ok {
-		log.Debugf("Cache HIT %v\n", key)
 		return v
 	}
-
-	log.Debugf("Cache MISS %v\n", key)
 
 	v := valueCreator()
 	c.Put(key, v)
 	return v
 }
 
+func (c *Cache[K, V]) Length() int {
+	var length int
+	for curr := c.head; curr != nil; curr = curr.Next {
+		length++
+	}
+
+	return length
+}
+
 // Returns a string representing the state of the cache, useful in logging.
 func (c *Cache[K, V]) String() string {
-	results := make([]string, len(c.scores))
-	for i, entry := range c.scores {
-		results[i] = fmt.Sprintf("%d: %v", entry.Score(), entry.Key)
+	results := []string{}
+	for curr := c.head; curr != nil; curr = curr.Next {
+		results = append(results, fmt.Sprintf("%d: %v", curr.Score(), curr.Key))
 	}
 
 	return fmt.Sprintf(
 		"Age: %d, Count: %d, Size of items: %s, Max size %s | %s",
 		c.currentAge,
-		len(c.scores),
+		c.Length(),
 		c.currentSize.String(),
 		c.targetSize.String(),
 		strings.Join(results, ", "),
 	)
 }
 
-// Binary searches for the index in scores of an entry.
-// The given index would be the position for an entry with the given score.
-func (c *Cache[K, V]) findIndexFor(score uint) int {
-	// Find the first index that is at the same or higher score than given score.
-	i := sort.Search(len(c.scores), func(i int) bool {
-		return c.scores[i].Score() >= score
-	})
+func (c *Cache[K, V]) remove(entry *Entry[K, V]) {
+	defer func() {
+		c.currentSize -= entry.size
+		delete(c.lookup, entry.Key)
+	}()
 
-	// Keep going untill we find an entry with a higher score, meaning we return the prev.
-	for j := i; j < len(c.scores); j++ {
-		if c.scores[j].Score() != score {
-			return j
+	if entry == c.head {
+		c.head = c.head.Next
+		if c.head != nil {
+			c.head.Prev = nil
 		}
+
+		return
 	}
 
-	// If there is no item higher than score, return the given i
-	return i
+	if entry == c.tail {
+		c.tail = c.tail.Prev
+		if c.tail != nil {
+			c.tail.Next = nil
+		}
+
+		return
+	}
+
+	if entry.Next != nil {
+		entry.Next.Prev = entry.Prev
+	}
+
+	if entry.Prev != nil {
+		entry.Prev.Next = entry.Next
+	}
 }
 
-// Binary searches for the index in scores of an entry.
-// the entry at index will be the given entry.
-func (c *Cache[K, V]) findIndex(entry *Entry[K, V]) int {
-	score := entry.Score()
-	// I is now the first index that is more than or equal to score.
-	i := sort.Search(len(c.scores), func(i int) bool {
-		return c.scores[i].Score() >= score
-	})
+func (c *Cache[K, V]) insert(entry *Entry[K, V]) {
+	defer func() {
+		c.lookup[entry.Key] = entry
+		c.currentSize += entry.size
+	}()
 
-	// Loop from that index, checking if the keys match, once we get out of
-	// the score range, return, so that, we only check same score and same key.
-	for j := i; j < len(c.scores); j++ {
-		if c.scores[j].Score() != score {
+	if c.head == nil {
+		c.head = entry
+		c.tail = entry
+		return
+	}
+
+	// Go from head to tail until an entry is found with a lower score,
+	// Put it in front of that one.
+	score := entry.Score()
+	var insertAfter *Entry[K, V]
+	for curr := c.head; curr != nil; curr = curr.Next {
+		if score >= curr.Score() {
+			insertAfter = curr.Prev
 			break
 		}
-
-		if c.scores[j].Key == entry.Key {
-			return j
-		}
 	}
 
-	return -1
-}
+	if insertAfter == nil {
+		t := c.head
+		c.head = entry
+		entry.Next = t
+		t.Prev = entry
 
-func (c *Cache[K, V]) insertScore(index int, value *Entry[K, V]) {
-	if len(c.scores) == index {
-		c.scores = append(c.scores, value)
 		return
 	}
 
-	c.scores = append(c.scores[:index+1], c.scores[index:]...)
-	c.scores[index] = value
-}
-
-func (c *Cache[K, V]) removeScore(i int) {
-	if len(c.scores)-1 == i {
-		c.scores = c.scores[:i]
-		return
+	if insertAfter.Next != nil {
+		entry.Next = insertAfter.Next
 	}
 
-	c.scores = append(c.scores[:i], c.scores[i+1:]...)
+	insertAfter.Next = entry
+	entry.Prev = insertAfter
 }

@@ -12,6 +12,9 @@ type Entry[K comparable, V any] struct {
 	timesUsed                uint
 	scoreAgeMultiplier       uint
 	scoreFrequencyMultiplier uint
+
+	Prev *Entry[K, V]
+	Next *Entry[K, V]
 }
 
 // Calculates the score for the item.
