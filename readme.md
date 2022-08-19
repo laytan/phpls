@@ -51,35 +51,38 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
 
 ### Features to be implemented before v1
 
+- Send parse errors to client
+- Hover
+- Completion
+    - **Incomplete files** (with syntax errors), challenging because the parser wants complete files
+    - Show details about completion items
+    - Automatic use statement on complete
+- Autocomplete namespace usage
+
+### Features for later
+
 - Check if we can publish the binary/ls via packagist
 - Go to declaration
 - Go to type definition
 - Go to implementation
 - Find references
-- Hover
 - Document symbols
 - Signature help
-- Completion
-    - **Incomplete files** (with syntax errors), challenging because the parser wants complete files
-    - Show details about completion items
-    - Automatic use statement on complete
-- Workspace symbols
-- Watching for changes outside editor (Did change watched files)
-
-### Features for later
-
+    - Workspace symbols
+    - Watching for changes outside editor (Did change watched files)
 - Diagnostics (Publish & Pull)
 - Highlight references (Document highlight)
-- Rename
 - Code lens
 - Folding
+- Code action
+    - Rename
+    - Align associative array keys
 
 ### Features with even lower priority/that don't make sense to me
 
 **Look into what these are:**  
 - Inline value (is this a refactor?)
 - Inlay hints (Looks like a completion?)
-- Code action
 
 **Others:**  
 - Selection range
