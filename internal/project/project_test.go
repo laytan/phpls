@@ -343,7 +343,7 @@ func TestDefinitions(t *testing.T) {
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())
-	err := project.Parse()
+	_, err := project.Parse()
 	is.NoErr(err)
 
 	for _, test := range expectations {
@@ -396,7 +396,7 @@ func TestDefinitions(t *testing.T) {
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
 	project := NewProject(definitionsFolder, phpversion.EightOne())
-	err := project.Parse()
+	_, err := project.Parse()
 	is.NoErr(err)
 
 	for i := 0; i < b.N; i++ {
@@ -414,7 +414,7 @@ func BenchmarkParsing(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		project := NewProject(definitionsFolder, phpversion.EightOne())
-		err := project.Parse()
+		_, err := project.Parse()
 		is.NoErr(err)
 	}
 }

@@ -1,6 +1,9 @@
 package server
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
@@ -55,4 +58,28 @@ func (s *Server) isMethodAllowed(method string) error {
 	}
 
 	return nil
+}
+
+func (s *Server) showAndLogErr(ctx context.Context, t protocol.MessageType, err error) {
+	s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+		Type:    t,
+		Message: fmt.Sprintf("%v", err),
+	})
+	log.Error(err)
+}
+
+func (s *Server) showAndLogMsg(ctx context.Context, t protocol.MessageType, msg string) {
+	s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+		Type:    t,
+		Message: msg,
+	})
+
+	switch t {
+	case protocol.Error:
+		log.Errorln(msg)
+	case protocol.Warning:
+		log.Warnln(msg)
+	default:
+		log.Infoln(msg)
+	}
 }

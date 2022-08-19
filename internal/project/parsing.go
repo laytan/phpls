@@ -19,24 +19,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (p *Project) Parse() error {
-	start := time.Now()
-	defer func() {
-		log.Infof(
-			"Parsed %d files of %d root folders in %s\n",
-			len(p.files),
-			len(p.roots),
-			time.Since(start),
-		)
-	}()
-
+func (p *Project) Parse() (numFiles int, err error) {
 	for _, root := range p.roots {
 		if err := p.ParseRoot(root); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
-	return nil
+	return len(p.files), nil
 }
 
 func (p *Project) ParseRoot(root string) error {

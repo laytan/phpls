@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
@@ -55,11 +57,21 @@ func (s *Server) Initialize(
 
 	s.project = project.NewProject(string(s.root), phpv)
 
-	// TODO: send this error to client, seems important to know about.
 	go func() {
-		if err := s.project.Parse(); err != nil {
-			log.Error(err)
+		s.showAndLogMsg(ctx, protocol.Info, "Started indexing workspaces")
+
+		start := time.Now()
+		numFiles, err := s.project.Parse()
+		if err != nil {
+			s.showAndLogErr(ctx, protocol.Warning, err)
+			return
 		}
+
+		s.showAndLogMsg(
+			ctx,
+			protocol.Info,
+			fmt.Sprintf("Indexed %d source files in %s", numFiles, time.Since(start)),
+		)
 	}()
 
 	if params.ProcessID != 0 {
