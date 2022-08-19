@@ -95,8 +95,9 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			_, col := position.PosToLoc(file.content, uint(pos.StartPos))
 
 			return &position.Position{
-				Row: uint(pos.StartLine),
-				Col: col,
+				Row:  uint(pos.StartLine),
+				Col:  col,
+				Path: path,
 			}, nil
 
 		case *ir.FunctionCallExpr:
