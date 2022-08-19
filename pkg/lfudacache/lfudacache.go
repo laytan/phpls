@@ -87,13 +87,11 @@ func (c *Cache[K, V]) Put(key K, value V) {
 	}
 
 	c.insert(&Entry[K, V]{
-		size:                     bSize,
-		lastUsedAge:              c.currentAge,
-		timesUsed:                timesUsed,
-		Key:                      key,
-		Value:                    value,
-		scoreAgeMultiplier:       c.scoreAgeMultiplier,
-		scoreFrequencyMultiplier: c.scoreFrequencyMultiplier,
+		size:        bSize,
+		lastUsedAge: c.currentAge,
+		timesUsed:   timesUsed,
+		Key:         key,
+		Value:       value,
 	})
 	c.currentAge++
 
@@ -146,7 +144,7 @@ func (c *Cache[K, V]) Length() int {
 func (c *Cache[K, V]) String() string {
 	results := []string{}
 	for curr := c.head; curr != nil; curr = curr.Next {
-		results = append(results, fmt.Sprintf("%d: %v", curr.Score(), curr.Key))
+		results = append(results, fmt.Sprintf("%d: %v", c.score(curr), curr.Key))
 	}
 
 	return fmt.Sprintf(
@@ -206,10 +204,10 @@ func (c *Cache[K, V]) insert(entry *Entry[K, V]) {
 
 	// Go from head to tail until an entry is found with a lower score,
 	// Put it in front of that one.
-	score := entry.Score()
+	score := c.score(entry)
 	var insertAfter *Entry[K, V]
 	for curr := c.head; curr != nil; curr = curr.Next {
-		if score >= curr.Score() {
+		if score >= c.score(curr) {
 			insertAfter = curr.Prev
 			break
 		}
@@ -230,4 +228,8 @@ func (c *Cache[K, V]) insert(entry *Entry[K, V]) {
 
 	insertAfter.Next = entry
 	entry.Prev = insertAfter
+}
+
+func (c *Cache[K, V]) score(e *Entry[K, V]) uint {
+	return e.Score(c.scoreAgeMultiplier, c.scoreFrequencyMultiplier)
 }
