@@ -2,13 +2,13 @@ package lfudacache
 
 import (
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/DmitriyVTitov/size"
 	"github.com/laytan/elephp/pkg/datasize"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -72,7 +72,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 
 	bSize := datasize.Size(size.Of(value))
 	if uint(bSize) >= uint(c.targetSize)/c.minItemsInCache {
-		log.Printf(
+		log.Warnf(
 			"Size of entry: %s for key %v is too large, not putting it in cache\n",
 			bSize.String(),
 			key,
@@ -93,7 +93,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 		c.scores = c.scores[1:len(c.scores)]
 		c.currentSize -= removeEntry.size
 		delete(c.entries, removeKey)
-		log.Printf("Removed entry with key %v out of cache\n", removeKey)
+		log.Infof("Removed entry with key %v out of cache\n", removeKey)
 	}
 
 	entry := &Entry[K, V]{
@@ -112,6 +112,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 
 	c.currentAge++
 	c.currentSize += bSize
+	log.Infof("New size of cache: %s\n", c.currentSize.String())
 }
 
 // Gets the given key from the cache.
@@ -143,11 +144,11 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 // the entry into the cache for next calls.
 func (c *Cache[K, V]) Cached(key K, valueCreator func() V) V {
 	if v, ok := c.Get(key); ok {
-		log.Printf("Cache HIT %v\n", key)
+		log.Debugf("Cache HIT %v\n", key)
 		return v
 	}
 
-	log.Printf("Cache MISS %v\n", key)
+	log.Debugf("Cache MISS %v\n", key)
 
 	v := valueCreator()
 	c.Put(key, v)
