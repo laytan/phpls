@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -29,10 +30,6 @@ var (
 
 type typer struct{}
 
-func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (phpdoxer.Type, error) {
-	panic("unimplemented") // TODO: Implement
-}
-
 func (t *typer) Param(
 	Root *ir.Root,
 	funcOrMeth ir.Node,
@@ -47,4 +44,18 @@ func (t *typer) Variable(
 	scope ir.Node,
 ) (phpdoxer.Type, error) {
 	panic("not implemented") // TODO: Implement
+}
+
+func nodeComments(node ir.Node) []string {
+	docs := []string{}
+	node.IterateTokens(func(t *token.Token) bool {
+		if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
+			return true
+		}
+
+		docs = append(docs, string(t.Value))
+		return true
+	})
+
+	return docs
 }
