@@ -643,7 +643,7 @@ func TestParse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Parse(tt.args)
+			got, err := ParseType(tt.args)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
@@ -663,66 +663,6 @@ func TestParse(t *testing.T) {
 
 			if tt.wantEqualStrings && got.String() != tt.args {
 				t.Errorf("Parse().String() = %v, want %v", got.String(), tt.args)
-			}
-		})
-	}
-}
-
-func TestParseUnion(t *testing.T) {
-	tests := []struct {
-		name    string
-		args    []string
-		want    Type
-		wantErr bool
-	}{
-		{
-			name:    "empty",
-			wantErr: true,
-		},
-		{
-			name:    "one item",
-			args:    []string{"string"},
-			wantErr: true,
-		},
-		{
-			name: "basic",
-			args: []string{"string", "null"},
-			want: &TypeUnion{Left: &TypeString{}, Right: &TypeNull{}},
-		},
-		{
-			name: "complex",
-			args: []string{"string", "false&true", "(int&array)&true"},
-			want: &TypeUnion{
-				Left: &TypeString{},
-				Right: &TypeUnion{
-					Left: &TypeIntersection{
-						Left:  &TypeBool{Accepts: BoolAcceptsFalse},
-						Right: &TypeBool{Accepts: BoolAcceptsTrue},
-					},
-					Right: &TypeIntersection{
-						Left: &TypePrecedence{
-							Type: &TypeIntersection{
-								Left:  &TypeInt{},
-								Right: &TypeArray{},
-							},
-						},
-						Right: &TypeBool{Accepts: BoolAcceptsTrue},
-					},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseUnion(tt.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseUnion() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ParseUnion() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -106,7 +106,7 @@ var (
 
 // TODO: const and classlike types are basically the same format, to parse those
 // TODO: correctly we need context of the actual project, which we don't have here.
-func Parse(value string) (Type, error) {
+func ParseType(value string) (Type, error) {
 	value = strings.TrimSpace(value)
 
 	if len(value) == 0 {
@@ -263,19 +263,19 @@ func Parse(value string) (Type, error) {
 		var err error
 		if prec[precRgxBefG] != "" {
 			symBef = prec[precRgxBefG][len(prec[precRgxBefG])-1:]
-			bef, err = Parse(prec[precRgxBefG][0 : len(prec[precRgxBefG])-1])
+			bef, err = ParseType(prec[precRgxBefG][0 : len(prec[precRgxBefG])-1])
 		}
 
 		if prec[precRgxAfG] != "" {
 			symAf = prec[precRgxAfG][:1]
-			af, err = Parse(prec[precRgxAfG][1:])
+			af, err = ParseType(prec[precRgxAfG][1:])
 		}
 
 		if err != nil {
 			return nil, err
 		}
 
-		inner, err := Parse(prec[precRgxInG])
+		inner, err := ParseType(prec[precRgxInG])
 		if err != nil {
 			return nil, err
 		}
@@ -319,12 +319,12 @@ func Parse(value string) (Type, error) {
 	ii := strings.Index(value, intersectionSymbol)
 
 	if ui != -1 && (ui < ii || ii == -1) {
-		left, err := Parse(value[:ui])
+		left, err := ParseType(value[:ui])
 		if err != nil {
 			return nil, err
 		}
 
-		right, err := Parse(value[ui+1:])
+		right, err := ParseType(value[ui+1:])
 		if err != nil {
 			return nil, err
 		}
@@ -336,12 +336,12 @@ func Parse(value string) (Type, error) {
 	}
 
 	if ii != -1 && (ii < ui || ui == -1) {
-		left, err := Parse(value[:ii])
+		left, err := ParseType(value[:ii])
 		if err != nil {
 			return nil, err
 		}
 
-		right, err := Parse(value[ii+1:])
+		right, err := ParseType(value[ii+1:])
 		if err != nil {
 			return nil, err
 		}
@@ -353,42 +353,6 @@ func Parse(value string) (Type, error) {
 	}
 
 	return nil, fmt.Errorf("%s: %w", value, ErrUnknown)
-}
-
-func ParseUnion(value []string) (Type, error) {
-	if len(value) < 2 {
-		return nil, fmt.Errorf("Union needs at least 2 parts: %w", ErrParse)
-	}
-
-	ret := &TypeUnion{}
-	curr := ret
-	for i, part := range value {
-		parsed, err := Parse(part)
-		if err != nil {
-			return nil, err
-		}
-
-		if curr.Left == nil {
-			curr.Left = parsed
-			continue
-		}
-
-		if curr.Right == nil {
-			if i == len(value)-1 {
-				curr.Right = parsed
-				continue
-			}
-
-			newU := &TypeUnion{
-				Left: parsed,
-			}
-
-			curr.Right = newU
-			curr = newU
-		}
-	}
-
-	return ret, nil
 }
 
 func parseComplexInt(value string) (bool, Type, error) {
@@ -452,7 +416,7 @@ func parseComplexArray(value string) (bool, Type, error) {
 
 	// No value means the key is the value.
 	if arrMatch[arrRgxValG] == "" {
-		itemType, err := Parse(arrMatch[arrRgxKeyG])
+		itemType, err := ParseType(arrMatch[arrRgxKeyG])
 		if err != nil {
 			return true, nil, fmt.Errorf("Error parsing array item type for %s: %w", value, err)
 		}
@@ -460,12 +424,12 @@ func parseComplexArray(value string) (bool, Type, error) {
 		return true, &TypeArray{ItemType: itemType, NonEmpty: nonEmpty}, nil
 	}
 
-	keyType, err := Parse(arrMatch[arrRgxKeyG])
+	keyType, err := ParseType(arrMatch[arrRgxKeyG])
 	if err != nil {
 		return true, nil, fmt.Errorf("Error parsing array key type for %s: %w", value, err)
 	}
 
-	itemType, err := Parse(arrMatch[arrRgxValG])
+	itemType, err := ParseType(arrMatch[arrRgxValG])
 	if err != nil {
 		return true, nil, fmt.Errorf("Error parsing array value type for %s: %w", value, err)
 	}
@@ -479,7 +443,7 @@ func parseComplexTypeArray(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	itemType, err := Parse(arrMatch[typeArrRgxTypeG])
+	itemType, err := ParseType(arrMatch[typeArrRgxTypeG])
 	if err != nil {
 		return true, nil, fmt.Errorf("Error parsing array value type for %s: %w", value, err)
 	}
@@ -541,7 +505,7 @@ func parseIterable(value string) (bool, Type, error) {
 	}
 
 	keyTypeRaw := iterableMatch[iterRgxKeyG]
-	keyType, err := Parse(keyTypeRaw)
+	keyType, err := ParseType(keyTypeRaw)
 	if err != nil {
 		return true, nil, fmt.Errorf(
 			"Error parsing iterable key type %s of type %s: %w",
@@ -558,7 +522,7 @@ func parseIterable(value string) (bool, Type, error) {
 		}, nil
 	}
 
-	valType, err := Parse(valTypeRaw)
+	valType, err := ParseType(valTypeRaw)
 	if err != nil {
 		return true, nil, fmt.Errorf(
 			"Error parsing iterable value type %s of type %s: %w",
@@ -605,7 +569,7 @@ func parseArrayShape(value string) (bool, Type, error) {
 	for i, val := range indiVals {
 		keyval := strings.Split(val, ":")
 		if len(keyval) == 1 {
-			valType, err := Parse(keyval[0])
+			valType, err := ParseType(keyval[0])
 			if err != nil {
 				return true, nil, fmt.Errorf(
 					"Error parsing array shape value %s of shape %s: %w",
@@ -624,7 +588,7 @@ func parseArrayShape(value string) (bool, Type, error) {
 		key = strings.TrimSuffix(key, "?")
 
 		val := keyval[1]
-		valType, err := Parse(val)
+		valType, err := ParseType(val)
 		if err != nil {
 			return true, nil, fmt.Errorf(
 				"Error parsing array shape value %s of shape %s: %w",
@@ -696,7 +660,7 @@ func parseCallable(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	returnType, err := Parse(match[clbleRgxRtrnG])
+	returnType, err := ParseType(match[clbleRgxRtrnG])
 	if err != nil {
 		return true, nil, fmt.Errorf(
 			"Error parsing callable return type %s of %s: %w",
@@ -727,7 +691,7 @@ func parseCallable(value string) (bool, Type, error) {
 			name += "$" + parts[1]
 		}
 
-		paramType, err := Parse(parts[0])
+		paramType, err := ParseType(parts[0])
 		if err != nil {
 			return true, nil, fmt.Errorf(
 				"Error parsing parameter %s of callable %s: %w",
@@ -786,7 +750,7 @@ func parseIntMaskOf(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	typeVal, err := Parse(match[intMskOfRgxTypG])
+	typeVal, err := ParseType(match[intMskOfRgxTypG])
 	if err != nil {
 		return true, nil, fmt.Errorf(
 			"Error parsing type %s of %s: %w",
@@ -807,7 +771,7 @@ func parseConditionalReturn(value string) (bool, Type, error) {
 		return false, nil, nil
 	}
 
-	right, err := Parse(match[cndRetRgxCheckG])
+	right, err := ParseType(match[cndRetRgxCheckG])
 	if err != nil {
 		return true, nil, fmt.Errorf(
 			"Error parsing check type %s of conditional return %s: %w",
@@ -817,7 +781,7 @@ func parseConditionalReturn(value string) (bool, Type, error) {
 		)
 	}
 
-	ifTrue, err := Parse(match[cndRetRgxTrueG])
+	ifTrue, err := ParseType(match[cndRetRgxTrueG])
 	if err != nil {
 		return true, nil, fmt.Errorf(
 			"Error parsing true type %s of conditional return %s: %w",
@@ -827,7 +791,7 @@ func parseConditionalReturn(value string) (bool, Type, error) {
 		)
 	}
 
-	ifFalse, err := Parse(match[cndRetRgxFalseG])
+	ifFalse, err := ParseType(match[cndRetRgxFalseG])
 	if err != nil {
 		return true, nil, fmt.Errorf(
 			"Error parsing false type %s of conditional return %s: %w",
@@ -873,7 +837,7 @@ func parseGenericClass(value string) (bool, Type, error) {
 	rawGenOver := strings.Split(match[genClsRgxGenOverG], typeSeperator)
 	genOver := make([]Type, len(rawGenOver))
 	for i, v := range rawGenOver {
-		parsed, err := Parse(v)
+		parsed, err := ParseType(v)
 		if err != nil {
 			return true, nil, fmt.Errorf("Error parsing generic type %s of %s: %w", v, value, err)
 		}

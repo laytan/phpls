@@ -1,11 +1,12 @@
 package typer
 
+// Typer is responsible of using ir and phpdoxer to retrieve/resolve types
+// from phpdoc or type hints of a node.
+
 import (
 	"errors"
-	"fmt"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -26,46 +27,10 @@ var (
 	ErrUnexpectedNodeType      = errors.New("Node type unexpected")
 )
 
-type typer struct {
-	doxer phpdoxer.PhpDoxer
-}
+type typer struct{}
 
 func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) (phpdoxer.Type, error) {
-	kind := ir.GetNodeKind(funcOrMeth)
-	if kind != ir.KindClassMethodStmt && kind != ir.KindFunctionStmt {
-		return nil, fmt.Errorf("Type %T: %w", funcOrMeth, ErrUnsupportedFuncOrMethod)
-	}
-
-	docReturn := t.docIterReturn(funcOrMeth)
-	if len(docReturn) > 0 {
-		// TODO: Give class
-		parsedT, err := phpdoxer.ParseUnion(docReturn)
-		if err != nil {
-			return nil, err
-		}
-
-		return parsedT, nil
-	}
-
-	hintReturn := t.returnTypeHint(funcOrMeth)
-	if hintReturn == nil {
-		return &phpdoxer.TypeMixed{}, nil
-	}
-
-	// TODO: a scalar (booll, string etc.) is not a name node.
-	// TODO: can a typehint be a union?
-	name, ok := hintReturn.(*ir.Name)
-	if !ok {
-		return nil, fmt.Errorf(
-			"expected type *ir.Name but got %T: %w",
-			hintReturn,
-			ErrUnexpectedNodeType,
-		)
-	}
-
-	trav := NewFQNTraverser()
-	root.Walk(trav)
-	return &phpdoxer.TypeClassLike{Name: trav.ResultFor(name).String()}, nil
+	panic("unimplemented") // TODO: Implement
 }
 
 func (t *typer) Param(
@@ -82,47 +47,4 @@ func (t *typer) Variable(
 	scope ir.Node,
 ) (phpdoxer.Type, error) {
 	panic("not implemented") // TODO: Implement
-}
-
-func (t *typer) docIterReturn(funcOrMeth ir.Node) []string {
-	var docReturn []string
-	docIterator := func(tok *token.Token) bool {
-		if tok.ID != token.T_COMMENT && tok.ID != token.T_DOC_COMMENT {
-			return true
-		}
-
-		ret := t.doxer.Return(string(tok.Value))
-		if len(ret) > 0 {
-			docReturn = ret
-		}
-
-		return true
-	}
-
-	switch typedNode := funcOrMeth.(type) {
-	case *ir.FunctionStmt:
-		typedNode.IterateTokens(docIterator)
-
-	case *ir.ClassMethodStmt:
-		typedNode.IterateTokens(docIterator)
-
-	default:
-		panic("Unsupported node in docIterReturn call")
-	}
-
-	return docReturn
-}
-
-func (t *typer) returnTypeHint(funcOrMeth ir.Node) ir.Node {
-	var returnType ir.Node
-
-	switch typedNode := funcOrMeth.(type) {
-	case *ir.FunctionStmt:
-		returnType = typedNode.ReturnType
-
-	case *ir.ClassMethodStmt:
-		returnType = typedNode.ReturnType
-	}
-
-	return returnType
 }
