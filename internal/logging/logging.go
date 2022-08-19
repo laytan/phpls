@@ -17,9 +17,6 @@ const maxLogFiles = 2
 func Configure(con config.Config) {
 	lvl := toLogrusLevel(con.LogLevel())
 	logrus.SetLevel(lvl)
-	if lvl >= logrus.InfoLevel {
-		logrus.SetReportCaller(true)
-	}
 
 	formatter := &logrus.TextFormatter{
 		DisableQuote: true,
