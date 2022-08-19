@@ -123,7 +123,7 @@ linters-settings:
             disabled: false
             arguments:
               - maxLitCount: "3"
-                allowStrs: '"", " "'
+                allowStrs: '""," "'
                 allowInts: "0,1,2,100,64"
                 allowFloats: "0.0,0.,1.0,1.,2.0,2."
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#atomic
