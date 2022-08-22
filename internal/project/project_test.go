@@ -78,7 +78,7 @@ func TestDefinitions(t *testing.T) {
 			file:     "class.php",
 			position: &position.Position{Row: 12, Col: 19},
 			outPosition: &position.Position{
-				Row:  165,
+				Row:  170,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
 			},
@@ -174,7 +174,7 @@ func TestDefinitions(t *testing.T) {
 			file:     "extends.php",
 			position: &position.Position{Row: 5, Col: 32},
 			outPosition: &position.Position{
-				Row:  165,
+				Row:  170,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
 			},
@@ -213,7 +213,7 @@ func TestDefinitions(t *testing.T) {
 			file:     "use.php",
 			position: &position.Position{Row: 4, Col: 6},
 			outPosition: &position.Position{
-				Row:  165,
+				Row:  170,
 				Col:  1,
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
 			},
