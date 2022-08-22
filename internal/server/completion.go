@@ -2,12 +2,10 @@ package server
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
-	"github.com/laytan/elephp/internal/project"
-	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
 	log "github.com/sirupsen/logrus"
 )
@@ -20,26 +18,38 @@ func (s *Server) Completion(
 	defer func() { log.Infof("Retrieving completion took %s\n", time.Since(start)) }()
 
 	pos := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
-	results, err := s.project.Complete(pos)
-	if err != nil {
-		if errors.Is(err, project.ErrNoCompletionResults) {
-			log.Warn(err)
-			return nil, nil
+	results, incomplete := s.project.Complete(pos)
+
+	items := make([]protocol.CompletionItem, len(results))
+	for i, res := range results {
+		log.Infoln(res.Key)
+		if res.Value.Namespace == "" {
+			items[i] = protocol.CompletionItem{
+				Label: res.Key,
+			}
+			continue
 		}
 
-		log.Error(err)
-		return nil, lsperrors.ErrRequestFailed(err.Error())
-	}
+		// TODO: Is this namespace already imported?
+		// TODO: check where the last namespace declaration is and put it after it.
 
-	completionItems := make([]protocol.CompletionItem, len(results))
-	for i, result := range results {
-		completionItems[i] = protocol.CompletionItem{
-			Label: result,
+		items[i] = protocol.CompletionItem{
+			Label:  res.Key,
+			Detail: fmt.Sprintf(`%s\%s`, res.Value.Namespace, res.Key),
+			AdditionalTextEdits: []protocol.TextEdit{
+				{
+					Range: protocol.Range{
+						Start: protocol.Position{Line: 1},
+						End:   protocol.Position{Line: 1},
+					},
+					NewText: fmt.Sprintf(`use %s\%s;`, res.Value.Namespace, res.Key),
+				},
+			},
 		}
 	}
 
 	return &protocol.CompletionList{
-		IsIncomplete: true,
-		Items:        completionItems,
+		Items:        items,
+		IsIncomplete: incomplete,
 	}, nil
 }

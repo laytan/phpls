@@ -2,7 +2,6 @@ package project
 
 import (
 	"path"
-	"strings"
 	"sync"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/laytan/elephp/pkg/lfudacache"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
@@ -95,11 +93,4 @@ func (p *Project) ParserConfigWrapWithPath(path string) conf.Config {
 	return p.ParserConfigWith(func(err *perrors.Error) {
 		log.Infof(`Parse error for path "%s": %+v`, path, err)
 	})
-}
-
-func (p *Project) GetLine(pos *position.Position) string {
-	file := p.GetFile(pos.Path)
-
-	lines := strings.SplitN(file.content, "\n", int(pos.Row))
-	return lines[pos.Row-1]
 }
