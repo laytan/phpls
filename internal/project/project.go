@@ -2,6 +2,7 @@ package project
 
 import (
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/laytan/elephp/pkg/lfudacache"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
@@ -93,4 +95,45 @@ func (p *Project) ParserConfigWrapWithPath(path string) conf.Config {
 	return p.ParserConfigWith(func(err *perrors.Error) {
 		log.Infof(`Parse error for path "%s": %+v`, path, err)
 	})
+}
+
+// Returns the position for the namespace statement that matches the given position.
+func (p *Project) Namespace(pos *position.Position) *position.Position {
+	file := p.GetFile(pos.Path)
+	root := p.ParseFileCached(file)
+
+	traverser := traversers.NewNamespace(pos.Row)
+	root.Walk(traverser)
+
+	if traverser.Result == nil {
+		log.Infoln("Did not find namespace")
+		return nil
+	}
+
+	row, col := position.PosToLoc(file.content, uint(traverser.Result.Position.StartPos))
+
+	return &position.Position{
+		Row:  row,
+		Col:  col,
+		Path: pos.Path,
+	}
+}
+
+// Returns whether the file at given pos needs a use statement for the given fqn.
+func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
+	file := p.GetFile(pos.Path)
+	root := p.ParseFileCached(file)
+
+	parts := strings.Split(fqn, `\`)
+	className := parts[len(parts)-1]
+
+	log.Infof("Class: %s, fqn: %s\n", className, fqn)
+
+	// Get how it would be resolved in the current file state.
+	actFqn := p.FQN(root, &ir.Name{Value: className})
+
+	log.Infof("Reolved: %s\n", actFqn.String())
+
+	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
+	return actFqn.String() != fqn
 }

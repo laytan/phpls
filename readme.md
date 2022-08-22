@@ -50,16 +50,18 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
     - [ ] Constants
     - [ ] Namespaces
     - [ ] PHP Keywords/language constructs
+    - [x] Automatic use statement on complete
+    - [ ] **Incomplete files** (with syntax errors), challenging because the parser disregards lines with syntax errors
+        - [x] Done in a hacky way, parsing out current word ourselves
+        - [ ] Context aware (if $this-> for example, add all members on the current class)
+    - [x] Autocomplete namespace usage
 
 ### Features to be implemented before v1
 
 - Send parse errors to client
 - Hover
 - Completion
-    - **Incomplete files** (with syntax errors), challenging because the parser wants complete files
-    - Show details about completion items
-    - Automatic use statement on complete
-- Autocomplete namespace usage
+    - Show details about completion items (use hover content?)
 
 ### Features for later
 

@@ -11,19 +11,19 @@ import (
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
-const maxCompletionResults = 100
+const maxCompletionResults = 20
 
 var ErrNoCompletionResults = errors.New("No completion results found for symbol at given position")
 
 func (p *Project) Complete(
 	pos *position.Position,
-) ([]*symboltrie.SearchResult[*traversers.TrieNode], bool) {
+) []*symboltrie.SearchResult[*traversers.TrieNode] {
 	query := p.getCompletionQuery(pos)
 	if len(query) == 0 {
-		return nil, true
+		return nil
 	}
 
-	return p.symbolTrie.SearchPrefix(query, maxCompletionResults), false
+	return p.symbolTrie.SearchPrefix(query, maxCompletionResults)
 }
 
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.

@@ -213,13 +213,6 @@ func (s *Server) Subtypes(
 	return nil, errorUnimplemented
 }
 
-func (s *Server) Resolve(
-	context.Context,
-	*protocol.CompletionItem,
-) (*protocol.CompletionItem, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *Server) InlayHintRefresh(context.Context) error {
 	return errorUnimplemented
 }
@@ -228,13 +221,6 @@ func (s *Server) WillSaveWaitUntil(
 	context.Context,
 	*protocol.WillSaveTextDocumentParams,
 ) ([]protocol.TextEdit, error) {
-	return nil, errorUnimplemented
-}
-
-func (s *Server) ResolveCompletionItem(
-	context.Context,
-	*protocol.CompletionItem,
-) (*protocol.CompletionItem, error) {
 	return nil, errorUnimplemented
 }
 

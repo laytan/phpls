@@ -13,6 +13,7 @@ import (
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/processwatch"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 )
 
 type serverInfo struct {
@@ -45,6 +46,17 @@ func (s *Server) Initialize(
 	s.root = strings.TrimPrefix(string(params.RootURI), "file://")
 	if len(s.root) == 0 {
 		return nil, lsperrors.ErrRequestFailed("LSP Server requires RootURI to be set")
+	}
+
+	// TODO: do all the up-to-date clients support this or do we need to support
+	// TODO: the other way too?
+	if !slices.Contains(
+		params.Capabilities.TextDocument.Completion.CompletionItem.ResolveSupport.Properties,
+		"additionalTextEdits",
+	) {
+		return nil, lsperrors.ErrRequestFailed(
+			`LSP Server requires the client to support the "additionalTextEdits" completion item resolve capability (textDocument.completion.completionItem.resolveSupport.properties).`,
+		)
 	}
 
 	phpv, err := phpversion.Get()
@@ -90,6 +102,7 @@ func (s *Server) Initialize(
 			DefinitionProvider: true,
 			CompletionProvider: protocol.CompletionOptions{
 				TriggerCharacters: []string{"$", "-", ">"},
+				ResolveProvider:   true,
 			},
 		},
 		ServerInfo: serverInfo{
