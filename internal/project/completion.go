@@ -2,41 +2,21 @@ package project
 
 import (
 	"errors"
-	"fmt"
+	"strings"
 
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/symboltrie"
-	"github.com/laytan/elephp/pkg/traversers"
 )
 
-const maxCompletionResults = 10
+const maxCompletionResults = 25
 
 var ErrNoCompletionResults = errors.New("No completion results found for symbol at given position")
 
 func (p *Project) Complete(pos *position.Position) ([]string, error) {
-	file := p.GetFile(pos.Path)
-	if file == nil {
-		return nil, fmt.Errorf("Error retrieving file content for %s", pos.Path)
-	}
+	line := p.GetLine(pos)
+	fields := strings.Fields(line)
+	field := fields[len(fields)-1]
 
-	// TODO: For completion to work with invalid/syntax errored files:
-	// We might be able to just use the file content (string) and get the line
-	// being worked on, and then parse the last identifier/word and complete that.
-	ast := p.ParseFileCached(file)
-	if ast == nil {
-		return nil, fmt.Errorf("Error parsing %s for completion", pos.Path)
-	}
-
-	apos := position.LocToPos(file.content, pos.Row, pos.Col)
-	nap := traversers.NewNodeAtPos(apos)
-	ast.Walk(nap)
-
-	if len(nap.Nodes) == 0 {
-		return nil, ErrNoCompletionResults
-	}
-
-	query := symbol.GetIdentifier(nap.Nodes[len(nap.Nodes)-1])
-	results := p.symbolTrie.SearchPrefix(query, maxCompletionResults)
+	results := p.symbolTrie.SearchPrefix(field, maxCompletionResults)
 	return symboltrie.SearchResultKeys(results), nil
 }
