@@ -118,6 +118,15 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return defaultV, false
 }
 
+func (c *Cache[K, V]) Delete(key K) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if entry, ok := c.lookup[key]; ok {
+		c.remove(entry)
+	}
+}
+
 // Convenience function that gets the entry for the given key, if it is not
 // in the cache, it calls valueCreator and returns what it returns, adding
 // the entry into the cache for next calls.

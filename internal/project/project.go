@@ -26,8 +26,9 @@ type Project struct {
 	// Path to file map.
 	files map[string]*File
 
-	roots        []string
-	ParserConfig conf.Config
+	roots []string
+
+	version *phpversion.PHPVersion
 
 	// Symbol trie for global variables, classes, interfaces etc.
 	// End goal being: never needing to traverse the whole project to search
@@ -43,28 +44,14 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 
 	roots := []string{root, stubs}
 	return &Project{
-		files: make(map[string]*File),
-		roots: roots,
-		ParserConfig: conf.Config{
-			ErrorHandlerFunc: func(e *perrors.Error) {
-				// TODO: when we get a parse/syntax error, publish the error
-				// TODO: via diagnostics (lsp).
-				// OPTIM: when we get a parse error, maybe don't use the faulty ast but use the latest
-				// OPTIM: valid version. Currently it tries to parse as much as it can but stops on an error.
-				log.Info(e)
-			},
-			Version: &version.Version{
-				Major: uint64(phpv.Major),
-				Minor: uint64(phpv.Minor),
-			},
-		},
+		files:      make(map[string]*File),
+		roots:      roots,
+		version:    phpv,
 		symbolTrie: symboltrie.New[*traversers.TrieNode](),
 		cache:      lfudacache.New[string, *ir.Root](cacheSize),
 	}
 }
 
-// OPTIM: make use of a LRU cache here, that would make multiple calls to the same more performant.
-// OPTIM: in general you are editting a file for some time and GetFile would be called a lot with the same files.
 func (p *Project) GetFile(path string) *File {
 	file, ok := p.files[path]
 	if !ok {
@@ -76,4 +63,34 @@ func (p *Project) GetFile(path string) *File {
 	}
 
 	return file
+}
+
+func (p *Project) ParserConfig() conf.Config {
+	return p.ParserConfigWith(func(e *perrors.Error) {
+		// TODO: when we get a parse/syntax error, publish the error
+		// TODO: via diagnostics (lsp).
+		// OPTIM: when we get a parse error, maybe don't use the faulty ast but use the latest
+		// OPTIM: valid version. Currently it tries to parse as much as it can but stops on an error.
+		log.Info(e)
+	})
+}
+
+func (p *Project) ParserConfigWith(errHandler func(*perrors.Error)) conf.Config {
+	return conf.Config{
+		ErrorHandlerFunc: errHandler,
+		// TODO: this should use the php version of the system,
+		// TODO: but for phpstorm-stubs we need to pass a later version as it uses attributes for example.
+		// TODO: so need to make a distinction between parsing project and stubs, (or just always use the latest php?).
+		// TODO: if we are going to serialize the ast for stubs anyway, we could just parse with latest version and store that.
+		Version: &version.Version{
+			Major: 8,
+			Minor: 1,
+		},
+	}
+}
+
+func (p *Project) ParserConfigWrapWithPath(path string) conf.Config {
+	return p.ParserConfigWith(func(err *perrors.Error) {
+		log.Infof(`Parse error for path "%s": %+v`, path, err)
+	})
 }

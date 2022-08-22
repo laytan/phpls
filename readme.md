@@ -30,6 +30,7 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
         - [ ] Static
         - [ ] Final methods
         - [ ] @method PhpDoc
+        - [ ] parent::__construct
     - [ ] Properties
         - [x] On $this
         - [x] On variables created using new X()
@@ -37,6 +38,7 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
     - [ ] Constants (classLike & global)
     - [ ] Anonymous functions
     - [ ] Arrow functions
+    - [ ] Class names in PhpDoc
 - [ ] Completion
     - [x] Class-like (interface, class & trait) names
     - [x] Function names

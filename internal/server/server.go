@@ -13,8 +13,7 @@ import (
 
 func NewServer(client protocol.ClientCloser) *Server {
 	return &Server{
-		client:    client,
-		openFiles: make([]string, 0),
+		client: client,
 	}
 }
 
@@ -27,9 +26,6 @@ type Server struct {
 	// When this is true, the server should only allow 'exit' requests.
 	// When the 'exit' request is sent, the server can exit completely.
 	isShuttingDown bool
-
-	// The currently open files, if any.
-	openFiles []string
 
 	root string
 

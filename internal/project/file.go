@@ -17,9 +17,6 @@ type File struct {
 	path     string
 }
 
-// OPTIM: make use of a cache here, that would make multiple calls to the same more performant.
-// OPTIM: in general you are editting a file for some time and parsing the same nodes.
-// github.com/bluele/gcache looks good, has an ARC cache which is perfect.
 func (f *File) parse(config conf.Config) (*ir.Root, error) {
 	rootNode, err := parser.Parse([]byte(f.content), config)
 	if err != nil {

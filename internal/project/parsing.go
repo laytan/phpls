@@ -10,11 +10,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/parser"
-	"github.com/VKCOM/php-parser/pkg/visitor/dumper"
 	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
 )
@@ -93,14 +93,9 @@ func (p *Project) ParseFile(path string, modTime time.Time) error {
 }
 
 func (p *Project) ParseFileContent(path string, content []byte, modTime time.Time) error {
-	rootNode, err := parser.Parse(content, p.ParserConfig)
+	rootNode, err := parser.Parse(content, p.ParserConfigWrapWithPath(path))
 	if err != nil {
 		return fmt.Errorf("Error parsing file %s into AST: %w", path, err)
-	}
-
-	if strings.HasSuffix(path, "methods.php") {
-		goDumper := dumper.NewDumper(os.Stdout).WithPositions()
-		rootNode.Accept(goDumper)
 	}
 
 	irNode := irconv.ConvertNode(rootNode)
@@ -126,17 +121,70 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 	return nil
 }
 
+func (p *Project) ParseFileUpdate(path string, content string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// If we already have it, and the content hasn't changed, skip.
+	if f, ok := p.files[path]; ok {
+		if removeWhitespace(content) == removeWhitespace(f.content) {
+			log.Infoln("File parsing with only whitespace changes, skipping this change")
+			return nil
+		}
+	}
+
+	rootNode, err := parser.Parse([]byte(content), p.ParserConfigWrapWithPath(path))
+	if err != nil {
+		return fmt.Errorf("Error parsing file %s into AST: %w", path, err)
+	}
+
+	irNode := irconv.ConvertNode(rootNode)
+	irRootNode, ok := irNode.(*ir.Root)
+	if !ok {
+		return errors.New("AST root node could not be converted to IR root node")
+	}
+
+	symbolTraverser := traversers.NewSymbol(p.symbolTrie)
+	symbolTraverser.SetPath(path)
+	irRootNode.Walk(symbolTraverser)
+
+	// Content changed, so delete from cache, this does reset its score if
+	// it is entered again, might not be ideal.
+	p.cache.Delete(path)
+
+	p.files[path] = &File{
+		content:  string(content),
+		modified: time.Now(),
+		path:     path,
+	}
+
+	return nil
+}
+
 func (p *Project) ParseFileCached(file *File) *ir.Root {
 	if file == nil {
 		return nil
 	}
 
 	return p.cache.Cached(file.path, func() *ir.Root {
-		root, err := file.parse(p.ParserConfig)
+		root, err := file.parse(p.ParserConfigWrapWithPath(file.path))
 		if err != nil {
 			log.Error(err)
 		}
 
 		return root
 	})
+}
+
+// Fast way of removing all whitespace from a string, credit: https://stackoverflow.com/a/32081891.
+func removeWhitespace(text string) string {
+	var b strings.Builder
+	b.Grow(len(text))
+	for _, ch := range text {
+		if !unicode.IsSpace(ch) {
+			b.WriteRune(ch)
+		}
+	}
+
+	return b.String()
 }
