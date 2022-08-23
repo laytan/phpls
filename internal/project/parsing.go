@@ -20,6 +20,12 @@ import (
 )
 
 func (p *Project) Parse() (numFiles int, err error) {
+	// Parsing creates alot of garbage, after parsing, run a gc cycle manually
+	// because we know there is a lot to clean up.
+	defer func() {
+		go runtime.GC()
+	}()
+
 	for _, root := range p.roots {
 		if err := p.ParseRoot(root); err != nil {
 			return 0, err
