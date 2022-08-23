@@ -69,6 +69,10 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 			break
 		}
 
+		if start >= end {
+			return ""
+		}
+
 		return strings.TrimSpace(string(rContent[start:end]))
 	}
 
