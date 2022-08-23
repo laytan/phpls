@@ -357,7 +357,7 @@ func (p *Project) variableType(
 		case *ir.Parameter:
 			switch scope.(type) {
 			case *ir.FunctionStmt, *ir.ClassMethodStmt:
-				paramType := p.typer.Param(root, traverser.Scope, varScope)
+				paramType := p.typer.Param(root, scope, varScope)
 
 				if typedRetType, ok := paramType.(*phpdoxer.TypeClassLike); ok {
 					retSym := p.findClassLikeSymbol(typedRetType)
