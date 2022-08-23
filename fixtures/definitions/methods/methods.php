@@ -50,3 +50,23 @@ class TestTraitOverridesExtends
     {
     }
 }
+
+
+$testMethodsObject = new TestMethodsClass();
+$testMethodsObject->testPublic();
+$testMethodsObject->testProtected();
+$testMethodsObject->testPrivate();
+
+$testMethodsObject->testTraitOverridesExtends();
+
+/**
+ * @var TestMethodsClass 
+*/
+$testphpdocmeth = $somekindofmagic;
+$testphpdocmeth->testPublic();
+
+/**
+ * @var \Definitions\Test\Methods\TestMethodsClass 
+*/
+$testphpdocmethfqn = $somekindofmagic2;
+$testphpdocmethfqn->testPublic();

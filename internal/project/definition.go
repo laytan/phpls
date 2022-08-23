@@ -157,7 +157,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 				return nil, ErrNoDefinitionFound
 			}
 
-			switch nextNode := nap.Nodes[i+1].(type) {
+			switch nap.Nodes[i+1].(type) {
 			// If one index further is the variable, go to the definition of that variable.
 			// when we break here, the next node will be checked and it will match the
 			// variable arm of the switch.
@@ -165,7 +165,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 				// If one index further is an identifier, go to the method definition.
 			case *ir.Identifier:
-				method, destPath, err := p.method(ast, classLikeScope, nextNode.Value)
+				method, destPath, err := p.method(ast, classLikeScope, scope, typedNode)
 				if err != nil {
 					return nil, err
 				}

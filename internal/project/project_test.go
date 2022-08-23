@@ -340,6 +340,38 @@ func TestDefinitions(t *testing.T) {
 			position:    &position.Position{Row: 32, Col: 21},
 			outPosition: &position.Position{Row: 7, Col: 5},
 		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 56, Col: 21},
+			outPosition: &position.Position{Row: 14, Col: 5},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 57, Col: 21},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 58, Col: 21},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 60, Col: 21},
+			outPosition: &position.Position{
+				Row:  16,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
+			},
+		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 66, Col: 18},
+			outPosition: &position.Position{Row: 14, Col: 5},
+		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 72, Col: 21},
+			outPosition: &position.Position{Row: 14, Col: 5},
+		},
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())

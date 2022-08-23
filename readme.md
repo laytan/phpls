@@ -27,6 +27,8 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
     - [ ] Methods
         - [x] On $this
         - [ ] On arbitrary variables
+            - [x] On variables created using new X()
+            - [x] On variables with @var phpdoc
         - [ ] Static
         - [ ] Final methods
         - [ ] @method PhpDoc

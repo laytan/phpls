@@ -132,16 +132,44 @@ func (r *rootRetriever) RetrieveRoot(n *resolvequeue.Node) (*ir.Root, error) {
 func (p *Project) method(
 	root *ir.Root,
 	classLikeScope ir.Node,
-	method string,
+	scope ir.Node,
+	method *ir.MethodCallExpr,
 ) (*ir.ClassMethodStmt, string, error) {
+	objectVar, ok := method.Variable.(*ir.SimpleVar)
+	if !ok {
+		return nil, "", fmt.Errorf(
+			"Method definition: unexpected variable node of type %T",
+			method.Variable,
+		)
+	}
+
+	methodName, ok := method.Method.(*ir.Identifier)
+	if !ok {
+		return nil, "", fmt.Errorf(
+			"Method definition: unexpected method node of type %T",
+			method.Method,
+		)
+	}
+
+	classScope, privacy, err := p.variableType(root, classLikeScope, scope, objectVar)
+	if err != nil {
+		return nil, "", fmt.Errorf("Error fetching variable type: %w", err)
+	}
+
+	if classScope == nil {
+		return nil, "", nil
+	}
+
+	file := p.GetFile(classScope.Path)
+	classRoot := p.ParseFileCached(file)
+
 	var result *ir.ClassMethodStmt
 	var resultPath string
-
-	err := p.walkResolveQueue(
-		root,
-		symbol.New(classLikeScope),
+	err = p.walkResolveQueue(
+		classRoot,
+		classScope.Symbol,
 		func(wc *walkContext) (bool, error) {
-			traverser := traversers.NewMethod(method, wc.QueueNode.FQN.Name(), wc.Privacy)
+			traverser := traversers.NewMethod(methodName.Value, wc.QueueNode.FQN.Name(), privacy)
 			wc.IR.Walk(traverser)
 
 			if traverser.Method != nil {
@@ -155,7 +183,12 @@ func (p *Project) method(
 		},
 	)
 	if err != nil {
-		return nil, "", fmt.Errorf("Error retrieving method definition for %s: %w", method, err)
+		return nil, "", fmt.Errorf(
+			"Error retrieving method definition for %s->%s: %w",
+			objectVar.Name,
+			methodName.Value,
+			err,
+		)
 	}
 
 	return result, resultPath, nil
