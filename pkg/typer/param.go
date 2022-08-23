@@ -8,28 +8,30 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Returns the return type of the method or function, prioritizing phpdoc
-// @return over the return type hint.
-func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) phpdoxer.Type {
+func (t *typer) Param(
+	root *ir.Root,
+	funcOrMeth ir.Node,
+	param *ir.Parameter,
+) phpdoxer.Type {
 	kind := ir.GetNodeKind(funcOrMeth)
 	if kind != ir.KindClassMethodStmt && kind != ir.KindFunctionStmt {
 		panic(fmt.Errorf("Type: %T: %w", funcOrMeth, ErrUnexpectedNodeType))
 	}
 
-	if retDoc := findReturnComment(funcOrMeth); retDoc != nil {
-		resolveFQN(root, retDoc)
-		return retDoc
+	if cmntType := findParamComment(funcOrMeth, param.Variable.Name); cmntType != nil {
+		resolveFQN(root, cmntType)
+		return cmntType
 	}
 
-	if retHint := parseTypeHint(funcOrMeth); retHint != nil {
-		resolveFQN(root, retHint)
-		return retHint
+	if hintType := parseTypeHint(param); hintType != nil {
+		resolveFQN(root, hintType)
+		return hintType
 	}
 
 	return nil
 }
 
-func findReturnComment(node ir.Node) phpdoxer.Type {
+func findParamComment(node ir.Node, name string) phpdoxer.Type {
 	comments := nodeComments(node)
 	for _, comment := range comments {
 		nodes, err := phpdoxer.ParseDoc(comment)
@@ -39,11 +41,16 @@ func findReturnComment(node ir.Node) phpdoxer.Type {
 		}
 
 		for _, node := range nodes {
-			if node.Kind() != phpdoxer.KindReturn {
+			param, ok := node.(*phpdoxer.NodeParam)
+			if !ok {
 				continue
 			}
 
-			return node.(*phpdoxer.NodeReturn).Type
+			if param.Name != name {
+				continue
+			}
+
+			return param.Type
 		}
 	}
 

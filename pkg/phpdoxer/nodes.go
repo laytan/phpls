@@ -8,6 +8,7 @@ const (
 	KindUnknown NodeKind = iota
 	KindReturn
 	KindVar
+	KindParam
 )
 
 type Node interface {
@@ -56,4 +57,17 @@ func (n *NodeVar) String() string {
 
 func (n *NodeVar) Kind() NodeKind {
 	return KindVar
+}
+
+type NodeParam struct {
+	Type Type
+	Name string
+}
+
+func (n *NodeParam) String() string {
+	return fmt.Sprintf("@param %s %s", n.Type.String(), n.Name)
+}
+
+func (n *NodeParam) Kind() NodeKind {
+	return KindParam
 }

@@ -1,6 +1,7 @@
 package phpdoxer
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -53,6 +54,28 @@ func parseGroup(at string, value string) (Node, error) {
 
 		return &NodeVar{
 			Type: typeNode,
+		}, nil
+
+	case "param":
+		split := strings.Fields(value)
+		if len(split) < 2 {
+			return nil, fmt.Errorf(
+				"PHPDoc error: found @param %s with %d arguments, must be at least 2 (type and name)",
+				value,
+				len(split),
+			)
+		}
+
+		typeStr, name := split[0], split[1]
+
+		typeNode, err := ParseType(typeStr)
+		if err != nil {
+			return nil, err
+		}
+
+		return &NodeParam{
+			Type: typeNode,
+			Name: name,
 		}, nil
 
 	default:

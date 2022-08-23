@@ -83,6 +83,20 @@ type TypeClassLike struct {
 	GenericOver    []Type
 }
 
+func (t *TypeClassLike) Namespace() string {
+	if !t.FullyQualified {
+		panic("Namespace() called on TypeClassLike that is not FullyQualified")
+	}
+
+	parts := strings.Split(t.Name, namespaceSeperator)
+	return strings.Join(parts[1:len(parts)-1], namespaceSeperator)
+}
+
+func (t *TypeClassLike) Identifier() string {
+	parts := strings.Split(t.Name, namespaceSeperator)
+	return parts[len(parts)-1]
+}
+
 func (t *TypeClassLike) String() string {
 	if len(t.GenericOver) == 0 {
 		return t.Name

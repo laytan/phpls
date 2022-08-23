@@ -5,22 +5,24 @@ package typer
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	log "github.com/sirupsen/logrus"
 )
 
 type Typer interface {
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Returns(root *ir.Root, funcOrMeth ir.Node) (phpdoxer.Type, error)
+	Returns(root *ir.Root, funcOrMeth ir.Node) phpdoxer.Type
 
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) (phpdoxer.Type, error)
+	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) phpdoxer.Type
 
 	// Scope should be the method/function the variable is used in, if it is used
 	// globally, this can be left nil.
-	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) (phpdoxer.Type, error)
+	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) phpdoxer.Type
 }
 
 var (
@@ -30,20 +32,8 @@ var (
 
 type typer struct{}
 
-func (t *typer) Param(
-	Root *ir.Root,
-	funcOrMeth ir.Node,
-	param *ir.Parameter,
-) (phpdoxer.Type, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (t *typer) Variable(
-	Root *ir.Root,
-	variable *ir.SimpleVar,
-	scope ir.Node,
-) (phpdoxer.Type, error) {
-	panic("not implemented") // TODO: Implement
+func New() Typer {
+	return &typer{}
 }
 
 func nodeComments(node ir.Node) []string {
@@ -58,4 +48,55 @@ func nodeComments(node ir.Node) []string {
 	})
 
 	return docs
+}
+
+func parseTypeHint(node ir.Node) phpdoxer.Type {
+	retNode := returnTypeNode(node)
+	if retNode == nil {
+		return nil
+	}
+
+	name, ok := retNode.(*ir.Name)
+	if !ok {
+		log.Errorf("%T is unsupported for a return type hint, expecting *ir.Name\n", retNode)
+		return nil
+	}
+
+	t, err := phpdoxer.ParseType(name.Value)
+	if err != nil {
+		log.Error(fmt.Errorf(`Error parsing return type hint "%s": %w`, name.Value, err))
+	}
+
+	return t
+}
+
+func returnTypeNode(node ir.Node) ir.Node {
+	switch typedNode := node.(type) {
+	case *ir.FunctionStmt:
+		return typedNode.ReturnType
+	case *ir.ClassMethodStmt:
+		return typedNode.ReturnType
+	case *ir.Parameter:
+		return typedNode.VariableType
+	default:
+		return nil
+	}
+}
+
+func resolveFQN(root *ir.Root, t phpdoxer.Type) {
+	cl, ok := t.(*phpdoxer.TypeClassLike)
+	if !ok {
+		return
+	}
+
+	if cl.FullyQualified {
+		return
+	}
+
+	tr := NewFQNTraverser()
+	root.Walk(tr)
+	res := tr.ResultFor(&ir.Name{Value: cl.Name})
+
+	cl.FullyQualified = true
+	cl.Name = res.String()
 }
