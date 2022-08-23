@@ -356,8 +356,6 @@ func TestDefinitions(t *testing.T) {
 				test.position.Path = testPath
 
 				pos, err := project.Definition(test.position)
-				fmt.Println(pos)
-				fmt.Println(err)
 
 				// Error is expected when no out position is given.
 				if test.outPosition == nil {

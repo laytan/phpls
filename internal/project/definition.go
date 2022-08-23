@@ -205,7 +205,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			// variable arm of the switch.
 			case *ir.SimpleVar:
 
-				// If one index further is an identifier, go to the method definition.
+				// If one index further is an identifier, go to the property definition.
 			case *ir.Identifier:
 				method, destPath, err := p.property(ast, classLikeScope, scope, typedNode)
 				if err != nil {

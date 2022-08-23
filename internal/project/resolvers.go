@@ -6,7 +6,7 @@ import (
 	"regexp"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/VKCOM/php-parser/pkg/token"
+	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -188,6 +188,10 @@ func (p *Project) property(
 		return nil, "", fmt.Errorf("Error fetching variable type: %w", err)
 	}
 
+	if classScope == nil {
+		return nil, "", nil
+	}
+
 	file := p.GetFile(classScope.Path)
 	classRoot := p.ParseFileCached(file)
 
@@ -320,13 +324,14 @@ func (p *Project) variableType(
 		case *ir.Parameter:
 			switch scope.(type) {
 			case *ir.FunctionStmt, *ir.ClassMethodStmt:
-				res, err := p.functionReturnType(root, traverser.Scope)
-				if err != nil {
-					return nil, 0, err
+				paramType := p.typer.Param(root, traverser.Scope, varScope)
+
+				if typedRetType, ok := paramType.(*phpdoxer.TypeClassLike); ok {
+					retSym := p.findClassLikeSymbol(typedRetType)
+					return retSym, phprivacy.PrivacyPublic, nil
 				}
 
-				// TODO: this is probably incorrect in some cases.
-				return res, phprivacy.PrivacyPrivate, nil
+				return nil, 0, nil
 
 			default:
 				return nil, 0, fmt.Errorf("Given variable %s is a parameter, but scope is %T, expected *ir.FunctionStmt or *ir.ClassMethodStmt", variable.Name, scope)
@@ -338,40 +343,14 @@ func (p *Project) variableType(
 		case *ir.Assign:
 			// If scope is assign, check traverser.assignment for a phpdoc.
 			// If it has a phpdoc, with @var, return the symbol for that type.
-			// TODO: abstract this away.
-			var docError error
-			var assignment *traversers.TrieNode
-			traverser.Assignment.IterateTokens(func(t *token.Token) bool {
-				if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
-					return true
+			varType := p.typer.Variable(root, traverser.Assignment, scope)
+
+			if clsLike, ok := varType.(*phpdoxer.TypeClassLike); ok {
+				assignment := p.findClassLikeSymbol(clsLike)
+				if assignment != nil {
+					// TODO: privacy will be wrong in some cases.
+					return assignment, phprivacy.PrivacyPrivate, nil
 				}
-
-				// First match is the full match, second is the capture group.
-				matches := varRegex.FindStringSubmatch(string(t.Value))
-				if len(matches) < 2 {
-					return true
-				}
-
-				typeName := matches[1]
-				// TODO: check if typeName is a normal php type and return if it is.
-				fqn := p.FQN(root, &ir.Name{Value: string(typeName)})
-				node := p.FindNodeInTrieMultiKinds(fqn, symbol.ClassLikeScopes)
-				if node == nil {
-					docError = fmt.Errorf("PhpDoc @var %s is not indexed", fqn.String())
-					return true
-				}
-
-				assignment = node
-				return false
-			})
-
-			if docError != nil {
-				return nil, 0, docError
-			}
-
-			if assignment != nil {
-				// TODO: privacy will be wrong in some cases.
-				return assignment, phprivacy.PrivacyPrivate, nil
 			}
 
 			switch exprNode := varScope.Expr.(type) {
@@ -433,64 +412,13 @@ func (p *Project) parentOf(root *ir.Root, classScope ir.Node) (*traversers.TrieN
 	return node, nil
 }
 
-// First checks the phpdoc for an @return, then the return typehint.
-func (p *Project) functionReturnType(
-	root *ir.Root,
-	functionOrMethodStmt ir.Node,
-) (*traversers.TrieNode, error) {
-	switch node := functionOrMethodStmt.(type) {
-	case *ir.FunctionStmt, *ir.ClassMethodStmt:
-		var returnNode *traversers.TrieNode
-		node.IterateTokens(func(t *token.Token) bool {
-			if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
-				return true
-			}
-
-			// First match is the full match, second is the capture group.
-			matches := returnTypeRegex.FindStringSubmatch(string(t.Value))
-			if len(matches) < 2 {
-				return true
-			}
-
-			typeName := matches[1]
-			// TODO: check if typeName is a normal php type and return if it is.
-			fqn := p.FQN(root, &ir.Name{Value: string(typeName)})
-			node := p.FindNodeInTrieMultiKinds(fqn, symbol.ClassLikeScopes)
-			if node == nil {
-				return true
-			}
-
-			returnNode = node
-			return false
-		})
-
-		// If the phpdoc has a valid @return, use that.
-		if returnNode != nil {
-			return returnNode, nil
+func (p *Project) findClassLikeSymbol(clsLike *phpdoxer.TypeClassLike) *traversers.TrieNode {
+	results := p.symbolTrie.SearchExact(clsLike.Identifier())
+	for _, result := range results {
+		if result.Namespace == clsLike.Namespace() {
+			return result
 		}
-
-		var returnType ir.Node
-		switch typedNode := node.(type) {
-		case *ir.FunctionStmt:
-			returnType = typedNode.ReturnType
-		case *ir.ClassMethodStmt:
-			returnType = typedNode.ReturnType
-		}
-
-		if returnType == nil {
-			return nil, nil
-		}
-
-		if returnName, ok := returnType.(*ir.Name); ok {
-			fqn := p.FQN(root, returnName)
-			// TODO: check for a normal php type.
-			node := p.FindNodeInTrieMultiKinds(fqn, symbol.ClassLikeScopes)
-			return node, nil
-		}
-
-		return nil, fmt.Errorf("Function/method return type is of unexpected type %T, expected *ir.Name", returnType)
-
-	default:
-		return nil, fmt.Errorf("Function/method return type can not be found for node of type %T", functionOrMethodStmt)
 	}
+
+	return nil
 }

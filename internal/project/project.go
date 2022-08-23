@@ -17,6 +17,7 @@ import (
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/elephp/pkg/typer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -38,6 +39,8 @@ type Project struct {
 	symbolTrie *symboltrie.Trie[*traversers.TrieNode]
 
 	cache *lfudacache.Cache[string, *ir.Root]
+
+	typer typer.Typer
 }
 
 func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
@@ -51,6 +54,7 @@ func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
 		version:    phpv,
 		symbolTrie: symboltrie.New[*traversers.TrieNode](),
 		cache:      lfudacache.New[string, *ir.Root](cacheSize),
+		typer:      typer.New(),
 	}
 }
 
