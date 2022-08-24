@@ -224,10 +224,6 @@ func (s *Server) WillSaveWaitUntil(
 	return nil, errorUnimplemented
 }
 
-func (s *Server) Hover(context.Context, *protocol.HoverParams) (*protocol.Hover, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *Server) SignatureHelp(
 	context.Context,
 	*protocol.SignatureHelpParams,

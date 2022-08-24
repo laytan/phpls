@@ -59,6 +59,12 @@ func (s *Server) Initialize(
 		)
 	}
 
+	if !slices.Contains(params.Capabilities.TextDocument.Hover.ContentFormat, "markdown") {
+		return nil, lsperrors.ErrRequestFailed(
+			`LSP Server requires the client to support "markdown" hover results (textDocument.hover.contentFormat)`,
+		)
+	}
+
 	phpv, err := phpversion.Get()
 	if err != nil {
 		log.Error(err)
@@ -104,6 +110,7 @@ func (s *Server) Initialize(
 				TriggerCharacters: []string{"$", "-", ">"},
 				ResolveProvider:   true,
 			},
+			HoverProvider: true,
 		},
 		ServerInfo: serverInfo{
 			Name: "elephp",
