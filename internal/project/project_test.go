@@ -372,6 +372,22 @@ func TestDefinitions(t *testing.T) {
 			position:    &position.Position{Row: 72, Col: 21},
 			outPosition: &position.Position{Row: 14, Col: 5},
 		},
+		// TODO: make these pass:
+		// {
+		// 	file:        "parameter.php",
+		// 	position:    &position.Position{Row: 13, Col: 10},
+		// 	outPosition: &position.Position{Row: 12, Col: 26},
+		// },
+		// {
+		// 	file:        "parameter.php",
+		// 	position:    &position.Position{Row: 17, Col: 10},
+		// 	outPosition: &position.Position{Row: 16, Col: 28},
+		// },
+		// {
+		// 	file:        "parameter.php",
+		// 	position:    &position.Position{Row: 20, Col: 6},
+		// 	outPosition: &position.Position{Row: 10, Col: 19},
+		// },
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())

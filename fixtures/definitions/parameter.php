@@ -6,3 +6,16 @@ function foobar($foo)
 {
     return $foo;
 }
+
+function closures($foo)
+{
+    $closure = function ($foo) {
+        $foo;
+    };
+
+    $closure2 = function ($foo) {
+        $foo;
+    };
+
+    $foo;
+}
