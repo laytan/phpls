@@ -3,7 +3,6 @@ package project
 import (
 	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/phpdoxer"
@@ -12,11 +11,6 @@ import (
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
-)
-
-var (
-	returnTypeRegex = regexp.MustCompile(`@return ([\w\\]+)`)
-	varRegex        = regexp.MustCompile(`@var ([\w\\]+)`)
 )
 
 // Resolves the fully qualified name for the given name node.
