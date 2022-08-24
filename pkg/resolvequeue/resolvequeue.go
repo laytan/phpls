@@ -100,9 +100,8 @@ func (r *resolveQueue) Resolve(
 
 	for i, implement := range traverser.Implements {
 		implements[i] = &Node{
-			FQN: fqnTraverser.ResultFor(implement),
-			// NOTE: this can also be ir.KindInterfaceExtendsStmt but we do the same thing with them.
-			Kind: ir.KindClassImplementsStmt,
+			FQN:  fqnTraverser.ResultFor(implement),
+			Kind: ir.KindInterfaceStmt,
 		}
 	}
 
