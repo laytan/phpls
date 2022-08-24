@@ -20,7 +20,7 @@ func (t *typer) Variable(
 }
 
 func findVarComment(node ir.Node) phpdoxer.Type {
-	comments := nodeComments(node)
+	comments := NodeComments(node)
 	for _, comment := range comments {
 		nodes, err := phpdoxer.ParseDoc(comment)
 		if err != nil {

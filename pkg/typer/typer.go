@@ -36,7 +36,7 @@ func New() Typer {
 	return &typer{}
 }
 
-func nodeComments(node ir.Node) []string {
+func NodeComments(node ir.Node) []string {
 	docs := []string{}
 	node.IterateTokens(func(t *token.Token) bool {
 		if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {

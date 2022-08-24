@@ -32,7 +32,7 @@ func (t *typer) Param(
 }
 
 func findParamComment(node ir.Node, name string) phpdoxer.Type {
-	comments := nodeComments(node)
+	comments := NodeComments(node)
 	for _, comment := range comments {
 		nodes, err := phpdoxer.ParseDoc(comment)
 		if err != nil {
