@@ -1,14 +1,15 @@
 package project
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/noverify/src/ir/irfmt"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
-	log "github.com/sirupsen/logrus"
 )
 
 func (p *Project) Hover(pos *position.Position) (string, error) {
@@ -34,9 +35,9 @@ func (p *Project) Hover(pos *position.Position) (string, error) {
 Nodes:
 	// TODO: this shows hover for the method if we are anywhere in the method, this is not what we want.
 	for i := len(nap.Nodes) - 1; i >= 0; i-- {
-		log.Infof("%T\n", nap.Nodes[i])
+		// log.Infof("%T\n", nap.Nodes[i])
 		switch typedNode := nap.Nodes[i].(type) {
-		case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
+		case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt, *ir.PropertyListStmt, *ir.FunctionStmt:
 			// TODO: show all methods on the class (also properties?).
 			cmntsStr = CleanedNodeComments(typedNode)
 			signature = NodeSignature(typedNode)
@@ -45,13 +46,6 @@ Nodes:
 
 		case *ir.ClassMethodStmt:
 			cmntsStr = CleanedNodeComments(nap.Nodes[i+1])
-			signature = NodeSignature(typedNode)
-
-			break Nodes
-
-		case *ir.FunctionStmt:
-			// TODO: docs aren't on this node when the node has attributes (check in_array for example).
-			cmntsStr = CleanedNodeComments(typedNode)
 			signature = NodeSignature(typedNode)
 
 			break Nodes
@@ -65,12 +59,6 @@ Nodes:
 			// 	}
 			// }
 
-			signature = NodeSignature(typedNode)
-
-			break Nodes
-
-		case *ir.PropertyListStmt:
-			cmntsStr = CleanedNodeComments(typedNode)
 			signature = NodeSignature(typedNode)
 
 			break Nodes
@@ -100,172 +88,103 @@ func CleanedNodeComments(node ir.Node) string {
 	return strings.Join(cmnts, "\n")
 }
 
-// TODO: support attributes.
-// NOTE: this is basically turning the node into the source string again,
-// NOTE: can we not just get the bounds of the signature and parse that out of the source string?
-// NOTE: it would be more complicated though.
 func NodeSignature(node ir.Node) string {
 	if node == nil {
 		return ""
 	}
 
-	switch typedNode := node.(type) {
-	case *ir.ArrayExpr:
-		return "[]"
+	out := new(bytes.Buffer)
+	p := irfmt.NewPrettyPrinter(out, "")
+	p.Print(withoutStmts(node))
+	return out.String()
+}
 
-	case *ir.Identifier:
-		return typedNode.Value
-
-	case *ir.Name:
-		// TODO: fully qualify the classlike name.
-		return typedNode.Value
-
+// TODO: can this be done in a less verbose way?
+func withoutStmts(node ir.Node) ir.Node {
+	switch t := node.(type) {
 	case *ir.ClassStmt:
-		signature := "class " + typedNode.ClassName.Value
-
-		if typedNode.Extends != nil {
-			signature += " extends " + typedNode.Extends.ClassName.Value
+		return &ir.ClassStmt{
+			Position:             t.Position,
+			AttrGroups:           t.AttrGroups,
+			Modifiers:            t.Modifiers,
+			ClassTkn:             t.ClassTkn,
+			ClassName:            t.ClassName,
+			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
+			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
+			Class: ir.Class{
+				Extends:    t.Extends,
+				Implements: t.Implements,
+				Doc:        t.Doc,
+				Stmts:      nil,
+			},
 		}
-
-		if typedNode.Implements != nil {
-			signature += " implements "
-			for _, name := range typedNode.Implements.InterfaceNames {
-				signature += NodeSignature(name) + ", "
-			}
-
-			// Remove the last ", "
-			signature = signature[:len(signature)-2]
-		}
-
-		signature += " {}"
-
-		return signature
 
 	case *ir.InterfaceStmt:
-		signature := "interface " + typedNode.InterfaceName.Value
-
-		if typedNode.Extends != nil && len(typedNode.Extends.InterfaceNames) > 0 {
-			signature += " extends "
-			for _, name := range typedNode.Extends.InterfaceNames {
-				signature += NodeSignature(name) + ", "
-			}
-
-			signature = signature[:len(signature)-2]
+		return &ir.InterfaceStmt{
+			Position:             t.Position,
+			AttrGroups:           t.AttrGroups,
+			InterfaceTkn:         t.InterfaceTkn,
+			InterfaceName:        t.InterfaceName,
+			Extends:              t.Extends,
+			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
+			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
+			Doc:                  t.Doc,
+			Stmts:                nil,
 		}
-
-		signature += " {}"
-
-		return signature
 
 	case *ir.TraitStmt:
-		return "trait " + typedNode.TraitName.Value + " {}"
-
-	case *ir.ClassMethodStmt:
-		signature := ""
-		for _, modifier := range typedNode.Modifiers {
-			signature += modifier.Value + " "
+		return &ir.TraitStmt{
+			Position:             t.Position,
+			AttrGroups:           t.AttrGroups,
+			TraitTkn:             t.TraitTkn,
+			TraitName:            t.TraitName,
+			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
+			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
+			Doc:                  t.Doc,
+			Stmts:                nil,
 		}
-
-		signature += "function " + typedNode.MethodName.Value + "("
-
-		for _, param := range typedNode.Params {
-			signature += NodeSignature(param)
-			signature += ", "
-		}
-
-		if len(typedNode.Params) != 0 {
-			signature = signature[:len(signature)-2]
-		}
-
-		signature += ")"
-
-		if typedNode.ReturnType != nil {
-			if typedNode.ReturnsRef {
-				signature += "&"
-			}
-
-			signature += ": " + NodeSignature(typedNode.ReturnType)
-		}
-
-		signature += " {}"
-		return signature
 
 	case *ir.FunctionStmt:
-		signature := ""
-
-		signature += "function " + typedNode.FunctionName.Value + "("
-
-		for _, param := range typedNode.Params {
-			signature += NodeSignature(param)
-			signature += ", "
+		return &ir.FunctionStmt{
+			Position:             t.Position,
+			AttrGroups:           t.AttrGroups,
+			FunctionTkn:          t.FunctionTkn,
+			AmpersandTkn:         t.AmpersandTkn,
+			FunctionName:         t.FunctionName,
+			OpenParenthesisTkn:   t.OpenParenthesisTkn,
+			Params:               t.Params,
+			SeparatorTkns:        t.SeparatorTkns,
+			CloseParenthesisTkn:  t.CloseParenthesisTkn,
+			ColonTkn:             t.ColonTkn,
+			ReturnType:           t.ReturnType,
+			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
+			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
+			ReturnsRef:           t.ReturnsRef,
+			Doc:                  t.Doc,
+			Stmts:                nil,
 		}
 
-		if len(typedNode.Params) != 0 {
-			signature = signature[:len(signature)-2]
+	case *ir.ClassMethodStmt:
+		return &ir.ClassMethodStmt{
+			Position:            t.Position,
+			AttrGroups:          t.AttrGroups,
+			Modifiers:           t.Modifiers,
+			FunctionTkn:         t.FunctionTkn,
+			AmpersandTkn:        t.AmpersandTkn,
+			MethodName:          t.MethodName,
+			OpenParenthesisTkn:  t.OpenParenthesisTkn,
+			Params:              t.Params,
+			SeparatorTkns:       t.SeparatorTkns,
+			CloseParenthesisTkn: t.CloseParenthesisTkn,
+			ColonTkn:            t.ColonTkn,
+			ReturnType:          t.ReturnType,
+			ReturnsRef:          t.ReturnsRef,
+			Doc:                 t.Doc,
+			Stmt:                nil,
 		}
-
-		signature += ")"
-
-		if typedNode.ReturnType != nil {
-			if typedNode.ReturnsRef {
-				signature += "&"
-			}
-
-			signature += ": " + NodeSignature(typedNode.ReturnType)
-		}
-
-		signature += " {}"
-		return signature
-
-	case *ir.Parameter:
-		signature := ""
-
-		if typedNode.VariableType != nil {
-			signature += NodeSignature(typedNode.VariableType) + " "
-		}
-
-		if typedNode.ByRef {
-			signature += "&"
-		}
-
-		signature += "$" + typedNode.Variable.Name
-
-		if typedNode.DefaultValue != nil {
-			signature += " = " + NodeSignature(typedNode.DefaultValue)
-		}
-
-		return signature
-
-	case *ir.PropertyListStmt:
-		signature := ""
-		for _, modifier := range typedNode.Modifiers {
-			signature += modifier.Value + " "
-		}
-
-		if typedNode.Type != nil {
-			signature += NodeSignature(typedNode.Type) + " "
-		}
-
-		for _, prop := range typedNode.Properties {
-			signature += NodeSignature(prop)
-		}
-
-		return signature
-
-	case *ir.PropertyStmt:
-		return NodeSignature(typedNode.Variable) + " " + NodeSignature(typedNode.Expr)
-
-	case *ir.SimpleVar:
-		return typedNode.Name
-
-	case *ir.Nullable:
-		return "?" + NodeSignature(typedNode.Expr)
-
-	case *ir.ConstFetchExpr:
-		return NodeSignature(typedNode.Constant)
 
 	default:
-		log.Warnf("Node to string called with node of type %T which has no case", typedNode)
-		return ""
+		return node
+
 	}
 }
