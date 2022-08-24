@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 func (p *Project) Parse() (numFiles int, err error) {
@@ -36,12 +36,8 @@ func (p *Project) Parse() (numFiles int, err error) {
 }
 
 func (p *Project) ParseRoot(root string) error {
-	// Waitgroup so this funtion can wait for everything to be parsed
-	// before returning.
-	wg := sync.WaitGroup{}
-
-	// Semaphore to limit the number of go routines working at the same time.
-	sem := make(chan struct{}, runtime.NumCPU())
+	g := new(errgroup.Group)
+	g.SetLimit(runtime.NumCPU())
 
 	// NOTE: This does not walk symbolic links, is that a problem?
 	err := filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
@@ -56,17 +52,7 @@ func (p *Project) ParseRoot(root string) error {
 			return nil
 		}
 
-		// Start a new go routine to do the actual parsing work.
-		// Make sure we wait for it to finish by adding to the wait group.
-		wg.Add(1)
-		go func(path string, info fs.DirEntry) {
-			// Takes from the semaphore, this blocks until there is an available spot.
-			sem <- struct{}{}
-			// Make sure we release the semaphore when we are done.
-			defer func() { <-sem }()
-			// Signal the wait group this is done too.
-			defer wg.Done()
-
+		g.Go(func() error {
 			finfo, err := info.Info()
 			if err != nil {
 				log.Error(fmt.Errorf("Error reading file info of %s: %w", path, err))
@@ -75,16 +61,18 @@ func (p *Project) ParseRoot(root string) error {
 			if err := p.ParseFile(path, finfo.ModTime()); err != nil {
 				log.Error(fmt.Errorf("Error parsing file %s: %w", path, err))
 			}
-		}(path, info)
+
+			return nil
+		})
 
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("Error parsing project: %w", err)
 	}
-
-	wg.Wait()
-	close(sem)
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("Error parsing project: %w", err)
+	}
 
 	return nil
 }
