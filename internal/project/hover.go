@@ -12,80 +12,72 @@ import (
 	"github.com/laytan/elephp/pkg/typer"
 )
 
-func (p *Project) Hover(pos *position.Position) (string, error) {
+func (p *Project) Hover(currpos *position.Position) (string, error) {
+	pos, err := p.Definition(currpos)
+	if err != nil {
+		return "", fmt.Errorf("Could not find definition for hover: %w", err)
+	}
+
 	path := pos.Path
 
 	file := p.GetFile(path)
 	if file == nil {
-		return "", fmt.Errorf("Error retrieving file content for %s", path)
+		return "", fmt.Errorf("Hover error retrieving file content for %s", path)
 	}
 
 	ast := p.ParseFileCached(file)
 	if ast == nil {
-		return "", fmt.Errorf("Error parsing %s for definitions", path)
+		return "", fmt.Errorf("Hover error parsing %s for definitions", path)
 	}
 
 	apos := position.LocToPos(file.content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
 	ast.Walk(nap)
 
-	cmntsStr := ""
-	signature := ""
+	out := []string{}
 
 Nodes:
 	// TODO: this shows hover for the method if we are anywhere in the method, this is not what we want.
 	for i := len(nap.Nodes) - 1; i >= 0; i-- {
-		// log.Infof("%T\n", nap.Nodes[i])
 		switch typedNode := nap.Nodes[i].(type) {
 		case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt, *ir.PropertyListStmt, *ir.FunctionStmt:
 			// TODO: show all methods on the class (also properties?).
-			cmntsStr = CleanedNodeComments(typedNode)
-			signature = NodeSignature(typedNode)
+			if cmnts := cleanedNodeComments(typedNode); len(cmnts) > 0 {
+				out = append(out, cmnts)
+			}
+
+			if signature := NodeSignature(typedNode); len(signature) > 0 {
+				out = append(out, signature)
+			}
 
 			break Nodes
 
 		case *ir.ClassMethodStmt:
-			cmntsStr = CleanedNodeComments(nap.Nodes[i+1])
-			signature = NodeSignature(typedNode)
+			if cmnts := cleanedNodeComments(nap.Nodes[i+1]); len(cmnts) > 0 {
+				out = append(out, cmnts)
+			}
+
+			if signature := NodeSignature(typedNode); len(signature) > 0 {
+				out = append(out, signature)
+			}
 
 			break Nodes
 
 		case *ir.Parameter:
-			// TODO: get @param comment from method statement too, something like:
-			// if mtd, ok := nap.Nodes[i-1].(*ir.ClassMethodStmt); ok {
-			// 	param := typer.New().Param(nap.Nodes[0].(*ir.Root), mtd, typedNode)
-			// 	if param != nil {
-			// 		cmntsStr = "/**\n * @param $" + typedNode.Variable.Name + " " + param.String() + "\n */"
-			// 	}
-			// }
-
-			signature = NodeSignature(typedNode)
+			if signature := NodeSignature(typedNode); len(signature) > 0 {
+				out = append(out, signature)
+			}
 
 			break Nodes
 
 		}
 	}
 
-	signature = strings.TrimSpace(signature)
-
-	out := "```php\n<?php\n"
-
-	if cmntsStr != "" {
-		out += cmntsStr + "\n"
+	if len(out) == 0 {
+		return "", nil
 	}
 
-	if signature != "" {
-		out += signature + "\n"
-	}
-
-	out += "```"
-
-	return out, nil
-}
-
-func CleanedNodeComments(node ir.Node) string {
-	cmnts := typer.NodeComments(node)
-	return strings.Join(cmnts, "\n")
+	return wrapWithPhpMarkdown(strings.Join(out, "\n")), nil
 }
 
 func NodeSignature(node ir.Node) string {
@@ -96,10 +88,31 @@ func NodeSignature(node ir.Node) string {
 	out := new(bytes.Buffer)
 	p := irfmt.NewPrettyPrinter(out, "")
 	p.Print(withoutStmts(node))
-	return out.String()
+	return cleanBrackets(out.String())
+}
+
+func wrapWithPhpMarkdown(content string) string {
+	return fmt.Sprintf("```php\n<?php\n%s\n```", content)
+}
+
+func cleanBrackets(signature string) string {
+	signature = strings.TrimSpace(signature)
+	if strings.HasSuffix(signature, "{\n\n}") {
+		signature = strings.TrimSuffix(signature, "{\n\n}")
+		signature = strings.TrimSpace(signature)
+		signature += " {}"
+	}
+
+	return signature
+}
+
+func cleanedNodeComments(node ir.Node) string {
+	cmnts := typer.NodeComments(node)
+	return strings.Join(cmnts, "\n")
 }
 
 // TODO: can this be done in a less verbose way?
+// Shallow copies the node excluding its Stmts property.
 func withoutStmts(node ir.Node) ir.Node {
 	switch t := node.(type) {
 	case *ir.ClassStmt:
