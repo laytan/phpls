@@ -9,6 +9,7 @@ import (
 var (
 	Scopes = map[ir.NodeKind]any{
 		ir.KindFunctionStmt: true,
+		ir.KindClosureExpr:  true,
 
 		ir.KindClassStmt:       true,
 		ir.KindClassMethodStmt: true,
@@ -38,5 +39,6 @@ func IsClassLike(node ir.Node) bool {
 
 func IsNonClassLikeScope(node ir.Node) bool {
 	kind := ir.GetNodeKind(node)
-	return kind == ir.KindFunctionStmt || kind == ir.KindClassMethodStmt
+	return kind == ir.KindFunctionStmt || kind == ir.KindClassMethodStmt ||
+		kind == ir.KindClosureExpr
 }
