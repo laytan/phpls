@@ -388,6 +388,15 @@ func TestDefinitions(t *testing.T) {
 		// 	position:    &position.Position{Row: 20, Col: 6},
 		// 	outPosition: &position.Position{Row: 10, Col: 19},
 		// },
+		{
+			file:     "parameter.php",
+			position: &position.Position{Row: 23, Col: 10},
+			outPosition: &position.Position{
+				Row:  891,
+				Col:  1,
+				Path: path.Join(stubsFolder, "standard", "standard_1.php"),
+			},
+		},
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())

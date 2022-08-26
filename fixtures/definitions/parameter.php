@@ -19,3 +19,5 @@ function closures($foo)
 
     $foo;
 }
+
+closures(trim(''));

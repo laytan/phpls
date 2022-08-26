@@ -30,26 +30,23 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 	nap := traversers.NewNodeAtPos(apos)
 	ast.Walk(nap)
 
-	// Root.
-	var scope ir.Node
-	var classLikeScope ir.Node
-	for i, node := range nap.Nodes {
-		if symbol.IsScope(node) {
-			scope = node
+	for i := len(nap.Nodes) - 1; i >= 0; i-- {
+		node := nap.Nodes[i]
+
+		var scope ir.Node
+		var classLikeScope ir.Node
+		for j := i - 1; j >= 0; j-- {
+			sNode := nap.Nodes[j]
+			if scope == nil && (symbol.IsScope(sNode) || ir.GetNodeKind(sNode) == ir.KindRoot) {
+				scope = sNode
+			}
+
+			if classLikeScope == nil && symbol.IsClassLike(sNode) {
+				classLikeScope = sNode
+			}
 		}
 
-		if symbol.IsClassLike(node) {
-			classLikeScope = node
-		}
-
-		// fmt.Printf("%T\n", node)
 		switch typedNode := node.(type) {
-		case *ir.Root:
-			scope = typedNode
-
-		case *ir.FunctionStmt:
-			scope = typedNode
-
 		case *ir.GlobalStmt:
 			// TODO: this might index out of bounds
 			globalVar, ok := nap.Nodes[i+1].(*ir.SimpleVar)
@@ -82,6 +79,13 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 				assignment = classLikeScope
 
 			default:
+				// UGLLY :(
+				if len(nap.Nodes) >= i-2 {
+					if _, ok := nap.Nodes[i-1].(*ir.GlobalStmt); ok {
+						continue
+					}
+				}
+
 				if ass := p.assignment(scope, typedNode); ass != nil {
 					assignment = ass
 				}
@@ -129,7 +133,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 		case *ir.Name:
 			classLike, destPath := p.classLike(ast, typedNode)
 			if classLike == nil {
-				return nil, ErrNoDefinitionFound
+				continue
 			}
 
 			if destPath == "" {
