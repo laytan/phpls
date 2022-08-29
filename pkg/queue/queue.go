@@ -55,3 +55,12 @@ func (q *Queue[V]) Dequeue() V {
 	q.head = node.next
 	return node.value
 }
+
+func (q *Queue[V]) Peek() V {
+	if q.head == nil {
+		var v V
+		return v
+	}
+
+	return q.head.value
+}
