@@ -23,6 +23,8 @@ type Typer interface {
 	// Scope should be the method/function the variable is used in, if it is used
 	// globally, this can be left nil.
 	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) phpdoxer.Type
+
+	Property(root *ir.Root, propertyList *ir.PropertyListStmt) phpdoxer.Type
 }
 
 var (
@@ -78,6 +80,8 @@ func returnTypeNode(node ir.Node) ir.Node {
 		return typedNode.ReturnType
 	case *ir.Parameter:
 		return typedNode.VariableType
+	case *ir.PropertyListStmt:
+		return typedNode.Type
 	default:
 		return nil
 	}
