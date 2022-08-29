@@ -83,6 +83,15 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
 - Code action
     - Rename
     - Align associative array keys
+    - Create interface from class
+        - get all public functions in the class and create an interface with them
+        - interface name is the current class name + Interface
+    - Override (asks for method to override, can lsp ask for input?)
+        - can lsp ask for input
+        - maybe add the trigger to the current class name and populate it with 'override x, override y' etc.
+    - Update interface
+        - when on a method that is implementing an interface (incorrectly)
+        - update the interface signature to the current method signature
 
 ### Features with even lower priority/that don't make sense to me
 
