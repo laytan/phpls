@@ -28,6 +28,7 @@ func (p *Project) Parse() (numFiles int, err error) {
 		go runtime.GC()
 	}()
 
+	// TODO: do this concurrently.
 	for _, root := range p.roots {
 		if err := p.ParseRoot(root); err != nil {
 			return 0, err
@@ -37,12 +38,12 @@ func (p *Project) Parse() (numFiles int, err error) {
 	return len(p.files), nil
 }
 
-func (p *Project) ParseRoot(root string) error {
+func (p *Project) ParseRoot(root *root) error {
 	g := new(errgroup.Group)
 	g.SetLimit(runtime.NumCPU())
 
 	// NOTE: This does not walk symbolic links, is that a problem?
-	err := filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root.Path, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			log.Error(fmt.Errorf("Error parsing %s: %w", path, err))
 			return nil

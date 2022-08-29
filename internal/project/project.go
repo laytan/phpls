@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"path"
 	"strings"
 	"sync"
@@ -23,15 +24,18 @@ import (
 
 const cacheSize = datasize.MegaByte * 100
 
+type root struct {
+	Path    string
+	Version *phpversion.PHPVersion
+}
+
 type Project struct {
 	mu sync.Mutex
 
 	// Path to file map.
 	files map[string]*File
 
-	roots []string
-
-	version *phpversion.PHPVersion
+	roots []*root
 
 	// Symbol trie for global variables, classes, interfaces etc.
 	// End goal being: never needing to traverse the whole project to search
@@ -43,15 +47,16 @@ type Project struct {
 	typer typer.Typer
 }
 
-func NewProject(root string, phpv *phpversion.PHPVersion) *Project {
-	// OPTIM: parse phpstorm stubs once and store somehow, they won't change.
-	stubs := path.Join(pathutils.Root(), "phpstorm-stubs")
+func NewProject(r string, phpv *phpversion.PHPVersion) *Project {
+	roots := []*root{
+		{Path: r, Version: phpv},
+		// Parse stubs using the latest supported PHP version, bcs they use the latest features.
+		{Path: path.Join(pathutils.Root(), "phpstorm-stubs"), Version: phpversion.EightOne()},
+	}
 
-	roots := []string{root, stubs}
 	return &Project{
 		files:      make(map[string]*File),
 		roots:      roots,
-		version:    phpv,
 		symbolTrie: symboltrie.New[*traversers.TrieNode](),
 		cache:      lfudacache.New[string, *ir.Root](cacheSize),
 		typer:      typer.New(),
@@ -71,8 +76,8 @@ func (p *Project) GetFile(path string) *File {
 	return file
 }
 
-func (p *Project) ParserConfig() conf.Config {
-	return p.ParserConfigWith(func(e *perrors.Error) {
+func (p *Project) ParserConfig(phpv *phpversion.PHPVersion) conf.Config {
+	return p.ParserConfigWith(phpv, func(e *perrors.Error) {
 		// TODO: when we get a parse/syntax error, publish the error
 		// TODO: via diagnostics (lsp).
 		// OPTIM: when we get a parse error, maybe don't use the faulty ast but use the latest
@@ -81,24 +86,44 @@ func (p *Project) ParserConfig() conf.Config {
 	})
 }
 
-func (p *Project) ParserConfigWith(errHandler func(*perrors.Error)) conf.Config {
+func (p *Project) ParserConfigWith(
+	phpv *phpversion.PHPVersion,
+	errHandler func(*perrors.Error),
+) conf.Config {
 	return conf.Config{
 		ErrorHandlerFunc: errHandler,
-		// TODO: this should use the php version of the system,
-		// TODO: but for phpstorm-stubs we need to pass a later version as it uses attributes for example.
-		// TODO: so need to make a distinction between parsing project and stubs, (or just always use the latest php?).
-		// TODO: if we are going to serialize the ast for stubs anyway, we could just parse with latest version and store that.
 		Version: &version.Version{
-			Major: 8,
-			Minor: 1,
+			Major: uint64(phpv.Major),
+			Minor: uint64(phpv.Minor),
 		},
 	}
 }
 
 func (p *Project) ParserConfigWrapWithPath(path string) conf.Config {
-	return p.ParserConfigWith(func(err *perrors.Error) {
+	phpv, err := p.phpversionForPath(path)
+	if err != nil {
+		panic(err)
+	}
+
+	return p.ParserConfigWith(phpv, func(err *perrors.Error) {
 		log.Infof(`Parse error for path "%s": %+v`, path, err)
 	})
+}
+
+// Checks in what root the path belongs and returns its version.
+func (p *Project) phpversionForPath(path string) (*phpversion.PHPVersion, error) {
+	var phpv *phpversion.PHPVersion
+	for _, root := range p.roots {
+		if strings.HasPrefix(path, root.Path) {
+			phpv = root.Version
+		}
+	}
+
+	if phpv == nil {
+		return nil, fmt.Errorf("Path %s is not in any of the tracked root/workspaces", path)
+	}
+
+	return phpv, nil
 }
 
 // Returns the position for the namespace statement that matches the given position.
