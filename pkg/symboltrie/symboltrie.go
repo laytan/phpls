@@ -51,7 +51,11 @@ func SearchResultKeys[T any](results []*SearchResult[T]) []string {
 }
 
 func (s *Trie[T]) SearchPrefix(key string, maxResults uint) []*SearchResult[T] {
-	opts := []func(*trie.SearchOptions){trie.WithMaxResults(int(maxResults))}
+	opts := make([]func(*trie.SearchOptions), 0, 1)
+	if maxResults > 0 {
+		opts = append(opts, trie.WithMaxResults(int(maxResults)))
+	}
+
 	result := s.trie.Search(strings.Split(key, ""), opts...)
 
 	flatResults := make([]*SearchResult[T], 0, len(result.Results))
@@ -88,6 +92,7 @@ func (s *Trie[T]) Put(key string, node T) {
 			s.MaxDuplicatesKey = key
 		}
 
+		s.Size++
 		return
 	}
 
