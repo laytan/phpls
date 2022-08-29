@@ -396,6 +396,33 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(stubsFolder, "standard", "standard_1.php"),
 			},
 		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 57, Col: 31},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 58, Col: 30},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 59, Col: 37},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:     path.Join("properties", "properties.php"),
+			position: &position.Position{Row: 60, Col: 31},
+		},
+		{
+			file:     path.Join("properties", "properties.php"),
+			position: &position.Position{Row: 61, Col: 31},
+		},
+		{
+			file:     path.Join("properties", "properties.php"),
+			position: &position.Position{Row: 62, Col: 34},
+		},
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())
@@ -432,20 +459,6 @@ func TestDefinitions(t *testing.T) {
 		)
 	}
 }
-
-// func TestTrie(t *testing.T) {
-// 	is := is.New(t)
-//
-// 	project := NewProject(definitionsFolder)
-// 	err := project.Parse()
-// 	is.NoErr(err)
-//
-// 	opts := []func(*trie.SearchOptions){trie.WithMaxResults(10)}
-// 	result := project.symbolTrie.Search(strings.Split("array", ""), opts...)
-// 	for _, res := range result.Results {
-// 		fmt.Println(res.Key)
-// 	}
-// }
 
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)

@@ -3,6 +3,7 @@ module github.com/laytan/elephp
 go 1.19
 
 require (
+	appliedgo.net/what v0.1.5
 	github.com/DmitriyVTitov/size v1.5.0
 	github.com/VKCOM/noverify v0.5.3
 	github.com/VKCOM/php-parser v0.8.2
@@ -21,6 +22,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.1.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect

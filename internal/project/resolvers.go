@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/resolvequeue"
+	"github.com/laytan/elephp/pkg/stack"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
@@ -188,60 +190,107 @@ func (p *Project) method(
 	return result, resultPath, nil
 }
 
+func (p *Project) propVarType(
+	root *ir.Root,
+	classLikeScope ir.Node,
+	scope ir.Node,
+	stmt *ir.PropertyFetchExpr,
+	properties *stack.Stack[*ir.Identifier],
+) (*traversers.TrieNode, phprivacy.Privacy, error) {
+	what.Func()
+	properties.Push(stmt.Property.(*ir.Identifier))
+
+	switch typedVar := stmt.Variable.(type) {
+	case *ir.SimpleVar:
+		return p.variableType(root, classLikeScope, scope, typedVar)
+
+	case *ir.PropertyFetchExpr:
+		return p.propVarType(root, classLikeScope, scope, typedVar, properties)
+
+	default:
+		return nil, 0, fmt.Errorf("Error retrieving property definition, variable node is of type %T, expected *ir.SimpleVar or *ir.PropertyFetchExpr", typedVar)
+	}
+}
+
+func (p *Project) walkToProperty(
+	root *ir.Root,
+	classLike *traversers.TrieNode,
+	properties *stack.Stack[*ir.Identifier],
+	privacy phprivacy.Privacy,
+) (*ir.PropertyListStmt, string, error) {
+	what.Happens(
+		"Walking properties, starting from %s\n",
+		classLike.Symbol.Identifier(),
+	)
+
+	var resultProp *ir.PropertyListStmt
+	var resultPath string
+	for prop := properties.Pop(); prop != nil; prop = properties.Pop() {
+		// walk resolve queue
+		err := p.walkResolveQueue(root, classLike.Symbol, func(wc *walkContext) (bool, error) {
+			what.Is(properties.Peek() != nil)
+			propTraverser := traversers.NewProperty(
+				prop.Value,
+				classLike.Symbol.Identifier(),
+				privacy,
+			)
+			wc.IR.Walk(propTraverser)
+			if propTraverser.Property == nil {
+				if !wc.HasMore {
+					return true, ErrNoDefinitionFound
+				}
+
+				return false, nil
+			}
+
+			resultProp = propTraverser.Property
+			resultPath = wc.TrieNode.Path
+
+			// get property type (classLike)
+			propType := p.typer.Property(root, propTraverser.Property)
+			if propType == nil {
+				return true, nil
+			}
+
+			if clsType, ok := propType.(*phpdoxer.TypeClassLike); ok {
+				classLike = p.findClassLikeSymbol(clsType)
+				file := p.GetFile(classLike.Path)
+				root = p.ParseFileCached(file)
+			}
+
+			return true, nil
+		})
+		if err != nil {
+			resultProp = nil
+			resultPath = ""
+			break
+		}
+	}
+
+	if resultProp == nil {
+		return nil, "", ErrNoDefinitionFound
+	}
+
+	return resultProp, resultPath, nil
+}
+
 func (p *Project) property(
 	root *ir.Root,
 	classLikeScope ir.Node,
 	scope ir.Node,
 	stmt *ir.PropertyFetchExpr,
 ) (*ir.PropertyListStmt, string, error) {
-	objectVar, ok := stmt.Variable.(*ir.SimpleVar)
-	if !ok {
-		return nil, "", fmt.Errorf(
-			"Property definition: unexpected variable node of type %T",
-			stmt.Variable,
-		)
-	}
-
-	propName, ok := stmt.Property.(*ir.Identifier)
-	if !ok {
-		return nil, "", fmt.Errorf(
-			"Property definition: unexpected property node of type %T",
-			stmt.Property,
-		)
-	}
-
-	classScope, privacy, err := p.variableType(root, classLikeScope, scope, objectVar)
+	properties := stack.New[*ir.Identifier]()
+	vt, vp, err := p.propVarType(root, classLikeScope, scope, stmt, properties)
 	if err != nil {
-		return nil, "", fmt.Errorf("Error fetching variable type: %w", err)
+		return nil, "", err
 	}
 
-	if classScope == nil {
+	if vt == nil {
 		return nil, "", nil
 	}
 
-	file := p.GetFile(classScope.Path)
-	classRoot := p.ParseFileCached(file)
-
-	var result *ir.PropertyListStmt
-	var resultPath string
-	err = p.walkResolveQueue(classRoot, classScope.Symbol, func(wc *walkContext) (bool, error) {
-		traverser := traversers.NewProperty(propName.Value, wc.QueueNode.FQN.Name(), privacy)
-		wc.IR.Walk(traverser)
-
-		if traverser.Property != nil {
-			result = traverser.Property
-			resultPath = wc.TrieNode.Path
-
-			return true, nil
-		}
-
-		return false, nil
-	})
-	if err != nil {
-		return nil, "", fmt.Errorf("Property definition: %w", err)
-	}
-
-	return result, resultPath, nil
+	return p.walkToProperty(root, vt, properties, vp)
 }
 
 type walkContext struct {
@@ -250,6 +299,7 @@ type walkContext struct {
 	File      *File
 	Privacy   phprivacy.Privacy
 	IR        *ir.Root
+	HasMore   bool
 }
 
 func (p *Project) walkResolveQueue(
@@ -295,7 +345,9 @@ func (p *Project) walkResolveQueue(
 			return fmt.Errorf("Error parsing ast for %s", file.path)
 		}
 
-		done, err := walker(&walkContext{res, symbol, file, privacy, ast})
+		done, err := walker(
+			&walkContext{res, symbol, file, privacy, ast, resolveQueue.Queue.Peek() != nil},
+		)
 		if err != nil {
 			return err
 		}

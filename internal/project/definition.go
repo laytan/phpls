@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -29,9 +30,11 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 	apos := position.LocToPos(file.content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
 	ast.Walk(nap)
+	// what.Is(ast)
 
 	for i := len(nap.Nodes) - 1; i >= 0; i-- {
 		node := nap.Nodes[i]
+		what.Happens("%T\n", node)
 
 		var scope ir.Node
 		var classLikeScope ir.Node

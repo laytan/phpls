@@ -1,3 +1,5 @@
+appliedgo.net/what v0.1.5 h1:MvrgAPj5FrMFyIyoPvMEfRFT+Zn3BqNBVNM25LHabQo=
+appliedgo.net/what v0.1.5/go.mod h1:MsswL0IpezZ2drSUXtFHMOjIrBWZIZPUKRvZJjPfgbE=
 github.com/BurntSushi/toml v1.1.0 h1:ksErzDEI1khOiGPgpwuI7x2ebx/uXQNw7xJpn9Eq1+I=
 github.com/BurntSushi/toml v1.1.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/DmitriyVTitov/size v1.5.0 h1:/PzqxYrOyOUX1BXj6J9OuVRVGe+66VL4D9FlUaW515g=

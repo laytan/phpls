@@ -30,3 +30,33 @@ $testphpdocprop->test;
 */
 $testphpdocpropfqn = $somekindofmagic2;
 $testphpdocpropfqn->test;
+
+
+class TestPropertiesClassDummy
+{
+}
+
+class TestPropertiesClass2
+{
+    public TestPropertiesClass $testType;
+
+    /**
+     * @var \Test\Properties\TestPropertiesClass
+     */
+    public $testDoc;
+
+    /**
+     * @var \Test\Properties\TestPropertiesClass
+     */
+    public TestPropertiesClassDummy $testDocAndType;
+
+    private TestPropertiesClass $testPrivate;
+}
+
+$testingProperties = new TestPropertiesClass2();
+$testingProperties->testType->test;
+$testingProperties->testDoc->test;
+$testingProperties->testDocAndType->test;
+$testingProperties->testType->nonexistantprop;
+$testingProperties->testType->test3;
+$testingProperties->testPrivate->test;
