@@ -131,12 +131,8 @@ func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
 	parts := strings.Split(fqn, `\`)
 	className := parts[len(parts)-1]
 
-	log.Infof("Class: %s, fqn: %s\n", className, fqn)
-
 	// Get how it would be resolved in the current file state.
 	actFqn := p.FQN(root, &ir.Name{Value: className})
-
-	log.Infof("Reolved: %s\n", actFqn.String())
 
 	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
 	return actFqn.String() != fqn

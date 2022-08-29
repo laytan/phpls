@@ -160,6 +160,21 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 	return nil
 }
 
+func (p *Project) ParseFileCached(file *File) *ir.Root {
+	if file == nil {
+		return nil
+	}
+
+	return p.cache.Cached(file.path, func() *ir.Root {
+		root, err := file.parse(p.ParserConfigWrapWithPath(file.path))
+		if err != nil {
+			log.Error(err)
+		}
+
+		return root
+	})
+}
+
 func (p *Project) removeSymbolsOf(path string) {
 	prevFile := p.GetFile(path)
 	prevRootNode := p.ParseFileCached(prevFile)
@@ -176,21 +191,6 @@ func (p *Project) removeSymbolsOf(path string) {
 	}
 
 	log.Infof("Removed %d symbols from %s out of the symboltrie", len(toRemove), path)
-}
-
-func (p *Project) ParseFileCached(file *File) *ir.Root {
-	if file == nil {
-		return nil
-	}
-
-	return p.cache.Cached(file.path, func() *ir.Root {
-		root, err := file.parse(p.ParserConfigWrapWithPath(file.path))
-		if err != nil {
-			log.Error(err)
-		}
-
-		return root
-	})
 }
 
 // Fast way of removing all whitespace from a string, credit: https://stackoverflow.com/a/32081891.
