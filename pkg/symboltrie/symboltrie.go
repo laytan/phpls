@@ -54,12 +54,16 @@ func (s *Trie[T]) SearchPrefix(key string, maxResults uint) []*SearchResult[T] {
 	opts := []func(*trie.SearchOptions){trie.WithMaxResults(int(maxResults))}
 	result := s.trie.Search(strings.Split(key, ""), opts...)
 
-	flatResults := make([]*SearchResult[T], len(result.Results))
-	for i, res := range result.Results {
+	flatResults := make([]*SearchResult[T], 0, len(result.Results))
+	for _, res := range result.Results {
 		trieNode := res.Value.(*trieNode[T])
-		flatResults[i] = &SearchResult[T]{
-			Key:   strings.Join(res.Key, ""),
-			Value: trieNode.Nodes[0],
+		key := strings.Join(res.Key, "")
+
+		for _, inRes := range trieNode.Nodes {
+			flatResults = append(flatResults, &SearchResult[T]{
+				Key:   key,
+				Value: inRes,
+			})
 		}
 	}
 
