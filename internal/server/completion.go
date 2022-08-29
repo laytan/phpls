@@ -62,6 +62,8 @@ func (s *Server) Completion(
 		items[i].AdditionalTextEdits = []protocol.TextEdit{{}}
 	}
 
+	log.Infof("Returning %d completion items\n", len(items))
+
 	return &protocol.CompletionList{
 		Items:        items,
 		IsIncomplete: true,

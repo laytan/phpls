@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/parser"
+	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -138,6 +140,9 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 		return errors.New("AST root node could not be converted to IR root node")
 	}
 
+	// Remove all symbols that are in this file before adding the updated ones.
+	p.removeSymbolsOf(path)
+
 	symbolTraverser := traversers.NewSymbol(p.symbolTrie)
 	symbolTraverser.SetPath(path)
 	irRootNode.Walk(symbolTraverser)
@@ -153,6 +158,24 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 	}
 
 	return nil
+}
+
+func (p *Project) removeSymbolsOf(path string) {
+	prevFile := p.GetFile(path)
+	prevRootNode := p.ParseFileCached(prevFile)
+	removeTrie := symboltrie.New[*traversers.TrieNode]()
+	removeTraverser := traversers.NewSymbol(removeTrie)
+	removeTraverser.SetPath(path)
+	prevRootNode.Walk(removeTraverser)
+	toRemove := removeTrie.SearchPrefix("", 0)
+
+	for _, node := range toRemove {
+		p.symbolTrie.Delete(node.Key, func(tn *traversers.TrieNode) bool {
+			return reflect.DeepEqual(node.Value, tn)
+		})
+	}
+
+	log.Infof("Removed %d symbols from %s out of the symboltrie", len(toRemove), path)
 }
 
 func (p *Project) ParseFileCached(file *File) *ir.Root {
