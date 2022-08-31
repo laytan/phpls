@@ -424,6 +424,20 @@ func TestDefinitions(t *testing.T) {
 			file:     path.Join("properties", "properties.php"),
 			position: &position.Position{Row: 62, Col: 34},
 		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 69, Col: 26},
+			outPosition: &position.Position{Row: 41, Col: 5},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 69, Col: 36},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:     path.Join("properties", "properties.php"),
+			position: &position.Position{Row: 70, Col: 34},
+		},
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())

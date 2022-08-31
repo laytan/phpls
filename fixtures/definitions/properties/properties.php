@@ -60,3 +60,11 @@ $testingProperties->testDocAndType->test;
 $testingProperties->testType->nonexistantprop;
 $testingProperties->testType->test3;
 $testingProperties->testPrivate->test;
+
+class TestPropertiesClassChild extends TestPropertiesClass2
+{
+}
+
+$testingPropertiesChild = new TestPropertiesClassChild();
+$testingPropertiesChild->testType->test;
+$testingPropertiesChild->testNo->test;

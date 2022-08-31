@@ -1,6 +1,7 @@
 package traversers
 
 import (
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -35,6 +36,8 @@ func (m *Property) EnterNode(node ir.Node) bool {
 	case *ir.PropertyListStmt:
 		for _, property := range typedNode.Properties {
 			stmt := property.(*ir.PropertyStmt)
+
+			what.Happens("Found property %s\n", stmt.Variable.Name)
 
 			if stmt.Variable.Name != m.name {
 				return false

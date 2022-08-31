@@ -219,8 +219,9 @@ func (p *Project) walkToProperty(
 	privacy phprivacy.Privacy,
 ) (*ir.PropertyListStmt, string, error) {
 	what.Happens(
-		"Walking properties, starting from %s\n",
+		"Walking properties, starting from %s->%s\n",
 		classLike.Symbol.Identifier(),
+		properties.Peek().Value,
 	)
 
 	var resultProp *ir.PropertyListStmt
@@ -228,14 +229,22 @@ func (p *Project) walkToProperty(
 	for prop := properties.Pop(); prop != nil; prop = properties.Pop() {
 		// walk resolve queue
 		err := p.walkResolveQueue(root, classLike.Symbol, func(wc *walkContext) (bool, error) {
-			what.Is(properties.Peek() != nil)
+			what.Happens("Checking %s for property %s\n", wc.QueueNode.FQN.String(), prop.Value)
+
 			propTraverser := traversers.NewProperty(
 				prop.Value,
-				classLike.Symbol.Identifier(),
+				wc.QueueNode.FQN.Name(),
 				privacy,
 			)
 			wc.IR.Walk(propTraverser)
+
 			if propTraverser.Property == nil {
+				what.Happens(
+					"Could not find property %s in %s\n",
+					prop.Value,
+					wc.QueueNode.FQN.String(),
+				)
+
 				if !wc.HasMore {
 					return true, ErrNoDefinitionFound
 				}
@@ -254,6 +263,12 @@ func (p *Project) walkToProperty(
 
 			if clsType, ok := propType.(*phpdoxer.TypeClassLike); ok {
 				classLike = p.findClassLikeSymbol(clsType)
+				what.Happens(
+					"Found class-like %s for property %s\n",
+					classLike.Symbol.Identifier(),
+					prop.Value,
+				)
+
 				file := p.GetFile(classLike.Path)
 				root = p.ParseFileCached(file)
 			}
