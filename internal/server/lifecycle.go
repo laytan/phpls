@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
@@ -14,6 +15,17 @@ import (
 	"github.com/laytan/elephp/pkg/processwatch"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
+)
+
+const (
+	name    = "elephp"
+	version = "0.0.1-dev"
+
+	indexingProgressToken = "indexing"
+	// Time between progress updates.
+	indexingProgressInterval = 100 * time.Millisecond
+	// The duration that the last progress message is shown, before end is sent.
+	indexingDecayTime = 2 * time.Second
 )
 
 type serverInfo struct {
@@ -76,20 +88,76 @@ func (s *Server) Initialize(
 	s.project = project.NewProject(string(s.root), phpv)
 
 	go func() {
-		s.showAndLogMsg(ctx, protocol.Info, "Started indexing workspaces")
-
+		filesDone := atomic.Uint32{}
 		start := time.Now()
-		numFiles, err := s.project.Parse()
+
+		message := func() string {
+			doneAmt := filesDone.Load()
+
+			return fmt.Sprintf(
+				"Indexed %d source files in %s",
+				doneAmt,
+				time.Since(start).Round(time.Millisecond),
+			)
+		}
+		log.Infoln(message())
+
+		ticker := time.NewTicker(indexingProgressInterval)
+		done := make(chan bool)
+		go func() {
+			s.client.Progress(ctx, &protocol.ProgressParams{
+				Token: indexingProgressToken,
+				Value: progress{
+					Kind:    progressKindBegin,
+					Title:   "Indexing project",
+					Message: message(),
+				},
+			})
+
+			for {
+				select {
+				case <-done:
+					s.client.Progress(ctx, &protocol.ProgressParams{
+						Token: indexingProgressToken,
+						Value: progress{
+							Kind:    progressKindReport,
+							Message: message(),
+						},
+					})
+
+					time.Sleep(indexingDecayTime)
+
+					s.client.Progress(ctx, &protocol.ProgressParams{
+						Token: indexingProgressToken,
+						Value: progress{
+							Kind: progressKindEnd,
+						},
+					})
+					return
+
+				case <-ticker.C:
+					s.client.Progress(ctx, &protocol.ProgressParams{
+						Token: indexingProgressToken,
+						Value: progress{
+							Kind:    progressKindReport,
+							Message: message(),
+						},
+					})
+				}
+			}
+		}()
+
+		err := s.project.Parse(&filesDone)
 		if err != nil {
 			s.showAndLogErr(ctx, protocol.Warning, err)
 			return
 		}
 
-		s.showAndLogMsg(
-			ctx,
-			protocol.Info,
-			fmt.Sprintf("Indexed %d source files in %s", numFiles, time.Since(start)),
-		)
+		ticker.Stop()
+		done <- true
+		close(done)
+
+		log.Infof(message())
 	}()
 
 	if params.ProcessID != 0 {
@@ -113,9 +181,8 @@ func (s *Server) Initialize(
 			HoverProvider: true,
 		},
 		ServerInfo: serverInfo{
-			Name: "elephp",
-			// TODO: version from env/go/anywhere
-			Version: "0.0.1-dev",
+			Name:    name,
+			Version: version,
 		},
 	}, nil
 }

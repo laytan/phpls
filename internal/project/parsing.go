@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unicode"
 
@@ -21,7 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (p *Project) Parse() (numFiles int, err error) {
+func (p *Project) Parse(numFiles *atomic.Uint32) error {
 	// Parsing creates alot of garbage, after parsing, run a gc cycle manually
 	// because we know there is a lot to clean up.
 	defer func() {
@@ -30,15 +31,15 @@ func (p *Project) Parse() (numFiles int, err error) {
 
 	// TODO: do this concurrently.
 	for _, root := range p.roots {
-		if err := p.ParseRoot(root); err != nil {
-			return 0, err
+		if err := p.ParseRoot(root, numFiles); err != nil {
+			return err
 		}
 	}
 
-	return len(p.files), nil
+	return nil
 }
 
-func (p *Project) ParseRoot(root *root) error {
+func (p *Project) ParseRoot(root *root, numFiles *atomic.Uint32) error {
 	g := new(errgroup.Group)
 	g.SetLimit(runtime.NumCPU())
 
@@ -56,6 +57,8 @@ func (p *Project) ParseRoot(root *root) error {
 		}
 
 		g.Go(func() error {
+			defer func() { numFiles.Add(1) }()
+
 			finfo, err := info.Info()
 			if err != nil {
 				log.Error(fmt.Errorf("Error reading file info of %s: %w", path, err))

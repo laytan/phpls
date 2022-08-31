@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"sync/atomic"
 	"testing"
 
 	"github.com/laytan/elephp/pkg/pathutils"
@@ -426,7 +427,7 @@ func TestDefinitions(t *testing.T) {
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne())
-	_, err := project.Parse()
+	err := project.Parse(&atomic.Uint32{})
 	is.NoErr(err)
 
 	for _, test := range expectations {
@@ -463,7 +464,7 @@ func TestDefinitions(t *testing.T) {
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
 	project := NewProject(definitionsFolder, phpversion.EightOne())
-	_, err := project.Parse()
+	err := project.Parse(&atomic.Uint32{})
 	is.NoErr(err)
 
 	for i := 0; i < b.N; i++ {
@@ -481,7 +482,7 @@ func BenchmarkParsing(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		project := NewProject(definitionsFolder, phpversion.EightOne())
-		_, err := project.Parse()
+		err := project.Parse(&atomic.Uint32{})
 		is.NoErr(err)
 	}
 }
