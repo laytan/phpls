@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	definitionsFolder = path.Join(pathutils.Root(), "fixtures", "definitions")
+	definitionsFolder = path.Join(pathutils.Root(), "test", "testdata", "definitions")
 	stubsFolder       = path.Join(pathutils.Root(), "phpstorm-stubs")
 )
 

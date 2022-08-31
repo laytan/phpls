@@ -22,7 +22,7 @@ func TestPosition(t *testing.T) {
 	}
 
 	content, err := ioutil.ReadFile(
-		path.Join(pathutils.Root(), "fixtures", "definitions", "parameter.php"),
+		path.Join(pathutils.Root(), "test", "testdata", "definitions", "parameter.php"),
 	)
 	is.NoErr(err)
 
