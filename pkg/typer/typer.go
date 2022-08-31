@@ -6,11 +6,11 @@ package typer
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/phpdoxer"
-	log "github.com/sirupsen/logrus"
 )
 
 type Typer interface {
@@ -60,13 +60,13 @@ func parseTypeHint(node ir.Node) phpdoxer.Type {
 
 	name, ok := retNode.(*ir.Name)
 	if !ok {
-		log.Errorf("%T is unsupported for a return type hint, expecting *ir.Name\n", retNode)
+		log.Printf("%T is unsupported for a return type hint, expecting *ir.Name\n", retNode)
 		return nil
 	}
 
 	t, err := phpdoxer.ParseType(name.Value)
 	if err != nil {
-		log.Error(fmt.Errorf(`Error parsing return type hint "%s": %w`, name.Value, err))
+		log.Println(fmt.Errorf(`Error parsing return type hint "%s": %w`, name.Value, err))
 	}
 
 	return t

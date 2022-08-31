@@ -1,12 +1,11 @@
 package processwatch
 
 import (
+	"log"
 	"os"
 	"runtime"
 	"syscall"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const exitCheckInterval = time.Second * 30
@@ -28,7 +27,7 @@ func NewExiter(pid uint) *Watcher {
 		Pid:      pid,
 		Interval: exitCheckInterval,
 		OnExit: func() {
-			log.Warnf("Watched process with ID: %d has exited, exiting too\n", pid)
+			log.Printf("Watched process with ID: %d has exited, exiting too\n", pid)
 			os.Exit(1)
 		},
 	}

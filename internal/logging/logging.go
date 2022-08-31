@@ -1,88 +1,73 @@
 package logging
 
 import (
-	"fmt"
 	"log"
+	"os"
 	"path"
-
-	"github.com/hpcloud/tail"
-	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/pkg/pathutils"
-	"github.com/natefinch/lumberjack"
-	"github.com/sirupsen/logrus"
+	"strings"
+	"time"
 )
 
-const maxLogFiles = 2
+const (
+	daysToKeep = 14
+	hoursInDay = 24
 
-func Configure(con config.Config) {
-	lvl := toLogrusLevel(con.LogLevel())
-	logrus.SetLevel(lvl)
+	dateLayout = "2006-01-02"
+	fileType   = ".log"
 
-	formatter := &logrus.TextFormatter{
-		DisableQuote: true,
-		PadLevelText: true,
-	}
+	filePerms = 0666
+)
 
-	switch con.LogOutput() {
-	case config.LogOutputFile:
-		logsPath := path.Join(pathutils.Root(), "logs", "elephp.log")
-		fmt.Printf(
-			"Logs are being printed to %s, run with `--log=stderr` if that is not desired\n",
-			logsPath,
-		)
+func Configure(root string, name string) (stop func()) {
+	logsPath := getLogsPath(root, name)
 
-		formatter.FullTimestamp = true
-
-		logrus.SetOutput(&lumberjack.Logger{
-			Filename:   logsPath,
-			MaxBackups: maxLogFiles,
-			LocalTime:  true,
-		})
-
-	case config.LogOutputStderr:
-		// Default configuration for logrus.
-	}
-
-	logrus.SetFormatter(formatter)
-}
-
-// TODO: remove this feature.
-func Tail() error {
-	t, err := tail.TailFile(
-		path.Join(pathutils.Root(), "logs", "elephp.log"),
-		tail.Config{
-			Follow:    true,
-			ReOpen:    true,
-			MustExist: true,
-			// Start at the end of the file.
-			Location: &tail.SeekInfo{Offset: 0, Whence: 2},
-		},
-	)
+	f, err := os.OpenFile(logsPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, filePerms)
 	if err != nil {
-		return fmt.Errorf("Error configuring logs tail: %w", err)
+		panic(err)
 	}
 
-	for line := range t.Lines {
-		log.Println(line.Text)
+	log.SetOutput(f)
+	log.SetFlags(log.Ltime | log.LUTC | log.Lshortfile)
+
+	go cleanLogs(root, name)
+
+	return func() {
+		if err := f.Close(); err != nil {
+			panic(err)
+		}
 	}
-
-	err = t.Wait()
-	log.Println(err.Error())
-
-	return nil
 }
 
-func toLogrusLevel(c config.LogLevel) logrus.Level {
-	switch c {
-	case config.LogLevelDebug:
-		return logrus.DebugLevel
-	case config.LogLevelInfo:
-		return logrus.InfoLevel
-	case config.LogLevelWarn:
-		return logrus.WarnLevel
-	case config.LogLevelError:
-		return logrus.ErrorLevel
-	default:
-		return logrus.InfoLevel
+func getLogsPath(root, name string) string {
+	filename := name + "-" + time.Now().Format(dateLayout) + fileType
+	return path.Join(root, filename)
+}
+
+func cleanLogs(root, name string) {
+	minTime := time.Now().Add(-(time.Hour * hoursInDay * daysToKeep))
+
+	files, err := os.ReadDir(root)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		date := file.Name()
+		date = strings.TrimPrefix(date, name+"-")
+		date = strings.TrimSuffix(date, fileType)
+
+		if t, err := time.Parse(dateLayout, date); err == nil {
+			if !t.Before(minTime) {
+				continue
+			}
+
+			if err := os.Remove(path.Join(root, file.Name())); err != nil {
+				panic(err)
+			}
+		}
 	}
 }

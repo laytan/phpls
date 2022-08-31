@@ -8,22 +8,6 @@ import (
 	"github.com/laytan/elephp/pkg/connection"
 )
 
-type LogOutput string
-
-const (
-	LogOutputStderr LogOutput = "stderr"
-	LogOutputFile   LogOutput = "file"
-)
-
-type LogLevel string
-
-const (
-	LogLevelDebug LogLevel = "debug"
-	LogLevelInfo  LogLevel = "info"
-	LogLevelWarn  LogLevel = "warn"
-	LogLevelError LogLevel = "error"
-)
-
 var ErrIncorrectConnTypeAmt = errors.New(
 	"Elephp requires exactly one connection type to be selected",
 )
@@ -35,13 +19,13 @@ func New() Config {
 }
 
 type Config interface {
+	Name() string
+	Version() string
 	Initialize() error
 	ClientPid() (uint, bool)
 	ConnType() (connection.ConnType, error)
 	ConnURL() string
 	UseStatsviz() bool
-	LogOutput() LogOutput
-	LogLevel() LogLevel
 }
 
 type lsConfig struct {
@@ -96,10 +80,10 @@ func (c *lsConfig) UseStatsviz() bool {
 	return c.opts.Statsviz
 }
 
-func (c *lsConfig) LogOutput() LogOutput {
-	return c.opts.Log
+func (c *lsConfig) Name() string {
+	return "elephp"
 }
 
-func (c *lsConfig) LogLevel() LogLevel {
-	return c.opts.LogLevel
+func (c *lsConfig) Version() string {
+	return "0.0.1-dev"
 }

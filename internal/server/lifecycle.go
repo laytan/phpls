@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -13,14 +14,10 @@ import (
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/processwatch"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 )
 
 const (
-	name    = "elephp"
-	version = "0.0.1-dev"
-
 	indexingProgressToken = "indexing"
 	// Time between progress updates.
 	indexingProgressInterval = 100 * time.Millisecond
@@ -79,11 +76,11 @@ func (s *Server) Initialize(
 
 	phpv, err := phpversion.Get()
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		return nil, lsperrors.ErrRequestFailed("LSP Server " + err.Error())
 	}
 
-	log.Infof("Detected php version: %s\n", phpv.String())
+	log.Printf("Detected php version: %s\n", phpv.String())
 
 	s.project = project.NewProject(string(s.root), phpv)
 
@@ -100,7 +97,7 @@ func (s *Server) Initialize(
 				time.Since(start).Round(time.Millisecond),
 			)
 		}
-		log.Infoln(message())
+		log.Println(message())
 
 		ticker := time.NewTicker(indexingProgressInterval)
 		done := make(chan bool)
@@ -157,12 +154,12 @@ func (s *Server) Initialize(
 		done <- true
 		close(done)
 
-		log.Infof(message())
+		log.Println(message())
 	}()
 
 	if params.ProcessID != 0 {
 		processwatch.NewExiter(uint(params.ProcessID))
-		log.Infof("Monitoring process ID: %d\n", uint(params.ProcessID))
+		log.Printf("Monitoring process ID: %d\n", uint(params.ProcessID))
 	}
 
 	return &protocol.InitializeResult{
@@ -181,8 +178,8 @@ func (s *Server) Initialize(
 			HoverProvider: true,
 		},
 		ServerInfo: serverInfo{
-			Name:    name,
-			Version: version,
+			Name:    s.config.Name(),
+			Version: s.config.Version(),
 		},
 	}, nil
 }

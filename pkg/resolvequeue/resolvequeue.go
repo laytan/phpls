@@ -2,12 +2,12 @@ package resolvequeue
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/queue"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/typer"
-	log "github.com/sirupsen/logrus"
 )
 
 type RootRetriever interface {
@@ -74,7 +74,7 @@ func (r *resolveQueue) Resolve(
 ) ([]*Node, []*Node, []*Node) {
 	root, err := r.rootRetriever.RetrieveRoot(node)
 	if err != nil {
-		log.Error(fmt.Errorf("ResolveQueue.Resolve error during parsing: %w", err))
+		log.Println(fmt.Errorf("ResolveQueue.Resolve error during parsing: %w", err))
 		return nil, nil, nil
 	}
 
@@ -186,7 +186,7 @@ func (r *resolver) toNames(nodes []ir.Node) []*ir.Name {
 	for i, trait := range nodes {
 		name, ok := trait.(*ir.Name)
 		if !ok {
-			log.Errorf("Resolver.toNames: expected type %T to be ir.Name\n", trait)
+			log.Printf("Resolver.toNames: expected type %T to be ir.Name\n", trait)
 			continue
 		}
 

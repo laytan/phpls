@@ -2,12 +2,12 @@ package connection
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 )
 
 type ConnType string
@@ -73,7 +73,7 @@ func ws(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 		}
 
 		if err = srv.Close(); err != nil {
-			log.Error(fmt.Errorf("Error closing WS HTTP server: %w", err))
+			log.Println(fmt.Errorf("Error closing WS HTTP server: %w", err))
 		}
 
 		connChan <- NewWsConnAdapter(c)
@@ -82,7 +82,7 @@ func ws(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Error(err)
+			log.Println(err)
 		}
 	}()
 

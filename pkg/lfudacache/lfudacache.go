@@ -2,12 +2,12 @@ package lfudacache
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 
 	"github.com/DmitriyVTitov/size"
 	"github.com/laytan/elephp/pkg/datasize"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -67,7 +67,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 
 	bSize := datasize.Size(size.Of(value))
 	if uint(bSize) >= uint(c.targetSize)/c.minItemsInCache {
-		log.Warnf(
+		log.Printf(
 			"Size of entry: %s for key %v is too large, not putting it in cache\n",
 			bSize.String(),
 			key,
@@ -82,7 +82,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 			break
 		}
 
-		log.Infof("Removed entry with key %v out of cache\n", c.tail.Key)
+		log.Printf("Removed entry with key %v out of cache\n", c.tail.Key)
 		c.remove(c.tail)
 	}
 
@@ -95,7 +95,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 	})
 	c.currentAge++
 
-	log.Infof("New size of cache: %s\n", c.currentSize.String())
+	log.Printf("New size of cache: %s\n", c.currentSize.String())
 }
 
 // Gets the given key from the cache.

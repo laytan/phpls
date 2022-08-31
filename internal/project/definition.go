@@ -3,13 +3,13 @@ package project
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
-	log "github.com/sirupsen/logrus"
 )
 
 var ErrNoDefinitionFound = errors.New("No definition found for symbol at given position")
@@ -54,7 +54,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			// TODO: this might index out of bounds
 			globalVar, ok := nap.Nodes[i+1].(*ir.SimpleVar)
 			if !ok {
-				log.Errorln("Node after the global stmt was not a variable, which we expected")
+				log.Println("Node after the global stmt was not a variable, which we expected")
 				return nil, ErrNoDefinitionFound
 			}
 
@@ -120,7 +120,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 			destFile := p.GetFile(destPath)
 			if destFile == nil {
-				log.Errorf("Destination at %s is not in parsed files cache\n", path)
+				log.Printf("Destination at %s is not in parsed files cache\n", path)
 				return nil, ErrNoDefinitionFound
 			}
 
@@ -145,7 +145,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 			destFile := p.GetFile(destPath)
 			if destFile == nil {
-				log.Errorf("Destination at %s is not in parsed files cache\n", destPath)
+				log.Printf("Destination at %s is not in parsed files cache\n", destPath)
 				return nil, ErrNoDefinitionFound
 			}
 
@@ -160,7 +160,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 		case *ir.MethodCallExpr:
 			if len(nap.Nodes) < i {
-				log.Errorln("No nodes found for given position that are more specific than the method call node")
+				log.Println("No nodes found for given position that are more specific than the method call node")
 				return nil, ErrNoDefinitionFound
 			}
 
@@ -202,7 +202,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 		case *ir.PropertyFetchExpr:
 			if len(nap.Nodes) < i {
-				log.Errorln("No nodes found for given position that are more specific than the property fetch node")
+				log.Println("No nodes found for given position that are more specific than the property fetch node")
 				return nil, ErrNoDefinitionFound
 			}
 

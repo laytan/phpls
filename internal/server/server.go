@@ -3,17 +3,19 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
-	log "github.com/sirupsen/logrus"
 )
 
-func NewServer(client protocol.ClientCloser) *Server {
+func NewServer(client protocol.ClientCloser, config config.Config) *Server {
 	return &Server{
 		client: client,
+		config: config,
 	}
 }
 
@@ -30,6 +32,8 @@ type Server struct {
 	root string
 
 	project *project.Project
+
+	config config.Config
 }
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call
@@ -37,7 +41,7 @@ type Server struct {
 func (s *Server) isMethodAllowed(method string) error {
 	// If we are shutting down, we only allow an exit request.
 	if s.isShuttingDown && method != "Exit" {
-		log.Errorf(
+		log.Printf(
 			"Method %s not allowed because the server is waiting for the exit method\n",
 			method,
 		)
@@ -46,7 +50,7 @@ func (s *Server) isMethodAllowed(method string) error {
 
 	// When not initialized, we require initialization first.
 	if !s.isInitialized && method != "Initialize" && method != "Initialized" {
-		log.Errorf(
+		log.Printf(
 			"Method %s not allowed because the server is waiting for the initialization methods\n",
 			method,
 		)
@@ -61,7 +65,8 @@ func (s *Server) showAndLogErr(ctx context.Context, t protocol.MessageType, err 
 		Type:    t,
 		Message: fmt.Sprintf("%v", err),
 	})
-	log.Error(err)
+
+	log.Println(err)
 }
 
 func (s *Server) showAndLogMsg(ctx context.Context, t protocol.MessageType, msg string) {
@@ -70,12 +75,5 @@ func (s *Server) showAndLogMsg(ctx context.Context, t protocol.MessageType, msg 
 		Message: msg,
 	})
 
-	switch t {
-	case protocol.Error:
-		log.Errorln(msg)
-	case protocol.Warning:
-		log.Warnln(msg)
-	default:
-		log.Infoln(msg)
-	}
+	log.Println(msg)
 }

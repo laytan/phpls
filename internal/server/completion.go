@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
-	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) Completion(
@@ -18,14 +18,14 @@ func (s *Server) Completion(
 	params *protocol.CompletionParams,
 ) (*protocol.CompletionList, error) {
 	start := time.Now()
-	defer func() { log.Infof("Retrieving completion took %s\n", time.Since(start)) }()
+	defer func() { log.Printf("Retrieving completion took %s\n", time.Since(start)) }()
 
 	pos := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
 
 	// Turn the position into JSON so we can access it in the Resolve request.
 	pathData, err := json.Marshal(pos)
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		return nil, lsperrors.ErrRequestFailed("Could not serialize document position to JSON")
 	}
 
@@ -62,7 +62,7 @@ func (s *Server) Completion(
 		items[i].AdditionalTextEdits = []protocol.TextEdit{{}}
 	}
 
-	log.Infof("Returning %d completion items\n", len(items))
+	log.Printf("Returning %d completion items\n", len(items))
 
 	return &protocol.CompletionList{
 		Items:        items,
@@ -78,7 +78,7 @@ func (s *Server) Resolve(
 	item *protocol.CompletionItem,
 ) (*protocol.CompletionItem, error) {
 	start := time.Now()
-	defer func() { log.Infof("Resolving completion took %s\n", time.Since(start)) }()
+	defer func() { log.Printf("Resolving completion took %s\n", time.Since(start)) }()
 
 	errMsg := fmt.Sprintf(
 		"Completion item data property could not be converted back to a Position struct, trying to convert: %#v",
@@ -87,15 +87,15 @@ func (s *Server) Resolve(
 
 	rawPos, ok := item.Data.(string)
 	if !ok {
-		log.Error(errMsg)
+		log.Println(errMsg)
 		return nil, lsperrors.ErrRequestFailed(errMsg)
 	}
 
 	pos := &position.Position{}
 	err := json.Unmarshal([]byte(rawPos), pos)
 	if err != nil {
-		log.Error(errMsg)
-		log.Error(err)
+		log.Println(errMsg)
+		log.Println(err)
 		return nil, lsperrors.ErrRequestFailed(errMsg)
 	}
 

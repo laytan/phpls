@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"log"
 	"path"
 	"strings"
 	"sync"
@@ -19,7 +20,6 @@ import (
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
-	log "github.com/sirupsen/logrus"
 )
 
 const cacheSize = datasize.MegaByte * 100
@@ -82,7 +82,7 @@ func (p *Project) ParserConfig(phpv *phpversion.PHPVersion) conf.Config {
 		// TODO: via diagnostics (lsp).
 		// OPTIM: when we get a parse error, maybe don't use the faulty ast but use the latest
 		// OPTIM: valid version. Currently it tries to parse as much as it can but stops on an error.
-		log.Info(e)
+		log.Println(e)
 	})
 }
 
@@ -106,7 +106,7 @@ func (p *Project) ParserConfigWrapWithPath(path string) conf.Config {
 	}
 
 	return p.ParserConfigWith(phpv, func(err *perrors.Error) {
-		log.Infof(`Parse error for path "%s": %+v`, path, err)
+		log.Printf(`Parse error for path "%s": %+v`, path, err)
 	})
 }
 
@@ -135,7 +135,7 @@ func (p *Project) Namespace(pos *position.Position) *position.Position {
 	root.Walk(traverser)
 
 	if traverser.Result == nil {
-		log.Infoln("Did not find namespace")
+		log.Println("Did not find namespace")
 		return nil
 	}
 

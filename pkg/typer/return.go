@@ -2,10 +2,10 @@ package typer
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/phpdoxer"
-	log "github.com/sirupsen/logrus"
 )
 
 // Returns the return type of the method or function, prioritizing phpdoc
@@ -34,7 +34,7 @@ func findReturnComment(node ir.Node) phpdoxer.Type {
 	for _, comment := range comments {
 		nodes, err := phpdoxer.ParseDoc(comment)
 		if err != nil {
-			log.Warn(err)
+			log.Println(err)
 			continue
 		}
 

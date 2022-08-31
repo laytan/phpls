@@ -2,11 +2,11 @@ package server
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/pkg/lsperrors"
-	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
@@ -23,7 +23,7 @@ func (s *Server) DidChange(
 
 	for _, changes := range params.ContentChanges {
 		if changes.Range != nil {
-			log.Errorln("LSP Server does not support ranges in DidChange requests")
+			log.Println("LSP Server does not support ranges in DidChange requests")
 			return lsperrors.ErrRequestFailed(
 				"LSP Server does not support ranges in DidChange requests",
 			)
@@ -34,11 +34,11 @@ func (s *Server) DidChange(
 	newContent := params.ContentChanges[len(params.ContentChanges)-1]
 
 	if err := s.project.ParseFileUpdate(path, newContent.Text); err != nil {
-		log.Error(err)
+		log.Println(err)
 		return lsperrors.ErrRequestFailed(err.Error())
 	}
 
-	log.Infof("Parsed changes for file %s\n", path)
+	log.Printf("Parsed changes for file %s\n", path)
 	return nil
 }
 

@@ -1,15 +1,16 @@
 package typer
 
 import (
+	"log"
+
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/phpdoxer"
-	log "github.com/sirupsen/logrus"
 )
 
 func (typer *typer) Property(root *ir.Root, propertyList *ir.PropertyListStmt) phpdoxer.Type {
 	nodes, err := phpdoxer.ParseDoc(propertyList.Doc.Raw)
 	if err != nil {
-		log.Warn(err)
+		log.Println(err)
 	}
 
 	for _, node := range nodes {

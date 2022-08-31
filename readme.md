@@ -153,23 +153,10 @@ Application Options:
       --tcp                          Communicate over TCP
       --url=                         The URL to listen on for tcp or websocket connections (default: 127.0.0.1:2001)
       --statsviz                     Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz
-      --log=[stderr|file]            Set the log output location (default: file)
-      --level=[info|info|warn|error] The level of logs to output (default: info)
 
 Help Options:
   -h, --help                         Show this help message
 ```
-
-## Logs
-
-If --log is set to file(the default) when running the language server, logs will be put in
-the logs/elephp.log file.
-
-Once this file gets to 100mb, the file is renamed to elephp-timestamp.log and the 
-main log file gets recreated.
-The maximum amount of log files is set to 2, so old log files will get deleted automatically.
-
-You can keep an eye on the logs by running `elephp logs`, this will tail the log file for you.
 
 ## Development
 
@@ -183,34 +170,6 @@ Linting:
 # install at: https://golangci-lint.run/usage/install/
 golangci-lint run
 ```
-
-## Use cases for seperate PHP process
-
-Some use cases have arrived for spawning a php process on startup that keeps 
-listening for requests outlined below for advanced features (that NEED php packages).
-
-I don't think this would slow the server down, because these will at most be sent 1 file
-which should be very fast, also having it open (not restarting the php process)
-everytime should make it fast enough.
-
-### PHPDoc
-
-We could try to use phpstan/phpdoc-parser
-(spawn seperate process with (tcp/pipe?) interface to Go code listening for parse requests)
-and with that, allow definition etc for tokens in the phpdoc.
-
-**I think this is a nice to have, hover can just send the raw phpdoc and signature back,
-for typing it might have value, but most modern code is using native type hints anyway.
-It would be a cool thing to have and set us apart from other PHP language servers though.**
-
-### Completion
-
-For completion we might want a seperate process, just like phpdoc listening for requests and
-parsing using microsoft/tolerant-php-parser. This should gracefully handle syntax errors and
-still give result that is workable.
-
-**We should first see if just taking the file content and the line that the user is editting,
-then splitting/parsing out the identifier that is being typed is enough though.**
 
 ## License
 

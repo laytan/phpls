@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -18,7 +19,6 @@ import (
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -46,7 +46,7 @@ func (p *Project) ParseRoot(root *root, numFiles *atomic.Uint32) error {
 	// NOTE: This does not walk symbolic links, is that a problem?
 	err := filepath.WalkDir(root.Path, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
-			log.Error(fmt.Errorf("Error parsing %s: %w", path, err))
+			log.Println(fmt.Errorf("Error parsing %s: %w", path, err))
 			return nil
 		}
 
@@ -61,11 +61,11 @@ func (p *Project) ParseRoot(root *root, numFiles *atomic.Uint32) error {
 
 			finfo, err := info.Info()
 			if err != nil {
-				log.Error(fmt.Errorf("Error reading file info of %s: %w", path, err))
+				log.Println(fmt.Errorf("Error reading file info of %s: %w", path, err))
 			}
 
 			if err := p.ParseFile(path, finfo.ModTime()); err != nil {
-				log.Error(fmt.Errorf("Error parsing file %s: %w", path, err))
+				log.Println(fmt.Errorf("Error parsing file %s: %w", path, err))
 			}
 
 			return nil
@@ -128,7 +128,7 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 	// If we already have it, and the content hasn't changed, skip.
 	if f, ok := p.files[path]; ok {
 		if removeWhitespace(content) == removeWhitespace(f.content) {
-			log.Infoln("File parsing with only whitespace changes, skipping this change")
+			log.Println("File parsing with only whitespace changes, skipping this change")
 			return nil
 		}
 	}
@@ -172,7 +172,7 @@ func (p *Project) ParseFileCached(file *File) *ir.Root {
 	return p.cache.Cached(file.path, func() *ir.Root {
 		root, err := file.parse(p.ParserConfigWrapWithPath(file.path))
 		if err != nil {
-			log.Error(err)
+			log.Println(err)
 		}
 
 		return root
@@ -194,7 +194,7 @@ func (p *Project) removeSymbolsOf(path string) {
 		})
 	}
 
-	log.Infof("Removed %d symbols from %s out of the symboltrie", len(toRemove), path)
+	log.Printf("Removed %d symbols from %s out of the symboltrie", len(toRemove), path)
 }
 
 // Fast way of removing all whitespace from a string, credit: https://stackoverflow.com/a/32081891.
