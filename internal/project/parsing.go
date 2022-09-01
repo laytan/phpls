@@ -40,19 +40,19 @@ func (p *Project) Parse(numFiles *atomic.Uint32) error {
 }
 
 func (p *Project) ParseRoot(root *root, numFiles *atomic.Uint32) error {
+	log.Printf("Parsing root %s with PHP version %s\n", root.Path, root.Version.String())
+
 	g := new(errgroup.Group)
 	g.SetLimit(runtime.NumCPU())
 
 	// NOTE: This does not walk symbolic links, is that a problem?
 	err := filepath.WalkDir(root.Path, func(path string, info fs.DirEntry, err error) error {
-		if err != nil {
-			log.Println(fmt.Errorf("Error parsing %s: %w", path, err))
+		if !p.ShouldParseFile(info) {
 			return nil
 		}
 
-		// TODO: make configurable what a php file is.
-		// NOTE: the TextDocumentItem struct has the languageid on it, maybe use that?
-		if !strings.HasSuffix(path, ".php") || info.IsDir() {
+		if err != nil {
+			log.Println(fmt.Errorf("Error parsing %s: %w", path, err))
 			return nil
 		}
 
@@ -177,6 +177,21 @@ func (p *Project) ParseFileCached(file *File) *ir.Root {
 
 		return root
 	})
+}
+
+func (p *Project) ShouldParseFile(info fs.DirEntry) bool {
+	if info.IsDir() {
+		return false
+	}
+
+	name := info.Name()
+	for _, extension := range p.fileExtensions {
+		if strings.HasSuffix(name, extension) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (p *Project) removeSymbolsOf(path string) {

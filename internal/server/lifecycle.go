@@ -82,7 +82,7 @@ func (s *Server) Initialize(
 
 	log.Printf("Detected php version: %s\n", phpv.String())
 
-	s.project = project.NewProject(string(s.root), phpv)
+	s.project = project.NewProject(string(s.root), phpv, s.config.FileExtensions())
 
 	go func() {
 		filesDone := atomic.Uint32{}

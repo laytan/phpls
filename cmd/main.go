@@ -24,9 +24,13 @@ import (
 
 func main() {
 	config := config.New()
-	err := config.Initialize()
-	if err != nil {
+	disregardErr, err := config.Initialize()
+	if disregardErr {
 		os.Exit(1)
+	}
+
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	stop := logging.Configure(path.Join(pathutils.Root(), "logs"), config.Name())

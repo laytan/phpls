@@ -440,7 +440,7 @@ func TestDefinitions(t *testing.T) {
 		},
 	}
 
-	project := NewProject(definitionsFolder, phpversion.EightOne())
+	project := NewProject(definitionsFolder, phpversion.EightOne(), []string{"php"})
 	err := project.Parse(&atomic.Uint32{})
 	is.NoErr(err)
 
@@ -477,7 +477,7 @@ func TestDefinitions(t *testing.T) {
 
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
-	project := NewProject(definitionsFolder, phpversion.EightOne())
+	project := NewProject(definitionsFolder, phpversion.EightOne(), []string{"php"})
 	err := project.Parse(&atomic.Uint32{})
 	is.NoErr(err)
 
@@ -495,7 +495,7 @@ func BenchmarkParsing(b *testing.B) {
 	is := is.New(b)
 
 	for i := 0; i < b.N; i++ {
-		project := NewProject(definitionsFolder, phpversion.EightOne())
+		project := NewProject(definitionsFolder, phpversion.EightOne(), []string{"php"})
 		err := project.Parse(&atomic.Uint32{})
 		is.NoErr(err)
 	}

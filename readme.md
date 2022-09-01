@@ -147,15 +147,16 @@ but here are the options available:
 elephp -h
 
 Application Options:
-      --clientProcessId=             Process ID that when terminated, terminates the language server
-      --stdio                        Communicate over stdio
-      --ws                           Communicate over websockets
-      --tcp                          Communicate over TCP
-      --url=                         The URL to listen on for tcp or websocket connections (default: 127.0.0.1:2001)
-      --statsviz                     Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz
+      --stdio            Communicate over stdio
+      --ws               Communicate over websockets
+      --tcp              Communicate over TCP
+  -v, --statsviz         Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz
+  -p, --clientProcessId= Process ID that when terminated, terminates the language server
+      --url=             The URL to listen on for tcp or websocket connections (default: 127.0.0.1:2001)
+  -e, --fileExtensions=  Define file extensions to treat as PHP source files (default: php)
 
 Help Options:
-  -h, --help                         Show this help message
+  -h, --help             Show this help message
 ```
 
 ## Development

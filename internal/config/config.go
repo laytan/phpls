@@ -2,7 +2,9 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/laytan/elephp/pkg/connection"
@@ -21,11 +23,12 @@ func New() Config {
 type Config interface {
 	Name() string
 	Version() string
-	Initialize() error
+	Initialize() (disregardErr bool, err error)
 	ClientPid() (uint, bool)
 	ConnType() (connection.ConnType, error)
 	ConnURL() string
 	UseStatsviz() bool
+	FileExtensions() []string
 }
 
 type lsConfig struct {
@@ -33,9 +36,22 @@ type lsConfig struct {
 	Args []string
 }
 
-func (c *lsConfig) Initialize() error {
-	_, err := flags.ParseArgs(&c.opts, c.Args)
-	return err //nolint:wrapcheck
+func (c *lsConfig) Initialize() (shownHelp bool, err error) {
+	_, err = flags.ParseArgs(&c.opts, c.Args)
+	if err == nil {
+		return false, nil
+	}
+
+	specificErr, ok := err.(*flags.Error)
+	if !ok {
+		return false, fmt.Errorf("[ERROR] unexpected error parsing flags: %w", err)
+	}
+
+	if specificErr.Type == flags.ErrHelp {
+		return true, nil
+	}
+
+	return false, fmt.Errorf("[ERROR] %w", specificErr)
 }
 
 func (c *lsConfig) ClientPid() (uint, bool) {
@@ -86,4 +102,13 @@ func (c *lsConfig) Name() string {
 
 func (c *lsConfig) Version() string {
 	return "0.0.1-dev"
+}
+
+func (c *lsConfig) FileExtensions() []string {
+	exts := make([]string, len(c.opts.FileExtensions))
+	for i, ext := range c.opts.FileExtensions {
+		exts[i] = strings.TrimSpace(ext)
+	}
+
+	return exts
 }

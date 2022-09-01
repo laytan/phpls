@@ -45,9 +45,12 @@ type Project struct {
 	cache *lfudacache.Cache[string, *ir.Root]
 
 	typer typer.Typer
+
+	// Extensions to treat as PHP source files.
+	fileExtensions []string
 }
 
-func NewProject(r string, phpv *phpversion.PHPVersion) *Project {
+func NewProject(r string, phpv *phpversion.PHPVersion, fileExtensions []string) *Project {
 	roots := []*root{
 		{Path: r, Version: phpv},
 		// Parse stubs using the latest supported PHP version, bcs they use the latest features.
@@ -55,11 +58,12 @@ func NewProject(r string, phpv *phpversion.PHPVersion) *Project {
 	}
 
 	return &Project{
-		files:      make(map[string]*File),
-		roots:      roots,
-		symbolTrie: symboltrie.New[*traversers.TrieNode](),
-		cache:      lfudacache.New[string, *ir.Root](cacheSize),
-		typer:      typer.New(),
+		files:          make(map[string]*File),
+		roots:          roots,
+		symbolTrie:     symboltrie.New[*traversers.TrieNode](),
+		cache:          lfudacache.New[string, *ir.Root](cacheSize),
+		typer:          typer.New(),
+		fileExtensions: fileExtensions,
 	}
 }
 

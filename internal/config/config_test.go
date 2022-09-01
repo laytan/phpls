@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/laytan/elephp/pkg/connection"
 	"github.com/matryer/is"
 )
@@ -53,7 +52,8 @@ func TestConfigConnType(t *testing.T) {
 
 	for _, test := range expectations {
 		c := newTestConfig(test.args)
-		err := c.Initialize()
+		shownHelp, err := c.Initialize()
+		is.Equal(shownHelp, false)
 		is.NoErr(err)
 
 		connType, err := c.ConnType()
@@ -100,7 +100,9 @@ func TestClientPid(t *testing.T) {
 
 	for _, test := range expectations {
 		config := newTestConfig(test.args)
-		err := config.Initialize()
+		shownHelp, err := config.Initialize()
+		is.Equal(shownHelp, false)
+
 		if !test.error {
 			is.NoErr(err)
 		}
@@ -115,12 +117,14 @@ func TestStatsviz(t *testing.T) {
 	is := is.New(t)
 
 	config := newTestConfig([]string{"--statsviz"})
-	err := config.Initialize()
+	shownHelp, err := config.Initialize()
+	is.Equal(shownHelp, false)
 	is.NoErr(err)
 	is.True(config.UseStatsviz())
 
 	config = newTestConfig([]string{})
-	err = config.Initialize()
+	shownHelp, err = config.Initialize()
+	is.Equal(shownHelp, false)
 	is.NoErr(err)
 	is.Equal(config.UseStatsviz(), false)
 }
@@ -129,12 +133,14 @@ func TestConnUrl(t *testing.T) {
 	is := is.New(t)
 
 	config := newTestConfig([]string{})
-	err := config.Initialize()
+	shownHelp, err := config.Initialize()
+	is.Equal(shownHelp, false)
 	is.NoErr(err)
 	is.Equal(config.ConnURL(), "127.0.0.1:2001")
 
 	config = newTestConfig([]string{"--url=\"127.0.0.1:2003\""})
-	err = config.Initialize()
+	shownHelp, err = config.Initialize()
+	is.Equal(shownHelp, false)
 	is.NoErr(err)
 	is.Equal(config.ConnURL(), "127.0.0.1:2003")
 }
@@ -158,10 +164,7 @@ func TestHelp(t *testing.T) {
 
 	for _, test := range expectations {
 		config := newTestConfig(test)
-		err := config.Initialize()
-		flagError, ok := err.(*flags.Error)
-
-		is.True(ok)
-		is.Equal(flagError.Type, flags.ErrHelp)
+		shownHelp, _ := config.Initialize()
+		is.Equal(shownHelp, true)
 	}
 }
