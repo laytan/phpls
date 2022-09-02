@@ -46,8 +46,12 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 
 		start := uint(0)
 		end := uint(len(rContent))
+		startI := pos.Col - 2
+		if startI >= end {
+			startI = end - 1
+		}
 
-		for i := pos.Col - 2; i > 0; i-- {
+		for i := startI; i > 0; i-- {
 			ch := rContent[i]
 
 			if unicode.IsDigit(ch) || unicode.IsLetter(ch) {
@@ -58,7 +62,7 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 			break
 		}
 
-		for i := pos.Col - 2; int(i) < len(rContent); i++ {
+		for i := startI; int(i) < len(rContent); i++ {
 			ch := rContent[i]
 
 			if unicode.IsDigit(ch) || unicode.IsLetter(ch) {
