@@ -68,3 +68,5 @@ class TestPropertiesClassChild extends TestPropertiesClass2
 $testingPropertiesChild = new TestPropertiesClassChild();
 $testingPropertiesChild->testType->test;
 $testingPropertiesChild->testNo->test;
+
+$testingPropertiesChild->testType->test();

@@ -26,9 +26,9 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
     - [x] Parameters
     - [ ] Methods
         - [x] On $this
-        - [ ] On arbitrary variables
-            - [x] On variables created using new X()
-            - [x] On variables with @var phpdoc
+        - [x] On variables created using new X()
+        - [x] On variables with @var phpdoc
+        - [x] On typed property chains $foo->bar->foobar->test()
         - [ ] Static
         - [ ] Final methods
         - [ ] @method PhpDoc
@@ -37,6 +37,7 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
         - [x] On $this
         - [x] On variables created using new X()
         - [x] On variables with a @var phpdoc
+        - [x] On typed property chains $foo->bar->foobar->test
     - [ ] Constants (classLike & global)
     - [ ] Anonymous functions
     - [ ] Arrow functions

@@ -131,8 +131,45 @@ func (p *Project) method(
 	scope ir.Node,
 	method *ir.MethodCallExpr,
 ) (*ir.ClassMethodStmt, string, error) {
-	objectVar, ok := method.Variable.(*ir.SimpleVar)
-	if !ok {
+	var targetClass *traversers.TrieNode
+	var targetPrivacy phprivacy.Privacy
+	switch typedVar := method.Variable.(type) {
+	case *ir.PropertyFetchExpr:
+		prop, path, err := p.property(root, classLikeScope, scope, typedVar)
+		if err != nil {
+			return nil, "", fmt.Errorf("Method definition: unable to get type of variable that method is called on: %w", err)
+		}
+
+		file := p.GetFile(path)
+		varRoot := p.ParseFileCached(file)
+		propType := p.typer.Property(varRoot, prop)
+		clsType, ok := propType.(*phpdoxer.TypeClassLike)
+		if !ok {
+			return nil, "", fmt.Errorf("Method definition: type of variable that method is called on is %s, expecting a class like type", propType)
+		}
+
+		target := p.findClassLikeSymbol(clsType)
+		if target == nil {
+			return nil, "", fmt.Errorf("Method definition: could not find definition for %s in symbol trie", clsType.Name)
+		}
+
+		targetClass = target
+		targetPrivacy = phprivacy.PrivacyPublic
+
+	case *ir.SimpleVar:
+		classScope, privacy, err := p.variableType(root, classLikeScope, scope, typedVar)
+		if err != nil {
+			return nil, "", fmt.Errorf("Method definition: could not find definition for variable that method is called on: %w", err)
+		}
+
+		if classScope == nil {
+			return nil, "", fmt.Errorf("Method definition: could not find class like definition for variable that method is called on")
+		}
+
+		targetClass = classScope
+		targetPrivacy = privacy
+
+	default:
 		return nil, "", fmt.Errorf(
 			"Method definition: unexpected variable node of type %T",
 			method.Variable,
@@ -142,30 +179,25 @@ func (p *Project) method(
 	methodName, ok := method.Method.(*ir.Identifier)
 	if !ok {
 		return nil, "", fmt.Errorf(
-			"Method definition: unexpected method node of type %T",
+			"Method definition: unexpected variable node of type %T",
 			method.Method,
 		)
 	}
 
-	classScope, privacy, err := p.variableType(root, classLikeScope, scope, objectVar)
-	if err != nil {
-		return nil, "", fmt.Errorf("Error fetching variable type: %w", err)
-	}
-
-	if classScope == nil {
-		return nil, "", nil
-	}
-
-	file := p.GetFile(classScope.Path)
+	file := p.GetFile(targetClass.Path)
 	classRoot := p.ParseFileCached(file)
 
 	var result *ir.ClassMethodStmt
 	var resultPath string
-	err = p.walkResolveQueue(
+	err := p.walkResolveQueue(
 		classRoot,
-		classScope.Symbol,
+		targetClass.Symbol,
 		func(wc *walkContext) (bool, error) {
-			traverser := traversers.NewMethod(methodName.Value, wc.QueueNode.FQN.Name(), privacy)
+			traverser := traversers.NewMethod(
+				methodName.Value,
+				wc.QueueNode.FQN.Name(),
+				targetPrivacy,
+			)
 			wc.IR.Walk(traverser)
 
 			if traverser.Method != nil {
@@ -180,9 +212,9 @@ func (p *Project) method(
 	)
 	if err != nil {
 		return nil, "", fmt.Errorf(
-			"Error retrieving method definition for %s->%s: %w",
-			objectVar.Name,
+			"Error retrieving method definition for %s on class %s: %w",
 			methodName.Value,
+			targetClass.Symbol.Identifier(),
 			err,
 		)
 	}
