@@ -11,6 +11,8 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
 
 ### In progress/done
 
+Below list is what needs to be done before v1 (or at least the first release).
+
 - [x] Communication
     - [x] Stdio
     - [x] Websockets
@@ -53,18 +55,16 @@ Below I have outlined all features that a LSP can theoretically do, and the prog
     - [ ] Constants
     - [ ] Namespaces
     - [ ] PHP Keywords/language constructs
+    - [ ] Show details about completion items (use hover content?)
     - [x] Automatic use statement on complete
     - [ ] **Incomplete files** (with syntax errors), challenging because the parser disregards lines with syntax errors
         - [x] Done in a hacky way, parsing out current word ourselves
         - [ ] Context aware (if $this-> for example, add all members on the current class)
     - [x] Autocomplete namespace usage
-
-### Features to be implemented before v1
-
-- Send parse errors to client
-- Hover
-- Completion
-    - Show details about completion items (use hover content?)
+- [ ] Hover
+    - [x] Basic, showing phpdoc and signature of symbols that definition supports
+    - [ ] Show property privacy
+    - [ ] To be continued...
 
 ### Features for later
 
