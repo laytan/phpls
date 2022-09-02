@@ -37,16 +37,25 @@ func (m *Method) EnterNode(node ir.Node) bool {
 			return false
 		}
 
+		hasPrivacy := false
 		for _, mod := range typedNode.Modifiers {
 			privacy, err := phprivacy.FromString(mod.Value)
 			if err != nil {
 				continue
 			}
 
+			hasPrivacy = true
+
 			if !m.privacy.CanAccess(privacy) {
 				continue
 			}
 
+			m.Method = typedNode
+			return false
+		}
+
+		// No privacy, means public privacy, means accesible.
+		if !hasPrivacy {
 			m.Method = typedNode
 			return false
 		}
