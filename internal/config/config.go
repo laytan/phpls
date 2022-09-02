@@ -107,7 +107,7 @@ func (c *lsConfig) Version() string {
 func (c *lsConfig) FileExtensions() []string {
 	exts := make([]string, len(c.opts.FileExtensions))
 	for i, ext := range c.opts.FileExtensions {
-		exts[i] = strings.TrimSpace(ext)
+		exts[i] = "." + strings.TrimSpace(ext)
 	}
 
 	return exts
