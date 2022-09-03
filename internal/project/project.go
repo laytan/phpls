@@ -12,8 +12,8 @@ import (
 	"github.com/VKCOM/php-parser/pkg/conf"
 	perrors "github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/version"
+	"github.com/laytan/elephp/pkg/arccache"
 	"github.com/laytan/elephp/pkg/datasize"
-	"github.com/laytan/elephp/pkg/lfudacache"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
@@ -42,7 +42,7 @@ type Project struct {
 	// for something.
 	symbolTrie *symboltrie.Trie[*traversers.TrieNode]
 
-	cache *lfudacache.Cache[string, *ir.Root]
+	cache *arccache.Cache[string, *ir.Root]
 
 	typer typer.Typer
 
@@ -61,7 +61,7 @@ func NewProject(r string, phpv *phpversion.PHPVersion, fileExtensions []string) 
 		files:          make(map[string]*File),
 		roots:          roots,
 		symbolTrie:     symboltrie.New[*traversers.TrieNode](),
-		cache:          lfudacache.New[string, *ir.Root](cacheSize),
+		cache:          arccache.New[string, *ir.Root](cacheSize),
 		typer:          typer.New(),
 		fileExtensions: fileExtensions,
 	}
