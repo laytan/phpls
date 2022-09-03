@@ -443,6 +443,37 @@ func TestDefinitions(t *testing.T) {
 			position:    &position.Position{Row: 72, Col: 36},
 			outPosition: &position.Position{Row: 11, Col: 5},
 		},
+		// {
+		// 	file:        path.Join("methods", "static.php"),
+		// 	position:    &position.Position{Row: 23, Col: 20},
+		// 	outPosition: &position.Position{Row: 6, Col: 5},
+		// },
+		// {
+		// 	file:     path.Join("methods", "static.php"),
+		// 	position: &position.Position{Row: 24, Col: 20},
+		// },
+		// {
+		// 	file:     path.Join("methods", "static.php"),
+		// 	position: &position.Position{Row: 25, Col: 20},
+		// },
+		// {
+		// 	file:        path.Join("methods", "static.php"),
+		// 	position:    &position.Position{Row: 27, Col: 20},
+		// 	outPosition: &position.Position{Row: 6, Col: 5},
+		// },
+		// {
+		// 	file:     path.Join("methods", "static.php"),
+		// 	position: &position.Position{Row: 28, Col: 20},
+		// },
+		// {
+		// 	file:     path.Join("methods", "static.php"),
+		// 	position: &position.Position{Row: 29, Col: 20},
+		// },
+		// {
+		// 	file:        path.Join("methods", "static.php"),
+		// 	position:    &position.Position{Row: 32, Col: 8},
+		// 	outPosition: &position.Position{Row: 6, Col: 5},
+		// },
 	}
 
 	project := NewProject(definitionsFolder, phpversion.EightOne(), []string{"php"})
