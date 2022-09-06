@@ -1,0 +1,16 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/laytan/elephp/internal/index
+BenchmarkIndex
+BenchmarkIndex-8   	      20	1016348212 ns/op	302241632 B/op	  911214 allocs/op
+BenchmarkIndex-8   	      20	1007189758 ns/op	302239018 B/op	  911199 allocs/op
+BenchmarkIndex-8   	      20	 999296342 ns/op	302239067 B/op	  911204 allocs/op
+BenchmarkIndex-8   	      20	1012917440 ns/op	302240350 B/op	  911205 allocs/op
+BenchmarkIndex-8   	      20	1041682462 ns/op	302238226 B/op	  911200 allocs/op
+BenchmarkIndex-8   	      20	 999154440 ns/op	302239811 B/op	  911203 allocs/op
+BenchmarkIndex-8   	      20	 995986002 ns/op	302240618 B/op	  911208 allocs/op
+BenchmarkIndex-8   	      20	1009586815 ns/op	302239986 B/op	  911206 allocs/op
+BenchmarkIndex-8   	      20	1013912429 ns/op	302241566 B/op	  911215 allocs/op
+BenchmarkIndex-8   	      20	1092138440 ns/op	302239100 B/op	  911201 allocs/op
+PASS
+ok  	github.com/laytan/elephp/internal/index	214.340s
