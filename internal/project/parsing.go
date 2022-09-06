@@ -106,7 +106,20 @@ func (p *Project) ParseFileContent(path string, content []byte, modTime time.Tim
 
 	symbolTraverser := traversers.NewSymbol(p.symbolTrie)
 	symbolTraverser.SetPath(path)
-	irRootNode.Walk(symbolTraverser)
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf(
+					"[WARNING] Recovered parser panic (probably a syntax error) for %s: %v\n",
+					path,
+					r,
+				)
+			}
+		}()
+
+		irRootNode.Walk(symbolTraverser)
+	}()
 
 	// Writing/Reading from a map needs to be done by one go routine at a time.
 	p.mu.Lock()

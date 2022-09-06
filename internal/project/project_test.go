@@ -536,3 +536,22 @@ func BenchmarkParsing(b *testing.B) {
 		is.NoErr(err)
 	}
 }
+
+func TestParserPanicIsRecovered(t *testing.T) {
+	is := is.New(t)
+
+	project := NewProject(
+		path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors"),
+		&phpversion.PHPVersion{
+			Major: 7,
+			Minor: 4,
+		},
+		[]string{"php"},
+	)
+
+	err := project.Parse(&atomic.Uint32{})
+	is.NoErr(err)
+
+	_, ok := project.files[path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors", "syntax_errors.php")]
+	is.True(ok)
+}
