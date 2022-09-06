@@ -7,8 +7,8 @@ require (
 	github.com/DmitriyVTitov/size v1.5.0
 	github.com/VKCOM/noverify v0.5.3
 	github.com/VKCOM/php-parser v0.8.2
-	github.com/arl/statsviz v0.4.1
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+	github.com/arl/statsviz v0.5.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
@@ -20,7 +20,6 @@ require (
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
