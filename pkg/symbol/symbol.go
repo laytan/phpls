@@ -50,11 +50,10 @@ func (b *baseSymbol) Identifier() string {
 // FunctionStmtSymbol is a stripped version of ir.FunctionStmt.
 type FunctionStmtSymbol struct {
 	baseSymbol
-	Params []ir.Node
 }
 
 func NewFunction(stmt *ir.FunctionStmt) *FunctionStmtSymbol {
-	f := &FunctionStmtSymbol{Params: stmt.Params}
+	f := &FunctionStmtSymbol{}
 	f.FromNode(stmt)
 	return f
 }
