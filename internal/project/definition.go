@@ -14,27 +14,24 @@ import (
 
 var ErrNoDefinitionFound = errors.New("No definition found for symbol at given position")
 
+// TODO: lots of repetition here.
 func (p *Project) Definition(pos *position.Position) (*position.Position, error) {
-	path := pos.Path
-
-	file := p.GetFile(path)
-	if file == nil {
-		return nil, fmt.Errorf("Error retrieving file content for %s", path)
+	content, root, err := p.wrksp.AllOf(pos.Path)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"[ERROR] In definition retrieving file content/nodes for %s: %w",
+			pos.Path,
+			err,
+		)
 	}
 
-	ast := p.ParseFileCached(file)
-	if ast == nil {
-		return nil, fmt.Errorf("Error parsing %s for definitions", path)
-	}
-
-	apos := position.LocToPos(file.content, pos.Row, pos.Col)
+	apos := position.LocToPos(content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
-	ast.Walk(nap)
-	// what.Is(ast)
+	root.Walk(nap)
 
 	for i := len(nap.Nodes) - 1; i >= 0; i-- {
 		node := nap.Nodes[i]
-		what.Happens("%T\n", node)
+		what.Happens("Checking for definition of %T\n", node)
 
 		var scope ir.Node
 		var classLikeScope ir.Node
@@ -58,13 +55,13 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 				return nil, ErrNoDefinitionFound
 			}
 
-			assignment := p.globalAssignment(ast, globalVar)
+			assignment := p.globalAssignment(root, globalVar)
 			if assignment == nil {
 				return nil, ErrNoDefinitionFound
 			}
 
 			pos := ir.GetPosition(assignment)
-			_, col := position.PosToLoc(file.content, uint(pos.StartPos))
+			_, col := position.PosToLoc(content, uint(pos.StartPos))
 
 			return &position.Position{
 				Row: uint(pos.StartLine),
@@ -98,13 +95,13 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 				return nil, ErrNoDefinitionFound
 			}
 
-			pos := ir.GetPosition(assignment)
-			_, col := position.PosToLoc(file.content, uint(pos.StartPos))
+			destPos := ir.GetPosition(assignment)
+			_, col := position.PosToLoc(content, uint(destPos.StartPos))
 
 			return &position.Position{
-				Row:  uint(pos.StartLine),
+				Row:  uint(destPos.StartLine),
 				Col:  col,
-				Path: path,
+				Path: pos.Path,
 			}, nil
 
 		case *ir.FunctionCallExpr:
@@ -115,17 +112,17 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			}
 
 			if destPath == "" {
-				destPath = path
+				destPath = pos.Path
 			}
 
-			destFile := p.GetFile(destPath)
-			if destFile == nil {
-				log.Printf("Destination at %s is not in parsed files cache\n", path)
+			destContent, err := p.wrksp.ContentOf(destPath)
+			if err != nil {
+				log.Println(fmt.Errorf("[ERROR] Definition destination at %s: %w", destPath, err))
 				return nil, ErrNoDefinitionFound
 			}
 
 			pos := function.Position()
-			_, col := position.PosToLoc(destFile.content, uint(pos.StartPos))
+			_, col := position.PosToLoc(destContent, uint(pos.StartPos))
 
 			return &position.Position{
 				Row:  uint(pos.StartLine),
@@ -134,23 +131,23 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			}, nil
 
 		case *ir.Name:
-			classLike, destPath := p.classLike(ast, typedNode)
+			classLike, destPath := p.classLike(root, typedNode)
 			if classLike == nil {
 				continue
 			}
 
 			if destPath == "" {
-				destPath = path
+				destPath = pos.Path
 			}
 
-			destFile := p.GetFile(destPath)
-			if destFile == nil {
-				log.Printf("Destination at %s is not in parsed files cache\n", destPath)
+			destContent, err := p.wrksp.ContentOf(destPath)
+			if err != nil {
+				log.Println(fmt.Errorf("[ERROR] Definition destination at %s: %w", destPath, err))
 				return nil, ErrNoDefinitionFound
 			}
 
 			pos := classLike.Position()
-			_, col := position.PosToLoc(destFile.content, uint(pos.StartPos))
+			_, col := position.PosToLoc(destContent, uint(pos.StartPos))
 
 			return &position.Position{
 				Row:  uint(pos.StartLine),
@@ -172,7 +169,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 				// If one index further is an identifier, go to the method definition.
 			case *ir.Identifier:
-				method, destPath, err := p.method(ast, classLikeScope, scope, typedNode)
+				method, destPath, err := p.method(root, classLikeScope, scope, typedNode)
 				if err != nil {
 					return nil, err
 				}
@@ -182,16 +179,17 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 				}
 
 				if destPath == "" {
-					destPath = path
+					destPath = pos.Path
 				}
 
-				file := p.GetFile(destPath)
-				if file == nil {
+				destContent, err := p.wrksp.ContentOf(destPath)
+				if err != nil {
+					log.Println(fmt.Errorf("[ERROR] Definition destination at %s: %w", destPath, err))
 					return nil, ErrNoDefinitionFound
 				}
 
 				pos := ir.GetPosition(method)
-				_, col := position.PosToLoc(file.content, uint(pos.StartPos))
+				_, col := position.PosToLoc(destContent, uint(pos.StartPos))
 
 				return &position.Position{
 					Row:  uint(pos.StartLine),
@@ -214,7 +212,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 
 				// If one index further is an identifier, go to the property definition.
 			case *ir.Identifier:
-				method, destPath, err := p.property(ast, classLikeScope, scope, typedNode)
+				method, destPath, err := p.property(root, classLikeScope, scope, typedNode)
 				if err != nil {
 					return nil, err
 				}
@@ -224,16 +222,17 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 				}
 
 				if destPath == "" {
-					destPath = path
+					destPath = pos.Path
 				}
 
-				file := p.GetFile(destPath)
-				if file == nil {
+				destContent, err := p.wrksp.ContentOf(destPath)
+				if err != nil {
+					log.Println(fmt.Errorf("[ERROR] Definition destination at %s: %w", destPath, err))
 					return nil, ErrNoDefinitionFound
 				}
 
 				pos := ir.GetPosition(method)
-				_, col := position.PosToLoc(file.content, uint(pos.StartPos))
+				_, col := position.PosToLoc(destContent, uint(pos.StartPos))
 
 				return &position.Position{
 					Row:  uint(pos.StartLine),

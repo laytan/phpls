@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
+	"path"
 	"runtime"
 	"strings"
 	"sync"
@@ -11,6 +13,8 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/parsing"
+	"github.com/laytan/elephp/pkg/pathutils"
+	"github.com/laytan/elephp/pkg/phpversion"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -23,12 +27,14 @@ const (
 	// But there is a balance to be struck, if a project only has 3 files,
 	// The index will still be of the high capacity (more memory).
 	// But larger projects are more common.
-	startingIndexSize = 2000
+	startingIndexSize = 10000
 )
 
 var ErrFileNotIndexed = errors.New("File is not indexed in the workspace")
 
 var indexGoRoutinesLimit = runtime.NumCPU()
+
+var stubsPath = path.Join(pathutils.Root(), "phpstorm-stubs")
 
 type file struct {
 	content string
@@ -41,8 +47,8 @@ func newFile(content string) *file {
 }
 
 type ParsedFile struct {
-	path    string
-	content string
+	Path    string
+	Content string
 }
 
 type Wrkspc interface {
@@ -58,25 +64,33 @@ type Wrkspc interface {
 
 	IROf(path string) (*ir.Root, error)
 
+	AllOf(path string) (string, *ir.Root, error)
+
 	Refresh(path string) error
 
 	RefreshFrom(path string, content string) error
 }
 
 // fileExtensions should all start with a period.
-func NewWrkspc(parser parsing.Parser, root string, fileExtensions []string) Wrkspc {
+func New(phpv *phpversion.PHPVersion, root string, fileExtensions []string) Wrkspc {
+	normalParser := parsing.New(phpv)
+	// TODO: not ideal, temporary
+	stubParser := parsing.New(phpversion.EightOne())
+
 	return &wrkspc{
-		parser:         parser,
-		root:           root,
+		normalParser:   normalParser,
+		stubParser:     stubParser,
+		roots:          []string{root, path.Join(pathutils.Root(), "phpstorm-stubs")},
 		fileExtensions: fileExtensions,
 		files:          make(map[string]*file, startingIndexSize),
 	}
 }
 
 type wrkspc struct {
-	parser parsing.Parser
+	normalParser parsing.Parser
+	stubParser   parsing.Parser
 
-	root string
+	roots []string
 
 	fileExtensions []string
 
@@ -85,14 +99,14 @@ type wrkspc struct {
 }
 
 func (w *wrkspc) Root() string {
-	return w.root
+	return w.roots[0]
 }
 
 func (w *wrkspc) FileExtensions() []string {
 	return w.fileExtensions
 }
 
-// TODO: error handling
+// TODO: error handling.
 func (w *wrkspc) Index(
 	files chan<- *ParsedFile,
 	total *atomic.Uint64,
@@ -107,6 +121,7 @@ func (w *wrkspc) Index(
 		}
 
 		totalDone <- true
+		close(totalDone)
 	}()
 
 	g := errgroup.Group{}
@@ -119,7 +134,7 @@ func (w *wrkspc) Index(
 				return err
 			}
 
-			files <- &ParsedFile{path: path, content: file.content}
+			files <- &ParsedFile{Path: path, Content: file.content}
 
 			return nil
 		})
@@ -164,13 +179,27 @@ func (w *wrkspc) IROf(path string) (*ir.Root, error) {
 		return nil, err
 	}
 
-	ir, err := w.parser.Parse(content)
+	ir, err := w.parser(path).Parse(content)
 	if err != nil {
 		// TODO: is this the proper way to wrap an error with fmt (does errors.Is work)?
 		return nil, fmt.Errorf(ErrParseFmt, err)
 	}
 
 	return ir, nil
+}
+
+func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
+	content, err := w.ContentOf(path)
+	if err != nil {
+		return "", nil, err
+	}
+
+	ir, err := w.parser(path).Parse(content)
+	if err != nil {
+		return "", nil, fmt.Errorf(ErrParseFmt, err)
+	}
+
+	return content, ir, nil
 }
 
 func (w *wrkspc) Refresh(path string) error {
@@ -184,7 +213,7 @@ func (w *wrkspc) RefreshFrom(path string, content string) error {
 }
 
 func (w *wrkspc) refresh(path string) (*file, error) {
-	content, err := w.parser.Read(path)
+	content, err := w.parser(path).Read(path)
 	if err != nil {
 		return nil, fmt.Errorf(ErrReadFmt, path, err)
 	}
@@ -203,21 +232,34 @@ func (w *wrkspc) refreshFrom(path string, content string) *file {
 }
 
 func (w *wrkspc) walk(walker func(path string, d fs.DirEntry) error) error {
-	if err := w.parser.Walk(w.root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+	wg := sync.WaitGroup{}
+	wg.Add(len(w.roots))
 
-		if w.shouldParse(d) {
-			return walker(path, d)
-		}
+	var finalErr error
 
-		return nil
-	}); err != nil {
-		return fmt.Errorf(ErrParseWalkFmt, err)
+	for _, root := range w.roots {
+		go func(root string) {
+			defer wg.Done()
+
+			if err := w.parser(root).Walk(root, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+
+				if w.shouldParse(d) {
+					return walker(path, d)
+				}
+
+				return nil
+			}); err != nil {
+				log.Println(fmt.Errorf(ErrParseWalkFmt, err))
+				finalErr = err
+			}
+		}(root)
 	}
 
-	return nil
+	wg.Wait()
+	return finalErr
 }
 
 func (w *wrkspc) shouldParse(d fs.DirEntry) bool {
@@ -233,4 +275,12 @@ func (w *wrkspc) shouldParse(d fs.DirEntry) bool {
 	}
 
 	return false
+}
+
+func (w *wrkspc) parser(path string) parsing.Parser {
+	if strings.HasPrefix(path, stubsPath) {
+		return w.stubParser
+	}
+
+	return w.normalParser
 }

@@ -1,5 +1,8 @@
-test:
-	go test ./... -cover -race -shuffle=on -timeout=5s -v -tags what
+gotest:
+	go test ./... -cover -race -shuffle=on -timeout=5s -tags what
 
-build:
+gobuild:
 	go build -o elephp cmd/main.go
+
+gotestbuild:
+	go build -o elephp -tags what cmd/main.go

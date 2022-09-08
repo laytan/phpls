@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"sync/atomic"
 	"testing"
 
 	"github.com/laytan/elephp/pkg/pathutils"
@@ -476,8 +475,8 @@ func TestDefinitions(t *testing.T) {
 		// },
 	}
 
-	project := NewProject(definitionsFolder, phpversion.EightOne(), []string{"php"})
-	err := project.Parse(&atomic.Uint32{})
+	project := New(definitionsFolder, phpversion.EightOne(), []string{"php"})
+	err := project.ParseWithoutProgress()
 	is.NoErr(err)
 
 	for _, test := range expectations {
@@ -513,8 +512,8 @@ func TestDefinitions(t *testing.T) {
 
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
-	project := NewProject(definitionsFolder, phpversion.EightOne(), []string{"php"})
-	err := project.Parse(&atomic.Uint32{})
+	project := New(definitionsFolder, phpversion.EightOne(), []string{"php"})
+	err := project.ParseWithoutProgress()
 	is.NoErr(err)
 
 	for i := 0; i < b.N; i++ {
@@ -531,8 +530,8 @@ func BenchmarkParsing(b *testing.B) {
 	is := is.New(b)
 
 	for i := 0; i < b.N; i++ {
-		project := NewProject(definitionsFolder, phpversion.EightOne(), []string{"php"})
-		err := project.Parse(&atomic.Uint32{})
+		project := New(definitionsFolder, phpversion.EightOne(), []string{"php"})
+		err := project.ParseWithoutProgress()
 		is.NoErr(err)
 	}
 }
@@ -540,7 +539,7 @@ func BenchmarkParsing(b *testing.B) {
 func TestParserPanicIsRecovered(t *testing.T) {
 	is := is.New(t)
 
-	project := NewProject(
+	project := New(
 		path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors"),
 		&phpversion.PHPVersion{
 			Major: 7,
@@ -549,9 +548,6 @@ func TestParserPanicIsRecovered(t *testing.T) {
 		[]string{"php"},
 	)
 
-	err := project.Parse(&atomic.Uint32{})
+	err := project.ParseWithoutProgress()
 	is.NoErr(err)
-
-	_, ok := project.files[path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors", "syntax_errors.php")]
-	is.True(ok)
 }

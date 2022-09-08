@@ -3,6 +3,7 @@ package project
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/VKCOM/noverify/src/ir"
@@ -12,32 +13,26 @@ import (
 	"github.com/laytan/elephp/pkg/typer"
 )
 
-func (p *Project) Hover(currpos *position.Position) (string, error) {
+func (p *Project) Hover(currpos *position.Position) string {
 	pos, err := p.Definition(currpos)
 	if err != nil {
-		return "", fmt.Errorf("Could not find definition for hover: %w", err)
+		log.Println(fmt.Errorf("[INFO] Hover error getting definition: %w", err))
 	}
 
-	path := pos.Path
-
-	file := p.GetFile(path)
-	if file == nil {
-		return "", fmt.Errorf("Hover error retrieving file content for %s", path)
+	content, root, err := p.wrksp.AllOf(pos.Path)
+	if err != nil {
+		log.Println(
+			fmt.Errorf("[ERROR] Hover error getting content/parsing of %s: %w", pos.Path, err),
+		)
 	}
 
-	ast := p.ParseFileCached(file)
-	if ast == nil {
-		return "", fmt.Errorf("Hover error parsing %s for definitions", path)
-	}
-
-	apos := position.LocToPos(file.content, pos.Row, pos.Col)
+	apos := position.LocToPos(content, pos.Row, pos.Col)
 	nap := traversers.NewNodeAtPos(apos)
-	ast.Walk(nap)
+	root.Walk(nap)
 
 	out := []string{}
 
 Nodes:
-	// TODO: this shows hover for the method if we are anywhere in the method, this is not what we want.
 	for i := len(nap.Nodes) - 1; i >= 0; i-- {
 		switch typedNode := nap.Nodes[i].(type) {
 		case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt, *ir.PropertyListStmt, *ir.FunctionStmt:
@@ -69,15 +64,14 @@ Nodes:
 			}
 
 			break Nodes
-
 		}
 	}
 
 	if len(out) == 0 {
-		return "", nil
+		return ""
 	}
 
-	return wrapWithPhpMarkdown(strings.Join(out, "\n")), nil
+	return wrapWithPhpMarkdown(strings.Join(out, "\n"))
 }
 
 func NodeSignature(node ir.Node) string {

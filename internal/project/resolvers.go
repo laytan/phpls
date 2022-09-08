@@ -3,17 +3,74 @@ package project
 import (
 	"errors"
 	"fmt"
+	"log"
+	"strings"
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
+	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/stack"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
 )
+
+// Returns the position for the namespace statement that matches the given position.
+func (p *Project) Namespace(pos *position.Position) *position.Position {
+	content, root, err := p.wrksp.AllOf(pos.Path)
+	if err != nil {
+		log.Println(
+			fmt.Errorf(
+				"[ERROR] Getting namespace, could not get content/nodes of %s: %w",
+				pos.Path,
+				err,
+			),
+		)
+	}
+
+	traverser := traversers.NewNamespace(pos.Row)
+	root.Walk(traverser)
+
+	if traverser.Result == nil {
+		log.Println("Did not find namespace")
+		return nil
+	}
+
+	row, col := position.PosToLoc(content, uint(traverser.Result.Position.StartPos))
+
+	return &position.Position{
+		Row:  row,
+		Col:  col,
+		Path: pos.Path,
+	}
+}
+
+// Returns whether the file at given pos needs a use statement for the given fqn.
+func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
+	root, err := p.wrksp.IROf(pos.Path)
+	if err != nil {
+		log.Println(
+			fmt.Errorf(
+				"[ERROR] Checking use statement needed, could not get nodes of %s: %w",
+				pos.Path,
+				err,
+			),
+		)
+	}
+
+	parts := strings.Split(fqn, `\`)
+	className := parts[len(parts)-1]
+
+	// Get how it would be resolved in the current file state.
+	actFqn := p.FQN(root, &ir.Name{Value: className})
+
+	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
+	return actFqn.String() != fqn
+}
 
 // Resolves the fully qualified name for the given name node.
 //
@@ -67,19 +124,13 @@ func (p *Project) function(
 		return nil, ""
 	}
 
-	results := p.symbolTrie.SearchExact(name.Value)
-
-	if len(results) == 0 {
+	result, err := p.index.Find("\\"+name.Value, ir.KindFunctionStmt)
+	if err != nil && !errors.Is(err, fmt.Errorf(index.ErrNotFoundFmt, "", "")) {
+		log.Println(fmt.Errorf("[ERROR] Could not find function %s: %w", name.Value, err))
 		return nil, ""
 	}
 
-	for _, res := range results {
-		if function, ok := res.Symbol.(*symbol.FunctionStmtSymbol); ok {
-			return function, res.Path
-		}
-	}
-
-	return nil, ""
+	return result.Symbol.(*symbol.FunctionStmtSymbol), result.Path
 }
 
 func (p *Project) classLike(
@@ -88,23 +139,13 @@ func (p *Project) classLike(
 ) (*symbol.ClassLikeStmtSymbol, string) {
 	fqn := p.FQN(root, name)
 
-	results := p.symbolTrie.SearchExact(fqn.Name())
-
-	if len(results) == 0 {
+	result, err := p.index.Find(fqn.String(), symbol.ClassLikeScopes...)
+	if err != nil && !errors.Is(err, fmt.Errorf(index.ErrNotFoundFmt, "", "")) {
+		log.Println(fmt.Errorf("[ERROR] Could not find class-like %s: %w", name.Value, err))
 		return nil, ""
 	}
 
-	for _, res := range results {
-		if res.Namespace != fqn.Namespace() {
-			continue
-		}
-
-		if symbol, ok := res.Symbol.(*symbol.ClassLikeStmtSymbol); ok {
-			return symbol, res.Path
-		}
-	}
-
-	return nil, ""
+	return result.Symbol.(*symbol.ClassLikeStmtSymbol), result.Path
 }
 
 type rootRetriever struct {
@@ -112,17 +153,17 @@ type rootRetriever struct {
 }
 
 func (r *rootRetriever) RetrieveRoot(n *resolvequeue.Node) (*ir.Root, error) {
-	file := r.project.FindFileInTrie(n.FQN, n.Kind)
-	if file == nil {
-		return nil, fmt.Errorf("No file indexed for FQN %s", n.FQN)
+	result, err := r.project.index.Find(n.FQN.String(), n.Kind)
+	if err != nil {
+		return nil, fmt.Errorf("No symbol indexed for %s (%T)", n.FQN, n.Kind)
 	}
 
-	ast := r.project.ParseFileCached(file)
-	if ast == nil {
+	root, err := r.project.wrksp.IROf(result.Path)
+	if err != nil {
 		return nil, fmt.Errorf("Error parsing file for FQN %s", n.FQN)
 	}
 
-	return ast, nil
+	return root, nil
 }
 
 func (p *Project) method(
@@ -140,8 +181,11 @@ func (p *Project) method(
 			return nil, "", fmt.Errorf("Method definition: unable to get type of variable that method is called on: %w", err)
 		}
 
-		file := p.GetFile(path)
-		varRoot := p.ParseFileCached(file)
+		varRoot, err := p.wrksp.IROf(path)
+		if err != nil {
+			return nil, "", fmt.Errorf("Method definition: unable to get file content/nodes of %s: %w", path, err)
+		}
+
 		propType := p.typer.Property(varRoot, prop)
 		clsType, ok := propType.(*phpdoxer.TypeClassLike)
 		if !ok {
@@ -184,12 +228,18 @@ func (p *Project) method(
 		)
 	}
 
-	file := p.GetFile(targetClass.Path)
-	classRoot := p.ParseFileCached(file)
+	classRoot, err := p.wrksp.IROf(targetClass.Path)
+	if err != nil {
+		return nil, "", fmt.Errorf(
+			"Method definition: unable to get file content/nodes of %s: %w",
+			targetClass.Path,
+			err,
+		)
+	}
 
 	var result *ir.ClassMethodStmt
 	var resultPath string
-	err := p.walkResolveQueue(
+	err = p.walkResolveQueue(
 		classRoot,
 		targetClass.Symbol,
 		func(wc *walkContext) (bool, error) {
@@ -301,8 +351,16 @@ func (p *Project) walkToProperty(
 					prop.Value,
 				)
 
-				file := p.GetFile(classLike.Path)
-				root = p.ParseFileCached(file)
+				newRoot, err := p.wrksp.IROf(classLike.Path)
+				if err != nil {
+					return false, fmt.Errorf(
+						"Walking properties: unable to get file content/nodes of %s: %w",
+						classLike.Path,
+						err,
+					)
+				}
+
+				root = newRoot
 			}
 
 			return true, nil
@@ -343,7 +401,6 @@ func (p *Project) property(
 type walkContext struct {
 	QueueNode *resolvequeue.Node
 	TrieNode  *traversers.TrieNode
-	File      *File
 	Privacy   phprivacy.Privacy
 	IR        *ir.Root
 	HasMore   bool
@@ -365,15 +422,15 @@ func (p *Project) walkResolveQueue(
 		res = resolveQueue.Queue.Dequeue()
 		isCurr = false
 	}() {
-		file, symbol := p.FindFileAndSymbolInTrie(res.FQN, res.Kind)
-		if file == nil {
-			return fmt.Errorf("Can't get file for FQN: %s", res.FQN.String())
+		result, err := p.index.Find(res.FQN.String(), res.Kind)
+		if err != nil {
+			return fmt.Errorf("Can't get file for FQN %s: %w", res.FQN.String(), err)
 		}
 
 		// NOTE: this is only correct when resolvequeue is called for a symbol
 		// NOTE: inside of the class. Not for $variable->method() for example.
 		var privacy phprivacy.Privacy
-		switch symbol.Symbol.NodeKind() {
+		switch result.Symbol.NodeKind() {
 		case ir.KindClassStmt:
 			// If first index (source file) search for any privacy,
 			// if not, search for protected and public privacy.
@@ -387,13 +444,13 @@ func (p *Project) walkResolveQueue(
 			privacy = phprivacy.PrivacyPrivate
 		}
 
-		ast := p.ParseFileCached(file)
-		if ast == nil {
-			return fmt.Errorf("Error parsing ast for %s", file.path)
+		root, err := p.wrksp.IROf(result.Path)
+		if err != nil {
+			return fmt.Errorf("Error parsing ast for %s: %w", result.Path, err)
 		}
 
 		done, err := walker(
-			&walkContext{res, symbol, file, privacy, ast, resolveQueue.Queue.Peek() != nil},
+			&walkContext{res, result, privacy, root, resolveQueue.Queue.Peek() != nil},
 		)
 		if err != nil {
 			return err
@@ -417,11 +474,12 @@ func (p *Project) variableType(
 	switch variable.Name {
 	case "this", "self", "static":
 		fqn := p.FQN(root, &ir.Name{Value: symbol.GetIdentifier(classScope)})
-		node := p.FindNodeInTrieMultiKinds(fqn, symbol.ClassLikeScopes)
-		if node == nil {
+
+		node, err := p.index.Find(fqn.String(), symbol.ClassLikeScopes...)
+		if err != nil {
 			return nil, 0, fmt.Errorf(
-				"Unable to get type of %s",
-				variable.Name,
+				"Unable to get type of %s: %w",
+				variable.Name, err,
 			)
 		}
 
@@ -492,9 +550,9 @@ func (p *Project) variableType(
 			case *ir.NewExpr:
 				if className, ok := exprNode.Class.(*ir.Name); ok {
 					fqn := p.FQN(root, className)
-					node := p.FindNodeInTrie(fqn, ir.KindClassStmt)
-					if node == nil {
-						return nil, 0, fmt.Errorf("Could not resolve FQN of name %s", className.Value)
+					node, err := p.index.Find(fqn.String(), ir.KindClassStmt)
+					if err != nil {
+						return nil, 0, fmt.Errorf("Could not resolve FQN of name %s: %w", className.Value, err)
 					}
 
 					return node, phprivacy.PrivacyPublic, nil
@@ -530,21 +588,20 @@ func (p *Project) parentOf(root *ir.Root, classScope ir.Node) (*traversers.TrieN
 	}
 
 	fqn := p.FQN(root, classStmt.Extends.ClassName)
-	node := p.FindNodeInTrie(fqn, ir.KindClassStmt)
-	if node == nil {
-		return nil, fmt.Errorf("Parent class %s is not indexed", fqn.String())
+	node, err := p.index.Find(fqn.String(), ir.KindClassStmt)
+	if err != nil {
+		return nil, fmt.Errorf("Parent class %s is not indexed: %w", fqn.String(), err)
 	}
 
 	return node, nil
 }
 
 func (p *Project) findClassLikeSymbol(clsLike *phpdoxer.TypeClassLike) *traversers.TrieNode {
-	results := p.symbolTrie.SearchExact(clsLike.Identifier())
-	for _, result := range results {
-		if result.Namespace == clsLike.Namespace() {
-			return result
-		}
+	result, err := p.index.Find(clsLike.Name, symbol.ClassLikeScopes...)
+	if err != nil {
+		log.Println(fmt.Errorf("Could not find class %s: %w", clsLike.String(), err))
+		return nil
 	}
 
-	return nil
+	return result
 }

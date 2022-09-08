@@ -3,11 +3,12 @@ package project
 import (
 	"bufio"
 	"errors"
+	"fmt"
+	"log"
 	"strings"
 	"unicode"
 
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
@@ -17,19 +18,26 @@ var ErrNoCompletionResults = errors.New("No completion results found for symbol 
 
 func (p *Project) Complete(
 	pos *position.Position,
-) []*symboltrie.SearchResult[*traversers.TrieNode] {
+) []*traversers.TrieNode {
 	query := p.getCompletionQuery(pos)
 	if len(query) == 0 {
 		return nil
 	}
 
-	return p.symbolTrie.SearchPrefix(query, maxCompletionResults)
+	return p.index.FindPrefix(query, maxCompletionResults)
 }
 
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.
 func (p *Project) getCompletionQuery(pos *position.Position) string {
-	file := p.GetFile(pos.Path)
-	scanner := bufio.NewScanner(strings.NewReader(file.content))
+	content, err := p.wrksp.ContentOf(pos.Path)
+	if err != nil {
+		log.Println(
+			fmt.Errorf("[ERROR] getting file content for completion query: %w", err).Error(),
+		)
+		return ""
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	for i := 0; scanner.Scan(); i++ {
 

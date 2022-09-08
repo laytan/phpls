@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/conf"
@@ -38,7 +39,7 @@ type parser struct {
 	config conf.Config
 }
 
-func New(phpv phpversion.PHPVersion) Parser {
+func New(phpv *phpversion.PHPVersion) Parser {
 	return &parser{
 		config: conf.Config{
 			Version: &version.Version{
@@ -55,14 +56,16 @@ func New(phpv phpversion.PHPVersion) Parser {
 
 func (p *parser) Parse(content string) (*ir.Root, error) {
 	ast, err := astParser.Parse([]byte(content), p.config)
-	if err != nil {
+	if err != nil || ast == nil {
 		return nil, fmt.Errorf(ErrASTFmt, err)
 	}
 
 	irNode := irconv.ConvertNode(ast)
 	root, ok := irNode.(*ir.Root)
 	if !ok {
-		panic("Top level node is not the root")
+		what.Is(ast)
+		what.Is(root)
+		log.Panic(fmt.Errorf("Top level node is not the root, content: %s", content))
 	}
 
 	return root, nil

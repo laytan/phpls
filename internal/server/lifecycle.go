@@ -82,80 +82,9 @@ func (s *Server) Initialize(
 
 	log.Printf("Detected php version: %s\n", phpv.String())
 
-	s.project = project.NewProject(string(s.root), phpv, s.config.FileExtensions())
+	s.project = project.New(string(s.root), phpv, s.config.FileExtensions())
 
-	go func() {
-		filesDone := atomic.Uint32{}
-		start := time.Now()
-
-		message := func() string {
-			doneAmt := filesDone.Load()
-
-			return fmt.Sprintf(
-				"Indexed %d source files in %s",
-				doneAmt,
-				time.Since(start).Round(time.Millisecond),
-			)
-		}
-		log.Println(message())
-
-		ticker := time.NewTicker(indexingProgressInterval)
-		done := make(chan bool)
-		go func() {
-			s.client.Progress(ctx, &protocol.ProgressParams{
-				Token: indexingProgressToken,
-				Value: progress{
-					Kind:    progressKindBegin,
-					Title:   "Indexing project",
-					Message: message(),
-				},
-			})
-
-			for {
-				select {
-				case <-done:
-					s.client.Progress(ctx, &protocol.ProgressParams{
-						Token: indexingProgressToken,
-						Value: progress{
-							Kind:    progressKindReport,
-							Message: message(),
-						},
-					})
-
-					time.Sleep(indexingDecayTime)
-
-					s.client.Progress(ctx, &protocol.ProgressParams{
-						Token: indexingProgressToken,
-						Value: progress{
-							Kind: progressKindEnd,
-						},
-					})
-					return
-
-				case <-ticker.C:
-					s.client.Progress(ctx, &protocol.ProgressParams{
-						Token: indexingProgressToken,
-						Value: progress{
-							Kind:    progressKindReport,
-							Message: message(),
-						},
-					})
-				}
-			}
-		}()
-
-		err := s.project.Parse(&filesDone)
-		if err != nil {
-			s.showAndLogErr(ctx, protocol.Warning, err)
-			return
-		}
-
-		ticker.Stop()
-		done <- true
-		close(done)
-
-		log.Println(message())
-	}()
+	go s.index()
 
 	if params.ProcessID != 0 {
 		processwatch.NewExiter(uint(params.ProcessID))
@@ -222,4 +151,115 @@ func (s *Server) Exit(context.Context) error {
 
 	os.Exit(1)
 	return nil
+}
+
+func (s *Server) index() {
+	ctx := context.Background()
+
+	done := &atomic.Uint64{}
+
+	total := &atomic.Uint64{}
+	var finalTotal uint64
+
+	totalDone := false
+	totalDoneChan := make(chan bool, 1)
+	go func() {
+		<-totalDoneChan
+		log.Println("total done")
+
+		totalDone = true
+		finalTotal = total.Load()
+	}()
+
+	start := time.Now()
+
+	message := func() (string, int) {
+		doneAmt := done.Load()
+		totalAmt := finalTotal
+		if !totalDone {
+			totalAmt = total.Load()
+		}
+
+		duration := time.Since(start).Round(time.Millisecond)
+
+		if totalDone {
+			percentage := int(float64(doneAmt) / float64(totalAmt) * 100)
+
+			return fmt.Sprintf(
+				"Indexed %d / %d (%d%%) source files in %s",
+				doneAmt,
+				totalAmt,
+				percentage,
+				duration,
+			), percentage
+		}
+
+		return fmt.Sprintf("Indexed %d / ~%d source files in %s", doneAmt, totalAmt, duration), 0
+	}
+
+	ticker := time.NewTicker(indexingProgressInterval)
+	doneChan := make(chan bool, 1)
+	go func() {
+		msg, _ := message()
+
+		s.client.Progress(ctx, &protocol.ProgressParams{
+			Token: indexingProgressToken,
+			Value: progress{
+				Kind:       progressKindBegin,
+				Title:      "Indexing project",
+				Message:    msg,
+				Percentage: 0,
+			},
+		})
+
+		for {
+			select {
+			case <-doneChan:
+				msg, _ := message()
+
+				s.client.Progress(ctx, &protocol.ProgressParams{
+					Token: indexingProgressToken,
+					Value: progress{
+						Kind:       progressKindReport,
+						Message:    msg,
+						Percentage: 100,
+					},
+				})
+
+				time.Sleep(indexingDecayTime)
+
+				s.client.Progress(ctx, &protocol.ProgressParams{
+					Token: indexingProgressToken,
+					Value: progress{
+						Kind: progressKindEnd,
+					},
+				})
+				return
+
+			case <-ticker.C:
+				msg, percentage := message()
+
+				s.client.Progress(ctx, &protocol.ProgressParams{
+					Token: indexingProgressToken,
+					Value: progress{
+						Kind:       progressKindReport,
+						Message:    msg,
+						Percentage: percentage,
+					},
+				})
+			}
+		}
+	}()
+
+	err := s.project.Parse(done, total, totalDoneChan)
+	if err != nil {
+		s.showAndLogErr(ctx, protocol.Warning, err)
+	}
+
+	ticker.Stop()
+
+	doneChan <- true
+	close(doneChan)
+
+	log.Println(message())
 }
