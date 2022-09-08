@@ -4,9 +4,6 @@ github.com/DmitriyVTitov/size v1.5.0 h1:/PzqxYrOyOUX1BXj6J9OuVRVGe+66VL4D9FlUaW5
 github.com/DmitriyVTitov/size v1.5.0/go.mod h1:le6rNI4CoLQV1b9gzp1+3d7hMAD/uu2QcJ+aYbNgiU0=
 github.com/VKCOM/noverify v0.5.3 h1:M+X8QzPcb5X8bYTlpQc3IdXV0quzmTSO6jr/Nfkv00I=
 github.com/VKCOM/noverify v0.5.3/go.mod h1:4YqmJFxSi6Hw7kBiUZ7GzeQgqHLyxEopsSVhIf9/htA=
-github.com/VKCOM/php-parser v0.8.0-rc.2.0.20210802093708-d85f5a481602/go.mod h1:wLtaD4M5K8bJPwjkl4BVone8dbMiG1OApbMKdjubCEw=
-github.com/VKCOM/php-parser v0.8.2 h1:2wNlV2AT8rCA5FOROlYoS/yVc5fA2TBbBLAe0ApKDXI=
-github.com/VKCOM/php-parser v0.8.2/go.mod h1:wLtaD4M5K8bJPwjkl4BVone8dbMiG1OApbMKdjubCEw=
 github.com/arl/statsviz v0.5.0 h1:IoIMlg0x8+6GcRmCSbDxXkymTvOQzpBMpBO5czxmhlY=
 github.com/arl/statsviz v0.5.0/go.mod h1:zDnjgRblGm1Dyd7J5YlbH7gM1/+HRC+SfkhZhQb5AnM=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
@@ -25,6 +22,8 @@ github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884
 github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2/go.mod h1:Hp8QDOEcdn4aDZ+DFTda+smIB0b5MvII4Q0Jo0y2VkA=
 github.com/jessevdk/go-flags v1.5.0 h1:1jKYvbxEjfUl0fmqTCOfonvskHHXMjBySTLW4y9LFvc=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
+github.com/laytan/php-parser v0.8.3 h1:lWpWS+duKi4CltYycIO3S/TV93vDUWr8hSd1AqAlD2k=
+github.com/laytan/php-parser v0.8.3/go.mod h1:wLtaD4M5K8bJPwjkl4BVone8dbMiG1OApbMKdjubCEw=
 github.com/matryer/is v1.4.0 h1:sosSmIWwkYITGrxZ25ULNDeKiMNzFSr4V/eqBQP0PeE=
 github.com/matryer/is v1.4.0/go.mod h1:8I/i5uYgLzgsgEloJE1U6xx5HkBQpAZvepWuujKwMRU=
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
