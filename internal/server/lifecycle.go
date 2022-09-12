@@ -165,7 +165,6 @@ func (s *Server) index() {
 	totalDoneChan := make(chan bool, 1)
 	go func() {
 		<-totalDoneChan
-		log.Println("total done")
 
 		totalDone = true
 		finalTotal = total.Load()
@@ -261,5 +260,6 @@ func (s *Server) index() {
 	doneChan <- true
 	close(doneChan)
 
-	log.Println(message())
+	m, _ := message()
+	log.Println(m)
 }

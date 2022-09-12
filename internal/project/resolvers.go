@@ -16,7 +16,7 @@ func (p *Project) Namespace(pos *position.Position) *position.Position {
 	if err != nil {
 		log.Println(
 			fmt.Errorf(
-				"[ERROR] Getting namespace, could not get content/nodes of %s: %w",
+				"Getting namespace, could not get content/nodes of %s: %w",
 				pos.Path,
 				err,
 			),
@@ -46,7 +46,7 @@ func (p *Project) NeedsUseStmtFor(pos *position.Position, FQN string) bool {
 	if err != nil {
 		log.Println(
 			fmt.Errorf(
-				"[ERROR] Checking use statement needed, could not get nodes of %s: %w",
+				"Checking use statement needed, could not get nodes of %s: %w",
 				pos.Path,
 				err,
 			),

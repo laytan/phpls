@@ -94,7 +94,7 @@ func (i *index) Index(path string, content string) error {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Println(
-					fmt.Errorf("[WARNING] Could not index %s, parse/syntax error: %v", path, err),
+					fmt.Errorf("Could not index %s, parse/syntax error: %v", path, err),
 				)
 			}
 		}()

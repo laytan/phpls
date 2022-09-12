@@ -44,14 +44,14 @@ func (c *lsConfig) Initialize() (shownHelp bool, err error) {
 
 	specificErr, ok := err.(*flags.Error)
 	if !ok {
-		return false, fmt.Errorf("[ERROR] unexpected error parsing flags: %w", err)
+		return false, fmt.Errorf("Unexpected error parsing flags: %w", err)
 	}
 
 	if specificErr.Type == flags.ErrHelp {
 		return true, nil
 	}
 
-	return false, fmt.Errorf("[ERROR] %w", specificErr)
+	return false, fmt.Errorf("Could not initialize config: %w", specificErr)
 }
 
 func (c *lsConfig) ClientPid() (uint, bool) {

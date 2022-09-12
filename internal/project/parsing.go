@@ -41,7 +41,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 
 				if err := p.index.Index(file.Path, file.Content); err != nil {
 					log.Println(
-						fmt.Errorf("[ERROR] Could not index the symbols in %s: %w", file.Path, err),
+						fmt.Errorf("Could not index the symbols in %s: %w", file.Path, err),
 					)
 					hasErrors = true
 				}
@@ -52,7 +52,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 	if err := p.wrksp.Index(files, total, totalDone); err != nil {
 		log.Println(
 			fmt.Errorf(
-				"[Error] Could not index the file content of root %s: %w",
+				"Could not index the file content of root %s: %w",
 				p.wrksp.Root(),
 				err,
 			),
@@ -65,7 +65,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 
 	if hasErrors {
 		return fmt.Errorf(
-			"[Error] Parsing the project resulted in errors, check the logs for more details",
+			"Parsing the project resulted in errors, check the logs for more details",
 		)
 	}
 
@@ -83,7 +83,7 @@ func (p *Project) ParseWithoutProgress() error {
 func (p *Project) ParseFileUpdate(path string, content string) error {
 	prevContent, err := p.wrksp.ContentOf(path)
 	if err != nil && !errors.Is(err, wrkspc.ErrFileNotIndexed) {
-		return fmt.Errorf("[ERROR] Could not read content of %s while updating: %w", path, err)
+		return fmt.Errorf("Could not read content of %s while updating: %w", path, err)
 	}
 
 	if err != nil {
@@ -95,11 +95,11 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 
 	// NOTE: order is important here.
 	if err := p.wrksp.RefreshFrom(path, content); err != nil {
-		return fmt.Errorf("[ERROR] Could not refresh indexed content of %s: %w", path, err)
+		return fmt.Errorf("Could not refresh indexed content of %s: %w", path, err)
 	}
 
 	if err := p.index.Refresh(path, content); err != nil {
-		return fmt.Errorf("[ERROR] Could not refresh indexed symbols of %s: %w", path, err)
+		return fmt.Errorf("Could not refresh indexed symbols of %s: %w", path, err)
 	}
 
 	return nil

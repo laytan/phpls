@@ -23,6 +23,7 @@ type testDefinitionsInput struct {
 	outPosition *position.Position
 }
 
+// TODO: create tests per definition provider.
 func TestDefinitions(t *testing.T) {
 	is := is.New(t)
 

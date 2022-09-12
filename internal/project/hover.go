@@ -16,13 +16,13 @@ import (
 func (p *Project) Hover(currpos *position.Position) string {
 	pos, err := p.Definition(currpos)
 	if err != nil {
-		log.Println(fmt.Errorf("[INFO] Hover error getting definition: %w", err))
+		log.Println(fmt.Errorf("Hover error getting definition: %w", err))
 	}
 
 	content, root, err := p.wrksp.AllOf(pos.Path)
 	if err != nil {
 		log.Println(
-			fmt.Errorf("[ERROR] Hover error getting content/parsing of %s: %w", pos.Path, err),
+			fmt.Errorf("Hover error getting content/parsing of %s: %w", pos.Path, err),
 		)
 	}
 

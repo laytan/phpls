@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -11,17 +12,20 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/conf"
-	"github.com/VKCOM/php-parser/pkg/errors"
+	astErrors "github.com/VKCOM/php-parser/pkg/errors"
 	astParser "github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/laytan/elephp/pkg/phpversion"
 )
 
 const (
-	ErrReadFmt  = "Could not read file at %s: %w"
-	ErrASTFmt   = "Error parsing file into AST: %w"
-	ErrWalkFmt  = "Error arose during walk of root %s: %w"
-	ErrParseFmt = "Parse/syntax error during parse: %s"
+	ErrReadFmt = "Could not read file at %s: %w"
+	ErrASTFmt  = "Error parsing file into AST: %w"
+	ErrWalkFmt = "Error arose during walk of root %s: %w"
+)
+
+var ErrNoContent = errors.New(
+	"No AST could be parsed, there were unrecoverable syntax errors or the file was empty",
 )
 
 // Parser is responsible for and a central place for
@@ -47,8 +51,8 @@ func New(phpv *phpversion.PHPVersion) Parser {
 				Minor: uint64(phpv.Minor),
 			},
 			// TODO: return these errors.
-			ErrorHandlerFunc: func(e *errors.Error) {
-				log.Println(fmt.Errorf(ErrParseFmt, e.String()))
+			ErrorHandlerFunc: func(e *astErrors.Error) {
+				what.Happens(e.String())
 			},
 		},
 	}
@@ -57,6 +61,10 @@ func New(phpv *phpversion.PHPVersion) Parser {
 func (p *parser) Parse(content string) (*ir.Root, error) {
 	ast, err := astParser.Parse([]byte(content), p.config)
 	if err != nil || ast == nil {
+		if err == nil {
+			return nil, ErrNoContent
+		}
+
 		return nil, fmt.Errorf(ErrASTFmt, err)
 	}
 

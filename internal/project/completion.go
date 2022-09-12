@@ -32,7 +32,7 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 	content, err := p.wrksp.ContentOf(pos.Path)
 	if err != nil {
 		log.Println(
-			fmt.Errorf("[ERROR] getting file content for completion query: %w", err).Error(),
+			fmt.Errorf("Getting file content for completion query: %w", err).Error(),
 		)
 		return ""
 	}
