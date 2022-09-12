@@ -1,6 +1,10 @@
 package traversers
 
-import "github.com/VKCOM/noverify/src/ir"
+import (
+	"log"
+
+	"github.com/VKCOM/noverify/src/ir"
+)
 
 func NewAssignment(variable *ir.SimpleVar) *Assignment {
 	return &Assignment{
@@ -47,6 +51,21 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 				a.Scope = typedNode
 			}
 		}
+
+	case *ir.ListExpr:
+		for _, item := range typedNode.Items {
+			typedVar, ok := item.Val.(*ir.SimpleVar)
+			if !ok {
+				log.Printf("Got type %T for an item in list expression, expected *ir.SimpleVar", item.Val)
+				continue
+			}
+
+			if typedVar.Name == a.variable.Name {
+				a.Assignment = typedVar
+				a.Scope = typedNode
+			}
+		}
+
 	}
 
 	return true

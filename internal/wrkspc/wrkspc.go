@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
@@ -112,6 +113,8 @@ func (w *wrkspc) Index(
 	total *atomic.Uint64,
 	totalDone chan<- bool,
 ) error {
+	defer close(files)
+
 	go func() {
 		if err := w.walk(func(_ string, d fs.DirEntry) error {
 			total.Add(1)
@@ -164,6 +167,8 @@ func (w *wrkspc) ContentOf(path string) (string, error) {
 	w.filesMutex.RLock()
 	defer w.filesMutex.RUnlock()
 
+	what.Happens("Getting content of %s", path)
+
 	file, ok := w.files[path]
 	if !ok {
 		return "", ErrFileNotIndexed
@@ -178,6 +183,8 @@ func (w *wrkspc) IROf(path string) (*ir.Root, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	what.Happens("Getting IR of %s", path)
 
 	ir, err := w.parser(path).Parse(content)
 	if err != nil {

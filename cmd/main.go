@@ -30,7 +30,9 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		if _, err := fmt.Println(err); err != nil {
+			panic(err)
+		}
 	}
 
 	stop := logging.Configure(path.Join(pathutils.Root(), "logs"), config.Name())

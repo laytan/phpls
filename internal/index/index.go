@@ -19,9 +19,13 @@ import (
 )
 
 const (
-	ErrParseFmt    = "Error indexing %s, unable to parse: %w"
-	ErrNotFoundFmt = "Could not find %s of kinds(%v) in the index"
-	ErrPoolFmt     = "Could not create symbol traverser: %w"
+	errParseFmt    = "Error indexing %s, unable to parse: %w"
+	errNotFoundFmt = "Could not find %s of kinds(%#v) in the index"
+)
+
+var (
+	ErrNotFound = fmt.Errorf(errNotFoundFmt, "", "")
+	ErrParse    = fmt.Errorf(errParseFmt, "", nil)
 )
 
 var stubsPath = path.Join(pathutils.Root(), "phpstorm-stubs")
@@ -36,14 +40,14 @@ type Index interface {
 	// Finds a symbol with the given FQN matching the given node kinds.
 	// The given namespace must be fully qualified.
 	//
-	// Giving this no kinds will return any kind.
+	// Giving this no kinds or ir.KindRoot will return any kind.
 	Find(FQN string, kind ...ir.NodeKind) (*traversers.TrieNode, error)
 
 	// Finds a prefix/completes a string.
 	// Do not call this with a namespaced symbol, only the class or function name.
 	//
 	// Giving this no kinds will return any kind.
-	// A max of 0 will return everything.
+	// A max of 0 or passing ir.KindRoot will return everything.
 	FindPrefix(prefix string, max uint, kind ...ir.NodeKind) []*traversers.TrieNode
 }
 
@@ -78,7 +82,7 @@ func New(phpv *phpversion.PHPVersion) Index {
 func (i *index) Index(path string, content string) error {
 	root, err := i.parser(path).Parse(content)
 	if err != nil {
-		return fmt.Errorf(ErrParseFmt, path, err)
+		return fmt.Errorf(errParseFmt, path, err)
 	}
 
 	traverser := i.symbolTraversers.Get()
@@ -106,26 +110,32 @@ func (i *index) Index(path string, content string) error {
 func (i *index) Find(FQN string, kind ...ir.NodeKind) (*traversers.TrieNode, error) {
 	FQNObj := typer.NewFQN(FQN)
 
+	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
+
 	results := i.symbolTrie.SearchExact(FQNObj.Name())
 	for _, result := range results {
 		if result.Namespace != FQNObj.Namespace() {
 			continue
 		}
 
-		if len(kind) == 0 || slices.Contains(kind, result.Symbol.NodeKind()) {
+		if retAll || slices.Contains(kind, result.Symbol.NodeKind()) {
 			return result, nil
 		}
 	}
 
-	return nil, fmt.Errorf(ErrNotFoundFmt, FQN, kind)
+	return nil, fmt.Errorf(errNotFoundFmt, FQN, kind)
 }
 
 func (i *index) FindPrefix(prefix string, max uint, kind ...ir.NodeKind) []*traversers.TrieNode {
 	results := i.symbolTrie.SearchPrefix(prefix, max)
 
+	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
+
 	values := make([]*traversers.TrieNode, len(results))
 	for i, result := range results {
-		values[i] = result.Value
+		if retAll || slices.Contains(kind, result.Value.Symbol.NodeKind()) {
+			values[i] = result.Value
+		}
 	}
 
 	return values
@@ -144,12 +154,12 @@ func (i *index) Delete(path string) error {
 	parser := i.parser(path)
 	content, err := parser.Read(path)
 	if err != nil {
-		return fmt.Errorf(ErrParseFmt, path, err)
+		return fmt.Errorf(errParseFmt, path, err)
 	}
 
 	prevRoot, err := parser.Parse(content)
 	if err != nil {
-		return fmt.Errorf(ErrParseFmt, path, err)
+		return fmt.Errorf(errParseFmt, path, err)
 	}
 
 	removeTrie := symboltrie.New[*traversers.TrieNode]()

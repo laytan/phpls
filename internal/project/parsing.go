@@ -74,7 +74,7 @@ func (p *Project) ParseWithoutProgress() error {
 
 func (p *Project) ParseFileUpdate(path string, content string) error {
 	prevContent, err := p.wrksp.ContentOf(path)
-	if !errors.Is(err, wrkspc.ErrFileNotIndexed) {
+	if err != nil && !errors.Is(err, wrkspc.ErrFileNotIndexed) {
 		return fmt.Errorf("[ERROR] Could not read content of %s while updating: %w", path, err)
 	}
 

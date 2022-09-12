@@ -1,31 +1,20 @@
 package traversers
 
 import (
-	"errors"
-
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/symbol"
 )
 
-func NewFunction(call *ir.FunctionCallExpr) (*Function, error) {
-	name, ok := call.Function.(*ir.Name)
-	if !ok {
-		return nil, errors.New(
-			"Can't get function definition for given node because it has no name",
-		)
-	}
-
+func NewFunction(name string) *Function {
 	return &Function{
-		call:           call,
 		name:           name,
 		currNodeIsRoot: true,
-	}, nil
+	}
 }
 
 // Function implements ir.Visitor.
 type Function struct {
-	call           *ir.FunctionCallExpr
-	name           *ir.Name
+	name           string
 	Function       *ir.FunctionStmt
 	currNodeIsRoot bool
 }
@@ -45,7 +34,7 @@ func (f *Function) EnterNode(node ir.Node) bool {
 	}
 
 	if function, ok := node.(*ir.FunctionStmt); ok {
-		if function.FunctionName.Value == f.name.Value {
+		if function.FunctionName.Value == f.name {
 			f.Function = function
 		}
 	}

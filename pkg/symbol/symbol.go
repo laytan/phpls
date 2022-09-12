@@ -24,6 +24,10 @@ func New(node ir.Node) Symbol {
 		return NewClassLikeTrait(typedNode)
 	case *ir.InterfaceStmt:
 		return NewClassLikeInterface(typedNode)
+	case *ir.SimpleVar:
+		return NewAssignment(typedNode)
+	case *ir.PropertyListStmt:
+		return NewProperty(typedNode)
 	default:
 		return nil
 	}
@@ -88,4 +92,33 @@ func NewClassLikeTrait(stmt *ir.TraitStmt) *ClassLikeStmtSymbol {
 
 func (c *ClassLikeStmtSymbol) NodeKind() ir.NodeKind {
 	return c.kind
+}
+
+// AssignmentSymbol represents a variable assignment.
+type AssignmentSymbol struct {
+	baseSymbol
+}
+
+func NewAssignment(stmt *ir.SimpleVar) *AssignmentSymbol {
+	a := &AssignmentSymbol{}
+	a.FromNode(stmt)
+	return a
+}
+
+func (a *AssignmentSymbol) NodeKind() ir.NodeKind {
+	return ir.KindSimpleVar
+}
+
+type PropertySymbol struct {
+	baseSymbol
+}
+
+func NewProperty(stmt *ir.PropertyListStmt) *PropertySymbol {
+	a := &PropertySymbol{}
+	a.FromNode(stmt)
+	return a
+}
+
+func (a *PropertySymbol) NodeKind() ir.NodeKind {
+	return ir.KindPropertyListStmt
 }
