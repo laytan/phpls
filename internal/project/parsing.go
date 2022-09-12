@@ -25,7 +25,14 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 	files := make(chan *wrkspc.ParsedFile)
 	wg := sync.WaitGroup{}
 
+	// Need to have a way to know when all waits have been added to the wait
+	// group, go reports a race condition when you at to a wait group after
+	// already waiting for it.
+	wgDone := make(chan bool, 1)
+
 	go func() {
+		defer func() { wgDone <- true }()
+
 		for file := range files {
 			wg.Add(1)
 			go func(file *wrkspc.ParsedFile) {
@@ -53,6 +60,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 		hasErrors = true
 	}
 
+	<-wgDone
 	wg.Wait()
 
 	if hasErrors {
