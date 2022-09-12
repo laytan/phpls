@@ -11,7 +11,7 @@ permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
   # pull-requests: read
-  
+
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
@@ -26,7 +26,7 @@ jobs:
         go-version: 1.19
 
     - name: Build
-      run: go build -v ./...
+      run: go build ./...
 
     - name: Test
-      run: CI=true go test -v --cover -timeout=10s ./...
+      run: go test -cover -race -shuffle=on -timeout=10s ./...
