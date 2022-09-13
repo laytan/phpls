@@ -31,6 +31,11 @@ func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) phpdoxer.Type {
 
 func findReturnComment(node ir.Node) phpdoxer.Type {
 	comments := NodeComments(node)
+
+	if method, ok := node.(*ir.ClassMethodStmt); ok {
+		comments = append(comments, method.Doc.Raw)
+	}
+
 	for _, comment := range comments {
 		nodes, err := phpdoxer.ParseDoc(comment)
 		if err != nil {

@@ -16,6 +16,7 @@ import (
 	"github.com/laytan/elephp/pkg/stack"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/elephp/pkg/typer"
 )
 
 // PropertyProvider resolves the definition of a property accessed like $a->property.
@@ -37,9 +38,16 @@ func (p *PropertyProvider) Define(ctx context.Context) (*definition.Definition, 
 	n := ctx.Current().(*ir.PropertyFetchExpr)
 
 	properties := stack.New[string]()
-	def, privacy, err := p.down(ctx, properties, n)
+	id, ok := n.Property.(*ir.Identifier)
+	if !ok {
+		log.Println(fmt.Errorf(definition.ErrUnexpectedNodeFmt, n.Property, "*ir.Identifier"))
+		return nil, definition.ErrNoDefinitionFound
+	}
+
+	def, privacy, err := p.down(ctx, properties, id.Value, n.Variable)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		return nil, definition.ErrNoDefinitionFound
 	}
 
 	def, err = p.up(ctx, def, privacy, properties)
@@ -63,31 +71,36 @@ func (p *PropertyProvider) Define(ctx context.Context) (*definition.Definition, 
 func (p *PropertyProvider) down(
 	ctx context.Context,
 	properties *stack.Stack[string],
-	fetch *ir.PropertyFetchExpr,
+	currentSymbol string,
+	currentVar ir.Node,
 ) (*definition.Definition, phprivacy.Privacy, error) {
-	name, ok := fetch.Property.(*ir.Identifier)
-	if !ok {
-		return nil, 0, fmt.Errorf(
-			definition.ErrUnexpectedNodeFmt,
-			fetch.Property,
-			"*ir.Identifier",
-		)
-	}
+	properties.Push(currentSymbol)
 
-	properties.Push(name.Value)
-
-	// TODO: support methods here (get the return type, keep going).
-	switch variable := fetch.Variable.(type) {
+	switch variable := currentVar.(type) {
 	case *ir.SimpleVar:
 		// Base case, get variable type.
 		return definition.VariableType(ctx, variable)
 
 	case *ir.PropertyFetchExpr:
 		// Recursively call this.
-		return p.down(ctx, properties, variable)
+		id, ok := variable.Property.(*ir.Identifier)
+		if !ok {
+			return nil, 0, fmt.Errorf(definition.ErrUnexpectedNodeFmt, variable.Property, "*ir.Identifier")
+		}
+
+		return p.down(ctx, properties, id.Value, variable.Variable)
+
+	case *ir.MethodCallExpr:
+		// Recursively call this.
+		id, ok := variable.Method.(*ir.Identifier)
+		if !ok {
+			return nil, 0, fmt.Errorf(definition.ErrUnexpectedNodeFmt, variable.Method, "*ir.Identifier")
+		}
+
+		return p.down(ctx, properties, id.Value+"()", variable.Variable)
 
 	default:
-		return nil, 0, fmt.Errorf(definition.ErrUnexpectedNodeFmt, fetch.Variable, "*ir.SimpleVar, *ir.PropertyFetchExpr or *ir.MethodCallExpr")
+		return nil, 0, fmt.Errorf(definition.ErrUnexpectedNodeFmt, currentVar, "*ir.SimpleVar, *ir.PropertyFetchExpr or *ir.MethodCallExpr")
 	}
 }
 
@@ -96,112 +109,162 @@ func (p *PropertyProvider) up(
 	ctx context.Context,
 	start *definition.Definition,
 	privacy phprivacy.Privacy,
-	properties *stack.Stack[string],
+	symbols *stack.Stack[string],
 ) (*definition.Definition, error) {
 	what.Happens(
 		"Walking properties, starting from %s->%s\n",
 		start.Node.Identifier(),
-		properties.Peek(),
+		symbols.Peek(),
 	)
 
 	currentDef := start
 	currentRoot := ctx.Root()
 
-	var resultProp *ir.PropertyListStmt
+	var resultSymbol ir.Node
 	var resultPath string
-	for prop := properties.Pop(); prop != ""; prop = properties.Pop() {
+	for prop := symbols.Pop(); prop != ""; prop = symbols.Pop() {
 		// walk resolve queue
 		err := walkResolveQueue(
 			ctx,
 			currentRoot,
 			currentDef.Node,
 			func(wc *walkContext) (bool, error) {
-				what.Happens("Checking %s for property %s\n", wc.QueueNode.FQN.String(), prop)
+				what.Happens("Checking %s for symbol %s\n", wc.FQN, prop)
+				root, err := ctx.Workspace().IROf(wc.Curr.Path)
+				if err != nil {
+					return true, err
+				}
 
-				propTraverser := traversers.NewProperty(
-					prop,
-					wc.QueueNode.FQN.Name(),
-					privacy,
-				)
-				wc.IR.Walk(propTraverser)
+				var result ir.Node
+				switch prop[len(prop)-2:] {
+				case "()":
+					traverser := traversers.NewMethod(prop[:len(prop)-2], wc.FQN.Name(), privacy)
+					root.Walk(traverser)
+					if traverser.Method != nil {
+						result = traverser.Method
+					}
 
-				if propTraverser.Property == nil {
+				default:
+					traverser := traversers.NewProperty(prop, wc.FQN.Name(), privacy)
+					root.Walk(traverser)
+					if traverser.Property != nil {
+						result = traverser.Property
+					}
+				}
+
+				if result == nil {
 					what.Happens(
-						"Could not find property %s in %s\n",
+						"Could not find symbol %s in %s\n",
 						prop,
-						wc.QueueNode.FQN.String(),
+						wc.FQN,
 					)
 
-					if !wc.HasMore {
-						what.Happens("No more to go")
+					if wc.IsLast {
 						return true, definition.ErrNoDefinitionFound
 					}
 
-					what.Happens("more to go")
 					return false, nil
 				}
 
-				resultProp = propTraverser.Property
-				resultPath = wc.CurrDef.Path
+				// At this point we have found the property in this class.
+				what.Happens(
+					"Found symbol definition for %s in %s",
+					prop,
+					wc.Curr.Node.Identifier(),
+				)
 
-				// get property type (classLike)
-				propType := ctx.Typer().Property(currentRoot, propTraverser.Property)
-				if propType == nil {
-					return true, nil
-				}
+				resultSymbol = result
+				resultPath = wc.Curr.Path
 
-				if clsType, ok := propType.(*phpdoxer.TypeClassLike); ok {
-					def, ok := definition.FindFullyQualified(
-						currentRoot,
-						ctx.Index(),
-						clsType.Name,
-						symbol.ClassLikeScopes...)
-					if !ok {
-						return false, nil
+				var symType phpdoxer.Type
+				switch symbol := result.(type) {
+				case *ir.PropertyListStmt:
+					// get property type.
+					propType := ctx.Typer().Property(currentRoot, symbol)
+					if propType == nil {
+						what.Happens("No type found for property %s in %s", prop, wc.FQN)
+						return true, nil
 					}
 
-					what.Happens(
-						"Found class-like %s for property %s\n",
-						def.Node.Identifier(),
-						prop,
+					symType = propType
+
+				case *ir.ClassMethodStmt:
+					// Get method return type.
+					methType := ctx.Typer().Returns(currentRoot, symbol)
+					if methType == nil {
+						what.Happens("No type found for method %s in %s", prop, wc.FQN)
+						return true, nil
+					}
+
+					symType = methType
+
+				default:
+					return true, fmt.Errorf(definition.ErrUnexpectedNodeFmt, result, "*ir.PropertyListStmt or *ir.ClassMethodStmt")
+				}
+
+				if symType.Kind() != phpdoxer.KindClassLike {
+					return true, fmt.Errorf(
+						definition.ErrUnexpectedNodeFmt,
+						symType,
+						"*phpdoxer.TypeClassLike",
 					)
-
-					newRoot, err := ctx.Workspace().IROf(def.Path)
-					if err != nil {
-						return false, fmt.Errorf(
-							"Walking properties: unable to get file content/nodes of %s: %w",
-							def.Path,
-							err,
-						)
-					}
-
-					currentDef = def
-					currentRoot = newRoot
 				}
+
+				clsType := symType.(*phpdoxer.TypeClassLike)
+				def, ok := definition.FindFullyQualified(
+					currentRoot,
+					ctx.Index(),
+					clsType.Name,
+					symbol.ClassLikeScopes...)
+				if !ok {
+					return false, nil
+				}
+
+				what.Happens(
+					"Found class-like %s for symbol %s\n",
+					def.Node.Identifier(),
+					prop,
+				)
+
+				newRoot, err := ctx.Workspace().IROf(def.Path)
+				if err != nil {
+					return false, fmt.Errorf(
+						"Walking properties: unable to get file content/nodes of %s: %w",
+						def.Path,
+						err,
+					)
+				}
+
+				currentDef = def
+				currentRoot = newRoot
 
 				return true, nil
 			},
 		)
 		if err != nil {
-			resultProp = nil
+			resultSymbol = nil
 			resultPath = ""
 			break
 		}
 	}
 
-	if resultProp == nil {
+	if resultSymbol == nil {
 		return nil, definition.ErrNoDefinitionFound
 	}
 
-	return &definition.Definition{Path: resultPath, Node: symbol.New(resultProp)}, nil
+	return &definition.Definition{Path: resultPath, Node: symbol.New(resultSymbol)}, nil
 }
 
+// walkContext is the context of a current iteration in the walk of the resolve queue.
 type walkContext struct {
-	QueueNode *resolvequeue.Node
-	CurrDef   *definition.Definition
-	Privacy   phprivacy.Privacy
-	IR        *ir.Root
-	HasMore   bool
+	// The FQN of the current class.
+	FQN *typer.FQN
+
+	// The definition of the current class.
+	Curr *definition.Definition
+
+	// Whether there are more classes in the resolve queue.
+	IsLast bool
 }
 
 func walkResolveQueue(
@@ -227,11 +290,7 @@ func walkResolveQueue(
 		&resolvequeue.Node{FQN: fqn, Kind: start.NodeKind()},
 	)
 
-	isCurr := true
-	for res := resolveQueue.Queue.Dequeue(); res != nil; func() {
-		res = resolveQueue.Queue.Dequeue()
-		isCurr = false
-	}() {
+	for res := resolveQueue.Queue.Dequeue(); res != nil; res = resolveQueue.Queue.Dequeue() {
 		def, err := ctx.Index().Find(res.FQN.String(), res.Kind)
 		if err != nil {
 			if !errors.Is(err, index.ErrNotFound) {
@@ -241,35 +300,11 @@ func walkResolveQueue(
 			return definition.ErrNoDefinitionFound
 		}
 
-		// NOTE: this is only correct when resolvequeue is called for a symbol
-		// NOTE: inside of the class. Not for $variable->method() for example.
-		var privacy phprivacy.Privacy
-		switch def.Symbol.NodeKind() {
-		case ir.KindClassStmt:
-			// If first index (source file) search for any privacy,
-			// if not, search for protected and public privacy.
-			privacy = phprivacy.PrivacyProtected
-
-			if isCurr {
-				privacy = phprivacy.PrivacyPrivate
-			}
-		default:
-			// Traits and interface members are available everywhere.
-			privacy = phprivacy.PrivacyPrivate
-		}
-
-		root, err := ctx.Workspace().IROf(def.Path)
-		if err != nil {
-			return fmt.Errorf(def.Path, "Error parsing ast for %s: %w", err)
-		}
-
 		done, err := walker(
 			&walkContext{
-				res,
-				&definition.Definition{Path: def.Path, Node: def.Symbol},
-				privacy,
-				root,
-				resolveQueue.Queue.Peek() != nil,
+				FQN:    res.FQN,
+				Curr:   &definition.Definition{Node: def.Symbol, Path: def.Path},
+				IsLast: resolveQueue.Queue.Peek() == nil,
 			},
 		)
 		if err != nil {

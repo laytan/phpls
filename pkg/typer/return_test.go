@@ -117,6 +117,43 @@ func Test_typer_Returns(t *testing.T) {
 			},
 			want: &phpdoxer.TypeClassLike{FullyQualified: true, Name: `\Testing\Testerdetest\Bar`},
 		},
+		{
+			name: "method typehint",
+			args: args{
+				source: `
+                <?php
+                namespace Testing;
+
+                class Test {
+                    public function test(): \Bar {}
+                }
+                `,
+				funcOrMethodGetter: func(r *ir.Root) ir.Node {
+					return r.Stmts[2].(*ir.ClassStmt).Stmts[0].(*ir.ClassMethodStmt)
+				},
+			},
+			want: &phpdoxer.TypeClassLike{FullyQualified: true, Name: `\Bar`},
+		},
+		{
+			name: "method doc comment",
+			args: args{
+				source: `
+                <?php
+                namespace Testing;
+
+                class Test {
+                    /**
+                     * @return \Bar
+                     */
+                    public function test() {}
+                }
+                `,
+				funcOrMethodGetter: func(r *ir.Root) ir.Node {
+					return r.Stmts[2].(*ir.ClassStmt).Stmts[0].(*ir.ClassMethodStmt)
+				},
+			},
+			want: &phpdoxer.TypeClassLike{FullyQualified: true, Name: `\Bar`},
+		},
 	}
 
 	tr := &typer{}

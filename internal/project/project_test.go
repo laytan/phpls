@@ -424,16 +424,12 @@ func TestDefinitions(t *testing.T) {
 			file:     path.Join("properties", "properties.php"),
 			position: &position.Position{Row: 70, Col: 34},
 		},
-		// {
-		// 	file:        path.Join("properties", "properties.php"),
-		// 	position:    &position.Position{Row: 72, Col: 36},
-		// 	outPosition: &position.Position{Row: 11, Col: 5},
-		// },
-		// {
-		// 	file:        "namespaced_functions.php",
-		// 	position:    &position.Position{Row: 15, Col: 1},
-		// 	outPosition: &position.Position{Row: 3, Col: 1},
-		// },
+		{
+			file:        "namespaced_functions.php",
+			position:    &position.Position{Row: 15, Col: 1},
+			outPosition: &position.Position{Row: 3, Col: 1},
+		},
+		// TODO: Why does this fail, this is not methods.
 		// {
 		// 	file:     "namespaced_functions.php",
 		// 	position: &position.Position{Row: 16, Col: 1},
@@ -488,6 +484,16 @@ func TestDefinitions(t *testing.T) {
 			file:        "variable.php",
 			position:    &position.Position{Row: 19, Col: 6},
 			outPosition: &position.Position{Row: 18, Col: 6},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 93, Col: 21},
+			outPosition: &position.Position{Row: 74, Col: 5},
+		},
+		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 94, Col: 22},
+			outPosition: &position.Position{Row: 74, Col: 5},
 		},
 	}
 

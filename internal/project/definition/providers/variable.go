@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
@@ -22,7 +21,6 @@ func (p *VariableProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 }
 
 func (p *VariableProvider) Define(ctx context.Context) (*definition.Definition, error) {
-	what.Is(ctx.Scope())
 	t := traversers.NewAssignment(ctx.Current().(*ir.SimpleVar))
 	ctx.Scope().Walk(t)
 

@@ -69,4 +69,26 @@ $testingPropertiesChild = new TestPropertiesClassChild();
 $testingPropertiesChild->testType->test;
 $testingPropertiesChild->testNo->test;
 
-$testingPropertiesChild->testType->test();
+class TestPropertiesClassReturnedByMethod
+{
+    public TestPropertiesClass $testType;
+}
+
+class TestPropertiesClassChild2 extends TestPropertiesClass2
+{
+
+    /**
+     * @return TestPropertiesClassReturnedByMethod
+     */
+    public function test()
+    {
+    }
+
+    public function test2(): TestPropertiesClassReturnedByMethod
+    {
+    }
+}
+
+$testChild2 = new TestPropertiesClassChild2();
+$testChild2->test()->testType;
+$testChild2->test2()->testType;
