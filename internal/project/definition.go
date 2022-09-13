@@ -20,6 +20,7 @@ var (
 		providers.NewVariable(), // $a
 		providers.NewName(),     // new Class, Class::
 		providers.NewProperty(), // $this->foo, $foo->foo->bar
+		providers.NewMethod(),   // $this->test(), $foo->foo->test()
 	}
 
 	ErrNoDefinitionFound = errors.New(

@@ -205,95 +205,95 @@ func TestDefinitions(t *testing.T) {
 				Path: path.Join(stubsFolder, "date", "date_c.php"),
 			},
 		},
-		// {
-		// 	file:        path.Join("methods", "methods.php"),
-		// 	position:    &position.Position{Row: 28, Col: 10},
-		// 	outPosition: &position.Position{Row: 12, Col: 1},
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods.php"),
-		// 	position:    &position.Position{Row: 28, Col: 16},
-		// 	outPosition: &position.Position{Row: 14, Col: 5},
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods.php"),
-		// 	position:    &position.Position{Row: 29, Col: 16},
-		// 	outPosition: &position.Position{Row: 18, Col: 5},
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods.php"),
-		// 	position:    &position.Position{Row: 30, Col: 16},
-		// 	outPosition: &position.Position{Row: 22, Col: 5},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods_child.php"),
-		// 	position: &position.Position{Row: 10, Col: 16},
-		// 	outPosition: &position.Position{
-		// 		Row:  18,
-		// 		Col:  5,
-		// 		Path: path.Join(definitionsFolder, "methods", "methods.php"),
-		// 	},
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods_child.php"),
-		// 	position:    &position.Position{Row: 18, Col: 16},
-		// 	outPosition: nil,
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods_child.php"),
-		// 	position:    &position.Position{Row: 12, Col: 16},
-		// 	outPosition: &position.Position{Row: 15, Col: 5},
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods_trait.php"),
-		// 	position:    &position.Position{Row: 13, Col: 16},
-		// 	outPosition: &position.Position{Row: 7, Col: 5},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods.php"),
-		// 	position: &position.Position{Row: 41, Col: 16},
-		// 	outPosition: &position.Position{
-		// 		Row:  7,
-		// 		Col:  5,
-		// 		Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-		// 	},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods.php"),
-		// 	position: &position.Position{Row: 42, Col: 16},
-		// 	outPosition: &position.Position{
-		// 		Row:  11,
-		// 		Col:  5,
-		// 		Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-		// 	},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods.php"),
-		// 	position: &position.Position{Row: 43, Col: 16},
-		// 	outPosition: &position.Position{
-		// 		Row:  16,
-		// 		Col:  5,
-		// 		Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-		// 	},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods_child.php"),
-		// 	position: &position.Position{Row: 9, Col: 16},
-		// 	outPosition: &position.Position{
-		// 		Row:  14,
-		// 		Col:  5,
-		// 		Path: path.Join(definitionsFolder, "methods", "methods.php"),
-		// 	},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods_child.php"),
-		// 	position: &position.Position{Row: 21, Col: 16},
-		// 	outPosition: &position.Position{
-		// 		Row:  16,
-		// 		Col:  5,
-		// 		Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-		// 	},
-		// },
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 28, Col: 10},
+			outPosition: &position.Position{Row: 12, Col: 1},
+		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 28, Col: 16},
+			outPosition: &position.Position{Row: 14, Col: 5},
+		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 29, Col: 16},
+			outPosition: &position.Position{Row: 18, Col: 5},
+		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 30, Col: 16},
+			outPosition: &position.Position{Row: 22, Col: 5},
+		},
+		{
+			file:     path.Join("methods", "methods_child.php"),
+			position: &position.Position{Row: 10, Col: 16},
+			outPosition: &position.Position{
+				Row:  18,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods.php"),
+			},
+		},
+		{
+			file:        path.Join("methods", "methods_child.php"),
+			position:    &position.Position{Row: 18, Col: 16},
+			outPosition: nil,
+		},
+		{
+			file:        path.Join("methods", "methods_child.php"),
+			position:    &position.Position{Row: 12, Col: 16},
+			outPosition: &position.Position{Row: 15, Col: 5},
+		},
+		{
+			file:        path.Join("methods", "methods_trait.php"),
+			position:    &position.Position{Row: 13, Col: 16},
+			outPosition: &position.Position{Row: 7, Col: 5},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 41, Col: 16},
+			outPosition: &position.Position{
+				Row:  7,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
+			},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 42, Col: 16},
+			outPosition: &position.Position{
+				Row:  11,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
+			},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 43, Col: 16},
+			outPosition: &position.Position{
+				Row:  16,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
+			},
+		},
+		{
+			file:     path.Join("methods", "methods_child.php"),
+			position: &position.Position{Row: 9, Col: 16},
+			outPosition: &position.Position{
+				Row:  14,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods.php"),
+			},
+		},
+		{
+			file:     path.Join("methods", "methods_child.php"),
+			position: &position.Position{Row: 21, Col: 16},
+			outPosition: &position.Position{
+				Row:  16,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
+			},
+		},
 		{
 			file:        path.Join("properties", "properties.php"),
 			position:    &position.Position{Row: 13, Col: 17},
@@ -327,38 +327,38 @@ func TestDefinitions(t *testing.T) {
 			position:    &position.Position{Row: 32, Col: 21},
 			outPosition: &position.Position{Row: 7, Col: 5},
 		},
-		// {
-		// 	file:        path.Join("methods", "methods.php"),
-		// 	position:    &position.Position{Row: 56, Col: 21},
-		// 	outPosition: &position.Position{Row: 14, Col: 5},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods.php"),
-		// 	position: &position.Position{Row: 57, Col: 21},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods.php"),
-		// 	position: &position.Position{Row: 58, Col: 21},
-		// },
-		// {
-		// 	file:     path.Join("methods", "methods.php"),
-		// 	position: &position.Position{Row: 60, Col: 21},
-		// 	outPosition: &position.Position{
-		// 		Row:  16,
-		// 		Col:  5,
-		// 		Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-		// 	},
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods.php"),
-		// 	position:    &position.Position{Row: 66, Col: 18},
-		// 	outPosition: &position.Position{Row: 14, Col: 5},
-		// },
-		// {
-		// 	file:        path.Join("methods", "methods.php"),
-		// 	position:    &position.Position{Row: 72, Col: 21},
-		// 	outPosition: &position.Position{Row: 14, Col: 5},
-		// },
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 56, Col: 21},
+			outPosition: &position.Position{Row: 14, Col: 5},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 57, Col: 21},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 58, Col: 21},
+		},
+		{
+			file:     path.Join("methods", "methods.php"),
+			position: &position.Position{Row: 60, Col: 21},
+			outPosition: &position.Position{
+				Row:  16,
+				Col:  5,
+				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
+			},
+		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 66, Col: 18},
+			outPosition: &position.Position{Row: 14, Col: 5},
+		},
+		{
+			file:        path.Join("methods", "methods.php"),
+			position:    &position.Position{Row: 72, Col: 21},
+			outPosition: &position.Position{Row: 14, Col: 5},
+		},
 		{
 			file:        "parameter.php",
 			position:    &position.Position{Row: 13, Col: 10},

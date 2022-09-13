@@ -1,6 +1,8 @@
 package symbol
 
 import (
+	"log"
+
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/position"
 )
@@ -18,6 +20,8 @@ func New(node ir.Node) Symbol {
 	switch typedNode := node.(type) {
 	case *ir.FunctionStmt:
 		return NewFunction(typedNode)
+	case *ir.ClassMethodStmt:
+		return NewMethod(typedNode)
 	case *ir.ClassStmt:
 		return NewClassLikeClass(typedNode)
 	case *ir.TraitStmt:
@@ -29,6 +33,7 @@ func New(node ir.Node) Symbol {
 	case *ir.PropertyListStmt:
 		return NewProperty(typedNode)
 	default:
+		log.Printf("symbol.New called with unsupported type %T", node)
 		return nil
 	}
 }
@@ -121,4 +126,18 @@ func NewProperty(stmt *ir.PropertyListStmt) *PropertySymbol {
 
 func (a *PropertySymbol) NodeKind() ir.NodeKind {
 	return ir.KindPropertyListStmt
+}
+
+type MethodSymbol struct {
+	baseSymbol
+}
+
+func NewMethod(stmt *ir.ClassMethodStmt) *MethodSymbol {
+	m := &MethodSymbol{}
+	m.FromNode(stmt)
+	return m
+}
+
+func (a *MethodSymbol) NodeKind() ir.NodeKind {
+	return ir.KindClassMethodStmt
 }
