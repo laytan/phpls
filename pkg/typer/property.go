@@ -7,6 +7,7 @@ import (
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
+// TODO: support {@inheritdoc}.
 func (typer *typer) Property(root *ir.Root, propertyList *ir.PropertyListStmt) phpdoxer.Type {
 	nodes, err := phpdoxer.ParseDoc(propertyList.Doc.Raw)
 	if err != nil {

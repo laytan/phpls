@@ -8,6 +8,7 @@ import (
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
+// TODO: support {@inheritdoc}.
 // Returns the return type of the method or function, prioritizing phpdoc
 // @return over the return type hint.
 func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) phpdoxer.Type {
