@@ -17,6 +17,7 @@ func (p *Project) Hover(currpos *position.Position) string {
 	pos, err := p.Definition(currpos)
 	if err != nil {
 		log.Println(fmt.Errorf("Hover error getting definition: %w", err))
+		return ""
 	}
 
 	content, root, err := p.wrksp.AllOf(pos.Path)
@@ -24,6 +25,8 @@ func (p *Project) Hover(currpos *position.Position) string {
 		log.Println(
 			fmt.Errorf("Hover error getting content/parsing of %s: %w", pos.Path, err),
 		)
+
+		return ""
 	}
 
 	apos := position.LocToPos(content, pos.Row, pos.Col)
