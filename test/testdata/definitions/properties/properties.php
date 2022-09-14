@@ -92,3 +92,11 @@ class TestPropertiesClassChild2 extends TestPropertiesClass2
 $testChild2 = new TestPropertiesClassChild2();
 $testChild2->test()->testType;
 $testChild2->test2()->testType;
+
+class TestTypedProperties
+{
+    public string $testTypedProperty;
+}
+
+$testTypedPropObj = new TestTypedProperties();
+$testTypedPropObj->testTypedProperty;

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	ErrUnexpectedNodeFmt = "Unexpected node of type %T (expected %s) when retrieving property definition"
+	ErrUnexpectedNodeFmt = "Unexpected node of type %T (expected %s) when retrieving symbol definition"
 )
 
 var (

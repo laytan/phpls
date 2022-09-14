@@ -425,6 +425,11 @@ func TestDefinitions(t *testing.T) {
 			position: &position.Position{Row: 70, Col: 34},
 		},
 		{
+			file:        path.Join("properties", "properties.php"),
+			position:    &position.Position{Row: 102, Col: 20},
+			outPosition: &position.Position{Row: 98, Col: 5},
+		},
+		{
 			file:        "namespaced_functions.php",
 			position:    &position.Position{Row: 15, Col: 1},
 			outPosition: &position.Position{Row: 3, Col: 1},

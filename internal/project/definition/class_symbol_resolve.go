@@ -115,12 +115,16 @@ func up(
 		symbols.Peek(),
 	)
 
+	var isLastProp bool
+
 	currentDef := start
 	currentRoot := ctx.Root()
 
 	var resultSymbol ir.Node
 	var resultPath string
 	for prop := symbols.Pop(); prop != ""; prop = symbols.Pop() {
+		isLastProp = symbols.Peek() == ""
+
 		// walk resolve queue
 		err := walkResolveQueue(
 			ctx,
@@ -157,7 +161,7 @@ func up(
 						wc.FQN,
 					)
 
-					if wc.IsLast {
+					if wc.IsLastClass {
 						return true, ErrNoDefinitionFound
 					}
 
@@ -201,6 +205,10 @@ func up(
 				}
 
 				if symType.Kind() != phpdoxer.KindClassLike {
+					if isLastProp {
+						return true, nil
+					}
+
 					return true, fmt.Errorf(
 						ErrUnexpectedNodeFmt,
 						symType,
@@ -215,7 +223,14 @@ func up(
 					clsType.Name,
 					symbol.ClassLikeScopes...)
 				if !ok {
-					return false, nil
+					if isLastProp {
+						return true, nil
+					}
+
+					return true, fmt.Errorf(
+						"Could not find fully qualified %s in the index",
+						clsType.Name,
+					)
 				}
 
 				what.Happens(
@@ -240,6 +255,7 @@ func up(
 			},
 		)
 		if err != nil {
+			log.Println(err)
 			resultSymbol = nil
 			resultPath = ""
 			break
@@ -262,7 +278,7 @@ type walkContext struct {
 	Curr *Definition
 
 	// Whether there are more classes in the resolve queue.
-	IsLast bool
+	IsLastClass bool
 }
 
 func walkResolveQueue(
@@ -300,9 +316,9 @@ func walkResolveQueue(
 
 		done, err := walker(
 			&walkContext{
-				FQN:    res.FQN,
-				Curr:   &Definition{Node: def.Symbol, Path: def.Path},
-				IsLast: resolveQueue.Queue.Peek() == nil,
+				FQN:         res.FQN,
+				Curr:        &Definition{Node: def.Symbol, Path: def.Path},
+				IsLastClass: resolveQueue.Queue.Peek() == nil,
 			},
 		)
 		if err != nil {
