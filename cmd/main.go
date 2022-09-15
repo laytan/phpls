@@ -17,14 +17,17 @@ import (
 	"github.com/laytan/elephp/pkg/connection"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/processwatch"
+	"github.com/samber/do"
 
 	// TODO: Check the difference between v1 and v2 of this.
 	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
 )
 
 func main() {
-	config := config.New()
-	disregardErr, err := config.Initialize()
+	conf := config.New()
+	do.ProvideValue(nil, conf)
+
+	disregardErr, err := conf.Initialize()
 	if disregardErr {
 		os.Exit(1)
 	}
@@ -35,20 +38,20 @@ func main() {
 		}
 	}
 
-	stop := logging.Configure(path.Join(pathutils.Root(), "logs"), config.Name())
+	stop := logging.Configure(path.Join(pathutils.Root(), "logs"), conf.Name())
 	defer stop()
 
-	connType, err := config.ConnType()
+	connType, err := conf.ConnType()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if pid, isset := config.ClientPid(); isset {
+	if pid, isset := conf.ClientPid(); isset {
 		processwatch.NewExiter(pid)
 		log.Printf("Monitoring process ID: %d\n", pid)
 	}
 
-	if config.UseStatsviz() {
+	if conf.UseStatsviz() {
 		go func() {
 			log.Println("Starting Statsviz at http://localhost:6060/debug/statsviz")
 			if err := statsviz.RegisterDefault(); err != nil {
@@ -63,7 +66,7 @@ func main() {
 
 	connChan := make(chan net.Conn, 1)
 	listeningChann := make(chan bool, 1)
-	go func() { connection.NewConnectionListener(connType, config.ConnURL(), connChan, listeningChann) }()
+	go func() { connection.NewConnectionListener(connType, conf.ConnURL(), connChan, listeningChann) }()
 
 	<-listeningChann
 	log.Printf("Waiting for connection of type: %s\n", connType)
@@ -74,7 +77,7 @@ func main() {
 	stream := jsonrpc2.NewHeaderStream(conn)
 	rpcConn := jsonrpc2.NewConn(stream)
 	client := protocol.ClientDispatcher(rpcConn)
-	server := server.NewServer(client, config)
+	server := server.NewServer(client)
 	rpcConn.Go(ctx, protocol.Handlers(protocol.ServerHandler(server, jsonrpc2.MethodNotFound)))
 	<-rpcConn.Done()
 	if err := rpcConn.Err(); err != nil {

@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
+	"github.com/samber/do"
 )
+
+var Wrkspc = func() wrkspc.Wrkspc { return do.MustInvoke[wrkspc.Wrkspc](nil) }
 
 type Context interface {
 	// Whether the current node is wrapped by the given kind.
@@ -39,17 +40,10 @@ type Context interface {
 	Root() *ir.Root
 
 	Start() *position.Position
-
-	Workspace() wrkspc.Wrkspc
-	Index() index.Index
-	Typer() typer.Typer
 }
 
 type context struct {
 	start      *position.Position
-	workspace  wrkspc.Wrkspc
-	index      index.Index
-	typer      typer.Typer
 	nodes      []ir.Node
 	curr       int
 	scope      ir.Node
@@ -115,20 +109,8 @@ func (c *context) Start() *position.Position {
 	return c.start
 }
 
-func (c *context) Workspace() wrkspc.Wrkspc {
-	return c.workspace
-}
-
-func (c *context) Index() index.Index {
-	return c.index
-}
-
-func (c *context) Typer() typer.Typer {
-	return c.typer
-}
-
 func (c *context) init() error {
-	content, root, err := c.workspace.AllOf(c.start.Path)
+	content, root, err := Wrkspc().AllOf(c.start.Path)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to parse context of %s: %w",
@@ -173,12 +155,9 @@ func (c *context) setScopes() {
 	}
 }
 
-func New(pos *position.Position, w wrkspc.Wrkspc, i index.Index, t typer.Typer) (Context, error) {
+func New(pos *position.Position) (Context, error) {
 	ctx := &context{
-		start:     pos,
-		workspace: w,
-		index:     i,
-		typer:     t,
+		start: pos,
 	}
 
 	err := ctx.init()

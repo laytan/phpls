@@ -20,6 +20,20 @@ func New() Config {
 	}
 }
 
+func Default() Config {
+	return &lsConfig{
+		opts: opts{
+			UseStdio:        true,
+			UseWs:           false,
+			UseTCP:          false,
+			Statsviz:        false,
+			ClientProcessID: 0,
+			URL:             "",
+			FileExtensions:  []string{"php"},
+		},
+	}
+}
+
 type Config interface {
 	Name() string
 	Version() string

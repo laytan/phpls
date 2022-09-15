@@ -13,6 +13,8 @@ import (
 	"github.com/laytan/elephp/pkg/strutil"
 )
 
+// This should only be called once at the beginning of the connection with a
+// client.
 func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone chan<- bool) error {
 	// Parsing creates alot of garbage, after parsing, run a gc cycle manually
 	// because we know there is a lot to clean up.
@@ -39,7 +41,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 				defer done.Add(1)
 				defer wg.Done()
 
-				if err := p.index.Index(file.Path, file.Content); err != nil {
+				if err := Index().Index(file.Path, file.Content); err != nil {
 					log.Println(
 						fmt.Errorf("Could not index the symbols in %s: %w", file.Path, err),
 					)
@@ -49,11 +51,11 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 		}
 	}()
 
-	if err := p.wrksp.Index(files, total, totalDone); err != nil {
+	if err := Wrkspc().Index(files, total, totalDone); err != nil {
 		log.Println(
 			fmt.Errorf(
 				"Could not index the file content of root %s: %w",
-				p.wrksp.Root(),
+				Wrkspc().Root(),
 				err,
 			),
 		)
@@ -81,7 +83,7 @@ func (p *Project) ParseWithoutProgress() error {
 }
 
 func (p *Project) ParseFileUpdate(path string, content string) error {
-	prevContent, err := p.wrksp.ContentOf(path)
+	prevContent, err := Wrkspc().ContentOf(path)
 	if err != nil && !errors.Is(err, wrkspc.ErrFileNotIndexed) {
 		return fmt.Errorf("Could not read content of %s while updating: %w", path, err)
 	}
@@ -94,11 +96,11 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 	}
 
 	// NOTE: order is important here.
-	if err := p.wrksp.RefreshFrom(path, content); err != nil {
+	if err := Wrkspc().RefreshFrom(path, content); err != nil {
 		return fmt.Errorf("Could not refresh indexed content of %s: %w", path, err)
 	}
 
-	if err := p.index.Refresh(path, content); err != nil {
+	if err := Index().Refresh(path, content); err != nil {
 		return fmt.Errorf("Could not refresh indexed symbols of %s: %w", path, err)
 	}
 

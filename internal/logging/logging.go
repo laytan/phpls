@@ -6,6 +6,9 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/laytan/elephp/internal/config"
+	"github.com/samber/do"
 )
 
 const (
@@ -18,8 +21,10 @@ const (
 	filePerms = 0666
 )
 
-func Configure(root string, name string) (stop func()) {
-	logsPath := getLogsPath(root, name)
+var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
+
+func Configure(root string) (stop func()) {
+	logsPath := getLogsPath(root)
 
 	f, err := os.OpenFile(logsPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, filePerms)
 	if err != nil {
@@ -29,7 +34,7 @@ func Configure(root string, name string) (stop func()) {
 	log.SetOutput(f)
 	log.SetFlags(log.Ltime | log.LUTC | log.Lshortfile)
 
-	go cleanLogs(root, name)
+	go cleanLogs(root)
 
 	return func() {
 		if err := f.Close(); err != nil {
@@ -38,12 +43,16 @@ func Configure(root string, name string) (stop func()) {
 	}
 }
 
-func getLogsPath(root, name string) string {
+func getLogsPath(root string) string {
+	name := Config().Name()
+
 	filename := name + "-" + time.Now().Format(dateLayout) + fileType
 	return path.Join(root, filename)
 }
 
-func cleanLogs(root, name string) {
+func cleanLogs(root string) {
+	name := Config().Name()
+
 	minTime := time.Now().Add(-(time.Hour * hoursInDay * daysToKeep))
 
 	files, err := os.ReadDir(root)

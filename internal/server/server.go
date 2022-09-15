@@ -10,13 +10,13 @@ import (
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	"github.com/samber/do"
 )
 
-func NewServer(client protocol.ClientCloser, config config.Config) *Server {
-	return &Server{
-		client: client,
-		config: config,
-	}
+var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
+
+func NewServer(client protocol.ClientCloser) *Server {
+	return &Server{client: client}
 }
 
 type Server struct {
@@ -32,8 +32,6 @@ type Server struct {
 	root string
 
 	project *project.Project
-
-	config config.Config
 }
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call

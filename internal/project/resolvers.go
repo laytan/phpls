@@ -12,7 +12,7 @@ import (
 
 // Returns the position for the namespace statement that matches the given position.
 func (p *Project) Namespace(pos *position.Position) *position.Position {
-	content, root, err := p.wrksp.AllOf(pos.Path)
+	content, root, err := Wrkspc().AllOf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf(
@@ -42,7 +42,7 @@ func (p *Project) Namespace(pos *position.Position) *position.Position {
 
 // Returns whether the file at given pos needs a use statement for the given fqn.
 func (p *Project) NeedsUseStmtFor(pos *position.Position, FQN string) bool {
-	root, err := p.wrksp.IROf(pos.Path)
+	root, err := Wrkspc().IROf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf(
@@ -78,7 +78,7 @@ func (p *Project) NeedsUseStmtFor(pos *position.Position, FQN string) bool {
 // 			return nil, "", fmt.Errorf("Method definition: unable to get type of variable that method is called on: %w", err)
 // 		}
 //
-// 		varRoot, err := p.wrksp.IROf(path)
+// 		varRoot, err := do.MustInvoke[wrkspc.Wrkspc](nil).IROf(path)
 // 		if err != nil {
 // 			return nil, "", fmt.Errorf("Method definition: unable to get file content/nodes of %s: %w", path, err)
 // 		}
@@ -125,7 +125,7 @@ func (p *Project) NeedsUseStmtFor(pos *position.Position, FQN string) bool {
 // 		)
 // 	}
 //
-// 	classRoot, err := p.wrksp.IROf(targetClass.Path)
+// 	classRoot, err := do.MustInvoke[wrkspc.Wrkspc](nil).IROf(targetClass.Path)
 // 	if err != nil {
 // 		return nil, "", fmt.Errorf(
 // 			"Method definition: unable to get file content/nodes of %s: %w",

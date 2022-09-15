@@ -65,7 +65,7 @@ func (p *FunctionProvider) checkLocal(
 }
 
 func (p *FunctionProvider) checkGlobal(ctx context.Context, name string) *definition.Definition {
-	n, err := ctx.Index().Find(`\`+name, ir.KindFunctionStmt)
+	n, err := Index().Find(`\`+name, ir.KindFunctionStmt)
 	if err != nil {
 		if !errors.Is(err, index.ErrNotFound) {
 			log.Println(err)

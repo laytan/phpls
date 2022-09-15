@@ -34,7 +34,7 @@ type DefinitionProvider interface {
 }
 
 func (p *Project) Definition(pos *position.Position) (*position.Position, error) {
-	ctx, err := context.New(pos, p.wrksp, p.index, p.typer)
+	ctx, err := context.New(pos)
 	if err != nil {
 		return nil, fmt.Errorf("Could not create definition context: %w", err)
 	}
@@ -61,7 +61,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 }
 
 func (p *Project) defPosition(def *definition.Definition) (*position.Position, error) {
-	content, err := p.wrksp.ContentOf(def.Path)
+	content, err := Wrkspc().ContentOf(def.Path)
 	if err != nil {
 		log.Println(err)
 		return nil, ErrNoDefinitionFound

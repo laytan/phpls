@@ -13,9 +13,11 @@ import (
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/samber/do"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -37,6 +39,8 @@ var indexGoRoutinesLimit = runtime.NumCPU()
 
 var stubsPath = path.Join(pathutils.Root(), "phpstorm-stubs")
 
+var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
+
 type file struct {
 	content string
 }
@@ -55,8 +59,6 @@ type ParsedFile struct {
 type Wrkspc interface {
 	Root() string
 
-	FileExtensions() []string
-
 	Index(files chan<- *ParsedFile, total *atomic.Uint64, totalDone chan<- bool) error
 
 	Has(path string) bool
@@ -73,7 +75,7 @@ type Wrkspc interface {
 }
 
 // fileExtensions should all start with a period.
-func New(phpv *phpversion.PHPVersion, root string, fileExtensions []string) Wrkspc {
+func New(phpv *phpversion.PHPVersion, root string) Wrkspc {
 	normalParser := parsing.New(phpv)
 	// TODO: not ideal, temporary
 	stubParser := parsing.New(phpversion.EightOne())
@@ -82,7 +84,7 @@ func New(phpv *phpversion.PHPVersion, root string, fileExtensions []string) Wrks
 		normalParser:   normalParser,
 		stubParser:     stubParser,
 		roots:          []string{root, path.Join(pathutils.Root(), "phpstorm-stubs")},
-		fileExtensions: fileExtensions,
+		fileExtensions: Config().FileExtensions(),
 		files:          make(map[string]*file, startingIndexSize),
 	}
 }
@@ -101,10 +103,6 @@ type wrkspc struct {
 
 func (w *wrkspc) Root() string {
 	return w.roots[0]
-}
-
-func (w *wrkspc) FileExtensions() []string {
-	return w.fileExtensions
 }
 
 // TODO: error handling.

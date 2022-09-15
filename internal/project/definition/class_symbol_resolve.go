@@ -46,7 +46,7 @@ func walkToClassSymbol(ctx context.Context, start string, startVar ir.Node) (*De
 		return nil, ErrNoDefinitionFound
 	}
 
-	def, err = up(ctx, def, privacy, symbols)
+	def, err = up(ctx.Root(), def, privacy, symbols)
 	if err != nil {
 		if errors.Is(err, ErrNoDefinitionFound) {
 			return nil, err
@@ -58,8 +58,6 @@ func walkToClassSymbol(ctx context.Context, start string, startVar ir.Node) (*De
 
 	return def, nil
 }
-
-// TODO: combine into one function, and give proper name.
 
 // Keeps going Down the call until a variable is hit, keeping track of where
 // we have been in the properties stack.
@@ -104,7 +102,7 @@ func down(
 
 // Walks back up the properties stack, resolving the types, returning the last type.
 func up(
-	ctx context.Context,
+	startRoot *ir.Root,
 	start *Definition,
 	privacy phprivacy.Privacy,
 	symbols *stack.Stack[string],
@@ -118,7 +116,7 @@ func up(
 	var isLastProp bool
 
 	currentDef := start
-	currentRoot := ctx.Root()
+	currentRoot := startRoot
 
 	var resultSymbol ir.Node
 	var resultPath string
@@ -127,12 +125,11 @@ func up(
 
 		// walk resolve queue
 		err := walkResolveQueue(
-			ctx,
 			currentRoot,
 			currentDef.Node,
 			func(wc *walkContext) (bool, error) {
 				what.Happens("Checking %s for symbol %s\n", wc.FQN, prop)
-				root, err := ctx.Workspace().IROf(wc.Curr.Path)
+				root, err := Wrkspc().IROf(wc.Curr.Path)
 				if err != nil {
 					return true, err
 				}
@@ -182,7 +179,7 @@ func up(
 				switch symbol := result.(type) {
 				case *ir.PropertyListStmt:
 					// get property type.
-					propType := ctx.Typer().Property(currentRoot, symbol)
+					propType := Typer().Property(currentRoot, symbol)
 					if propType == nil {
 						what.Happens("No type found for property %s in %s", prop, wc.FQN)
 						return true, nil
@@ -192,7 +189,7 @@ func up(
 
 				case *ir.ClassMethodStmt:
 					// Get method return type.
-					methType := ctx.Typer().Returns(currentRoot, symbol)
+					methType := Typer().Returns(currentRoot, symbol)
 					if methType == nil {
 						what.Happens("No type found for method %s in %s", prop, wc.FQN)
 						return true, nil
@@ -219,7 +216,6 @@ func up(
 				clsType := symType.(*phpdoxer.TypeClassLike)
 				def, ok := FindFullyQualified(
 					currentRoot,
-					ctx.Index(),
 					clsType.Name,
 					symbol.ClassLikeScopes...)
 				if !ok {
@@ -239,7 +235,7 @@ func up(
 					prop,
 				)
 
-				newRoot, err := ctx.Workspace().IROf(def.Path)
+				newRoot, err := Wrkspc().IROf(def.Path)
 				if err != nil {
 					return false, fmt.Errorf(
 						"Walking properties: unable to get file content/nodes of %s: %w",
@@ -282,7 +278,6 @@ type walkContext struct {
 }
 
 func walkResolveQueue(
-	ctx context.Context,
 	root *ir.Root,
 	start symbol.Symbol,
 	walker func(*walkContext) (bool, error),
@@ -290,7 +285,7 @@ func walkResolveQueue(
 	fqn := FullyQualify(root, start.Identifier())
 	resolveQueue := resolvequeue.New(
 		func(n *resolvequeue.Node) (*ir.Root, error) {
-			def, err := ctx.Index().Find(n.FQN.String(), n.Kind)
+			def, err := Index().Find(n.FQN.String(), n.Kind)
 			if err != nil {
 				if !errors.Is(err, index.ErrNotFound) {
 					log.Println(err)
@@ -299,13 +294,13 @@ func walkResolveQueue(
 				return nil, ErrNoDefinitionFound
 			}
 
-			return ctx.Workspace().IROf(def.Path)
+			return Wrkspc().IROf(def.Path)
 		},
 		&resolvequeue.Node{FQN: fqn, Kind: start.NodeKind()},
 	)
 
 	for res := resolveQueue.Queue.Dequeue(); res != nil; res = resolveQueue.Queue.Dequeue() {
-		def, err := ctx.Index().Find(res.FQN.String(), res.Kind)
+		def, err := Index().Find(res.FQN.String(), res.Kind)
 		if err != nil {
 			if !errors.Is(err, index.ErrNotFound) {
 				log.Println(err)

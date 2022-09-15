@@ -24,12 +24,12 @@ func (p *Project) Complete(
 		return nil
 	}
 
-	return p.index.FindPrefix(query, maxCompletionResults)
+	return Index().FindPrefix(query, maxCompletionResults)
 }
 
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.
 func (p *Project) getCompletionQuery(pos *position.Position) string {
-	content, err := p.wrksp.ContentOf(pos.Path)
+	content, err := Wrkspc().ContentOf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf("Getting file content for completion query: %w", err).Error(),

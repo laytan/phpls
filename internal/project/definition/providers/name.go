@@ -31,7 +31,6 @@ func (p *NameProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 func (p *NameProvider) Define(ctx context.Context) (*definition.Definition, error) {
 	def, ok := definition.FindFullyQualified(
 		ctx.Root(),
-		ctx.Index(),
 		ctx.Current().(*ir.Name).Value,
 		symbol.ClassLikeScopes...)
 	if !ok {

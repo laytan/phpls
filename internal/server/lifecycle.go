@@ -10,10 +10,14 @@ import (
 	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/processwatch"
+	"github.com/laytan/elephp/pkg/typer"
+	"github.com/samber/do"
 	"golang.org/x/exp/slices"
 )
 
@@ -74,15 +78,12 @@ func (s *Server) Initialize(
 		)
 	}
 
-	phpv, err := phpversion.Get()
+	proj, err := s.createProject()
 	if err != nil {
-		log.Println(err)
-		return nil, lsperrors.ErrRequestFailed("LSP Server " + err.Error())
+		return nil, err
 	}
 
-	log.Printf("Detected php version: %s\n", phpv.String())
-
-	s.project = project.New(string(s.root), phpv, s.config.FileExtensions())
+	s.project = proj
 
 	go s.index()
 
@@ -107,8 +108,8 @@ func (s *Server) Initialize(
 			HoverProvider: true,
 		},
 		ServerInfo: serverInfo{
-			Name:    s.config.Name(),
-			Version: s.config.Version(),
+			Name:    Config().Name(),
+			Version: Config().Version(),
 		},
 	}, nil
 }
@@ -262,4 +263,24 @@ func (s *Server) index() {
 
 	m, _ := message()
 	log.Println(m)
+}
+
+func (s *Server) createProject() (*project.Project, error) {
+	phpv, err := phpversion.Get()
+	if err != nil {
+		log.Println(err)
+		return nil, lsperrors.ErrRequestFailed("LSP Server " + err.Error())
+	}
+
+	log.Printf("Detected php version: %s\n", phpv.String())
+
+	i := index.New(phpv)
+	w := wrkspc.New(phpv, string(s.root))
+	t := typer.New()
+
+	do.ProvideValue(nil, i)
+	do.ProvideValue(nil, w)
+	do.ProvideValue(nil, t)
+
+	return project.New(), nil
 }

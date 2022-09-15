@@ -9,11 +9,13 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
+	"github.com/samber/do"
 )
 
 const (
@@ -25,6 +27,12 @@ var (
 	ErrNoDefinitionFound = errors.New(
 		"No definition found for symbol at given position",
 	)
+)
+
+var (
+	Index  = func() index.Index { return do.MustInvoke[index.Index](nil) }
+	Typer  = func() typer.Typer { return do.MustInvoke[typer.Typer](nil) }
+	Wrkspc = func() wrkspc.Wrkspc { return do.MustInvoke[wrkspc.Wrkspc](nil) }
 )
 
 type Definition struct {
@@ -45,12 +53,11 @@ func FullyQualify(root *ir.Root, name string) *typer.FQN {
 
 func FindFullyQualified(
 	root *ir.Root,
-	i index.Index,
 	name string,
 	kinds ...ir.NodeKind,
 ) (*Definition, bool) {
 	FQN := FullyQualify(root, name)
-	node, err := i.Find(FQN.String(), kinds...)
+	node, err := Index().Find(FQN.String(), kinds...)
 	if err != nil {
 		if !errors.Is(err, index.ErrNotFound) {
 			log.Println(err)
@@ -72,7 +79,6 @@ func VariableType(
 	case "this", "self", "static":
 		def, ok := FindFullyQualified(
 			ctx.Root(),
-			ctx.Index(),
 			symbol.GetIdentifier(ctx.ClassScope()),
 			symbol.ClassLikeScopes...)
 		if !ok {
@@ -105,9 +111,9 @@ func VariableType(
 		case *ir.Parameter:
 			switch ctx.Scope().(type) {
 			case *ir.FunctionStmt, *ir.ClassMethodStmt:
-				paramType := ctx.Typer().Param(ctx.Root(), ctx.Scope(), varScope)
+				paramType := Typer().Param(ctx.Root(), ctx.Scope(), varScope)
 				if typedRetType, ok := paramType.(*phpdoxer.TypeClassLike); ok {
-					def, ok := FindFullyQualified(ctx.Root(), ctx.Index(), typedRetType.Name, symbol.ClassLikeScopes...)
+					def, ok := FindFullyQualified(ctx.Root(), typedRetType.Name, symbol.ClassLikeScopes...)
 					if !ok {
 						return nil, 0, ErrNoDefinitionFound
 					}
@@ -124,9 +130,9 @@ func VariableType(
 		case *ir.Assign:
 			// If scope is assign, check traverser.assignment for a phpdoc.
 			// If it has a phpdoc, with @var, return the symbol for that type.
-			varType := ctx.Typer().Variable(ctx.Root(), assT.Assignment, ctx.Scope())
+			varType := Typer().Variable(ctx.Root(), assT.Assignment, ctx.Scope())
 			if clsLike, ok := varType.(*phpdoxer.TypeClassLike); ok {
-				def, ok := FindFullyQualified(ctx.Root(), ctx.Index(), clsLike.Name, symbol.ClassLikeScopes...)
+				def, ok := FindFullyQualified(ctx.Root(), clsLike.Name, symbol.ClassLikeScopes...)
 				if !ok {
 					return nil, 0, ErrNoDefinitionFound
 				}
@@ -147,7 +153,7 @@ func VariableType(
 				// Return the type being instantiated:
 			case *ir.NewExpr:
 				if className, ok := exprNode.Class.(*ir.Name); ok {
-					def, ok := FindFullyQualified(ctx.Root(), ctx.Index(), className.Value, ir.KindClassStmt)
+					def, ok := FindFullyQualified(ctx.Root(), className.Value, ir.KindClassStmt)
 					if !ok {
 						return nil, 0, ErrNoDefinitionFound
 					}
@@ -192,7 +198,7 @@ func parentOf(ctx context.Context, classStmt ir.Node) (*Definition, error) {
 	}
 
 	fqn := FullyQualify(ctx.Root(), class.Extends.ClassName.Value)
-	node, err := ctx.Index().Find(fqn.String(), ir.KindClassStmt)
+	node, err := Index().Find(fqn.String(), ir.KindClassStmt)
 	if err != nil {
 		return nil, fmt.Errorf("Parent class %s is not indexed: %w", fqn.String(), err)
 	}

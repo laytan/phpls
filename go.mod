@@ -14,6 +14,7 @@ require (
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/matryer/is v1.4.0
+	github.com/samber/do v1.4.0
 	github.com/shivamMg/trie v0.0.0
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde

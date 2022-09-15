@@ -6,16 +6,30 @@ import (
 	"path"
 	"testing"
 
+	"github.com/laytan/elephp/internal/config"
+	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/elephp/pkg/typer"
 	"github.com/matryer/is"
+	"github.com/samber/do"
 )
 
 var (
 	definitionsFolder = path.Join(pathutils.Root(), "test", "testdata", "definitions")
 	stubsFolder       = path.Join(pathutils.Root(), "phpstorm-stubs")
 )
+
+func setup(root string, phpv *phpversion.PHPVersion) *Project {
+	do.OverrideValue(nil, config.Default())
+	do.OverrideValue(nil, index.New(phpv))
+	do.OverrideValue(nil, wrkspc.New(phpv, root))
+	do.OverrideValue(nil, typer.New())
+
+	return New()
+}
 
 type testDefinitionsInput struct {
 	file        string
@@ -502,7 +516,7 @@ func TestDefinitions(t *testing.T) {
 		},
 	}
 
-	project := New(definitionsFolder, phpversion.EightOne(), []string{"php"})
+	project := setup(definitionsFolder, phpversion.EightOne())
 	err := project.ParseWithoutProgress()
 	is.NoErr(err)
 
@@ -539,7 +553,7 @@ func TestDefinitions(t *testing.T) {
 
 func BenchmarkStdlibFunction(b *testing.B) {
 	is := is.New(b)
-	project := New(definitionsFolder, phpversion.EightOne(), []string{"php"})
+	project := setup(definitionsFolder, phpversion.EightOne())
 	err := project.ParseWithoutProgress()
 	is.NoErr(err)
 
@@ -557,7 +571,7 @@ func BenchmarkParsing(b *testing.B) {
 	is := is.New(b)
 
 	for i := 0; i < b.N; i++ {
-		project := New(definitionsFolder, phpversion.EightOne(), []string{"php"})
+		project := setup(definitionsFolder, phpversion.EightOne())
 		err := project.ParseWithoutProgress()
 		is.NoErr(err)
 	}
@@ -566,13 +580,12 @@ func BenchmarkParsing(b *testing.B) {
 func TestParserPanicIsRecovered(t *testing.T) {
 	is := is.New(t)
 
-	project := New(
+	project := setup(
 		path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors"),
 		&phpversion.PHPVersion{
 			Major: 7,
 			Minor: 4,
 		},
-		[]string{"php"},
 	)
 
 	err := project.ParseWithoutProgress()

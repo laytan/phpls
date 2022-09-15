@@ -20,7 +20,7 @@ func (p *Project) Hover(currpos *position.Position) string {
 		return ""
 	}
 
-	content, root, err := p.wrksp.AllOf(pos.Path)
+	content, root, err := Wrkspc().AllOf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf("Hover error getting content/parsing of %s: %w", pos.Path, err),
