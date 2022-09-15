@@ -7,7 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/arl/statsviz"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	stop := logging.Configure(path.Join(pathutils.Root(), "logs"))
+	stop := logging.Configure(filepath.Join(pathutils.Root(), "logs"))
 	defer stop()
 
 	connType, err := conf.ConnType()

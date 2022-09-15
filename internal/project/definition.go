@@ -57,6 +57,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 		}
 	}
 
+	log.Println("no definition provider registered for the given position")
 	return nil, ErrNoDefinitionFound
 }
 

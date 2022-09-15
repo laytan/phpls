@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -35,7 +35,7 @@ const (
 var (
 	ErrFileNotIndexed    = errors.New("File is not indexed in the workspace")
 	indexGoRoutinesLimit = runtime.NumCPU()
-	stubsPath            = path.Join(pathutils.Root(), "phpstorm-stubs")
+	stubsPath            = filepath.Join(pathutils.Root(), "phpstorm-stubs")
 	Config               = func() config.Config { return do.MustInvoke[config.Config](nil) }
 )
 
@@ -91,7 +91,7 @@ func New(phpv *phpversion.PHPVersion, root string) Wrkspc {
 	return &wrkspc{
 		normalParser:   normalParser,
 		stubParser:     stubParser,
-		roots:          []string{root, path.Join(pathutils.Root(), "phpstorm-stubs")},
+		roots:          []string{root, filepath.Join(pathutils.Root(), "phpstorm-stubs")},
 		fileExtensions: Config().FileExtensions(),
 		files:          files,
 		irs:            irs,

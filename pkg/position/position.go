@@ -2,6 +2,7 @@ package position
 
 import (
 	"bufio"
+	"runtime"
 	"strings"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
@@ -9,6 +10,8 @@ import (
 
 // file://
 const URIFilePrefixLength = 7
+
+var onWindows = runtime.GOOS == "windows"
 
 type Position struct {
 	Row  uint
@@ -46,12 +49,17 @@ func (p *Position) ToLSPLocation() []protocol.Location {
 func PosToLoc(content string, pos uint) (row uint, col uint) {
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
+	linebreaks := 1
+	if onWindows {
+		linebreaks = 2
+	}
+
 	var line uint
 	var curr uint
 	for scanner.Scan() {
 		line++
 
-		lineLen := uint(len(scanner.Text())) + 1
+		lineLen := uint(len(scanner.Text())) + uint(linebreaks)
 		start := curr
 		curr += lineLen
 
@@ -68,13 +76,18 @@ func PosToLoc(content string, pos uint) (row uint, col uint) {
 func LocToPos(content string, row uint, col uint) uint {
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
+	linebreaks := 1
+	if onWindows {
+		linebreaks = 2
+	}
+
 	var line uint
 	var curr uint
 	for scanner.Scan() {
 		line++
 
 		if line < row {
-			lineLen := uint(len(scanner.Text())) + 1
+			lineLen := uint(len(scanner.Text())) + uint(linebreaks)
 			curr += lineLen
 			continue
 		}

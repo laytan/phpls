@@ -3,9 +3,10 @@ package pathutils
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
+
+	"appliedgo.net/what"
 )
 
 var root string
@@ -28,14 +29,15 @@ func Root() string {
 	if isInTests() {
 		// NOTE: Intentionally not setting root here so it gets evaluated every
 		// call, as tests will have different wd's.
-		r := path.Join(wd, "..", "..")
+		r := filepath.Join(wd, "..", "..")
+		what.Happens("Root is: %s", r)
 		return r
 	}
 
 	// When running through `go run cmd/main.go` the os.Executable call below
 	// will point to a temporary file of the binary.
 	// but os.Getwd would return the root.
-	if _, err := os.Stat(path.Join(wd, "go.mod")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(wd, "go.mod")); !os.IsNotExist(err) {
 		root = wd
 		return root
 	}
@@ -52,10 +54,10 @@ func Root() string {
 		panic(fmt.Errorf("Error evaluating executable symlinks: %w", err))
 	}
 
-	root = path.Dir(ex)
+	root = filepath.Dir(ex)
 	return root
 }
 
 func isInTests() bool {
-	return strings.HasSuffix(os.Args[0], ".test")
+	return strings.HasSuffix(os.Args[0], ".test") || strings.HasSuffix(os.Args[0], ".test.exe")
 }

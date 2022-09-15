@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io/fs"
 	"io/ioutil"
-	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -26,10 +25,10 @@ import (
 )
 
 var (
-	stubsRoot     = path.Join(pathutils.Root(), "phpstorm-stubs")
-	stdlibRoot    = path.Join(pathutils.Root(), "test", "testdata", "definitions", "stdlib")
-	annotatedRoot = path.Join(pathutils.Root(), "test", "testdata", "definitions", "annotated")
-	syntaxErrRoot = path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors")
+	stubsRoot     = filepath.Join(pathutils.Root(), "phpstorm-stubs")
+	stdlibRoot    = filepath.Join(pathutils.Root(), "test", "testdata", "definitions", "stdlib")
+	annotatedRoot = filepath.Join(pathutils.Root(), "test", "testdata", "definitions", "annotated")
+	syntaxErrRoot = filepath.Join(pathutils.Root(), "test", "testdata", "syntaxerrors")
 )
 
 type stdlibScenario struct {
@@ -40,7 +39,7 @@ type stdlibScenario struct {
 func TestStdlibDefinitions(t *testing.T) {
 	is := is.New(t)
 
-	stdlibPath := path.Join(stdlibRoot, "stdlib.php")
+	stdlibPath := filepath.Join(stdlibRoot, "stdlib.php")
 
 	scenarios := map[string]*stdlibScenario{
 		// TODO: fix & uncomment.
@@ -77,7 +76,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  785,
 				Col:  1,
-				Path: path.Join(stubsRoot, "standard", "standard_8.php"),
+				Path: filepath.Join(stubsRoot, "standard", "standard_8.php"),
 			},
 		},
 		"fqn": {
@@ -89,7 +88,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  170,
 				Col:  1,
-				Path: path.Join(stubsRoot, "date", "date_c.php"),
+				Path: filepath.Join(stubsRoot, "date", "date_c.php"),
 			},
 		},
 		"name": {
@@ -101,7 +100,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  7,
 				Col:  1,
-				Path: path.Join(stubsRoot, "swoole", "Swoole", "WebSocket", "Server.php"),
+				Path: filepath.Join(stubsRoot, "swoole", "Swoole", "WebSocket", "Server.php"),
 			},
 		},
 		"name_alias": {
@@ -113,7 +112,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  7,
 				Col:  1,
-				Path: path.Join(stubsRoot, "swoole", "Swoole", "Process.php"),
+				Path: filepath.Join(stubsRoot, "swoole", "Swoole", "Process.php"),
 			},
 		},
 		"implements_global": {
@@ -125,7 +124,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  13,
 				Col:  1,
-				Path: path.Join(stubsRoot, "date", "date_c.php"),
+				Path: filepath.Join(stubsRoot, "date", "date_c.php"),
 			},
 		},
 		"extends_multiple_namespaces_in_one_file": {
@@ -137,7 +136,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  713,
 				Col:  1,
-				Path: path.Join(stubsRoot, "http", "http3.php"),
+				Path: filepath.Join(stubsRoot, "http", "http3.php"),
 			},
 		},
 		"param_function_call": {
@@ -149,7 +148,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  891,
 				Col:  1,
-				Path: path.Join(stubsRoot, "standard", "standard_1.php"),
+				Path: filepath.Join(stubsRoot, "standard", "standard_1.php"),
 			},
 		},
 	}

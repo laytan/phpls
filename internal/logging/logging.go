@@ -3,7 +3,7 @@ package logging
 import (
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,7 +47,7 @@ func getLogsPath(root string) string {
 	name := Config().Name()
 
 	filename := name + "-" + time.Now().Format(dateLayout) + fileType
-	return path.Join(root, filename)
+	return filepath.Join(root, filename)
 }
 
 func cleanLogs(root string) {
@@ -74,7 +74,7 @@ func cleanLogs(root string) {
 				continue
 			}
 
-			if err := os.Remove(path.Join(root, file.Name())); err != nil {
+			if err := os.Remove(filepath.Join(root, file.Name())); err != nil {
 				panic(err)
 			}
 		}

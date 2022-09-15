@@ -3,7 +3,7 @@ package index
 import (
 	"fmt"
 	"log"
-	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -28,7 +28,7 @@ var (
 	ErrParse    = fmt.Errorf(errParseFmt, "", nil)
 )
 
-var stubsPath = path.Join(pathutils.Root(), "phpstorm-stubs")
+var stubsPath = filepath.Join(pathutils.Root(), "phpstorm-stubs")
 
 type Index interface {
 	Index(path string, content string) error

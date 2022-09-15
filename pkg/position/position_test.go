@@ -3,7 +3,7 @@ package position
 import (
 	"fmt"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/laytan/elephp/pkg/pathutils"
@@ -22,7 +22,7 @@ func TestPosition(t *testing.T) {
 	}
 
 	content, err := ioutil.ReadFile(
-		path.Join(
+		filepath.Join(
 			pathutils.Root(),
 			"test",
 			"testdata",
