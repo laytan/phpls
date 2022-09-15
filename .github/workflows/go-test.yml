@@ -13,7 +13,7 @@ permissions:
   # pull-requests: read
 
 jobs:
-  build_and_test:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -23,10 +23,9 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.19
-
-    - name: Build
-      run: go build ./...
+        check-latest: true
+        cache: true
+        go-version-file: go.mod
 
     - name: Test
-      run: go test -cover -race -shuffle=on -timeout=10s ./...
+      run: go test -cover -race -shuffle=on -timeout=10s -v ./...
