@@ -1,9 +1,8 @@
-package arccache
+package cache
 
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/DmitriyVTitov/size"
 	"github.com/davecgh/go-spew/spew"
@@ -11,44 +10,25 @@ import (
 	"github.com/laytan/elephp/pkg/datasize"
 )
 
-const (
-	// Average IR tree size to base the capacity of the cache on.
-	// actually calculating the size of the cache (bytes) every time
-	// is too slow, so we aproximate.
-	avgIRTreeSize = datasize.MegaByte * 3
-)
-
 // Wrapper of the arc cache, adding generics and a size in bytes (approx).
 type Cache[K comparable, V any] struct {
-	targetSize datasize.Size
-	c          *lru.ARCCache
+	capacity int
+	c        *lru.Cache
 }
 
 // Creates a new cache with some sane defaults.
-func New[K comparable, V any](targetSize datasize.Size) *Cache[K, V] {
-	capacity := int(targetSize / avgIRTreeSize)
+func New[K comparable, V any](capacity int) *Cache[K, V] {
 	log.Printf("Creating arc cache of capacity %d\n", capacity)
 
-	c, err := lru.NewARC(capacity)
+	c, err := lru.New(capacity)
 	if err != nil {
 		panic(err)
 	}
 
-	cache := &Cache[K, V]{
-		targetSize: targetSize,
-		c:          c,
+	return &Cache[K, V]{
+		capacity: capacity,
+		c:        c,
 	}
-
-	t := time.NewTicker(time.Minute)
-	go func() {
-		for {
-			<-t.C
-
-			log.Println(cache.String())
-		}
-	}()
-
-	return cache
 }
 
 // Puts the given key&value into the cache.
@@ -86,11 +66,19 @@ func (c *Cache[K, V]) Length() int {
 	return c.c.Len()
 }
 
-// Returns a string representing the state of the cache, useful in logging.
+// Returns some stats about the cache, this is relatively expensive because we
+// have to calculate the memory usage of the struct (not fast).
 func (c *Cache[K, V]) String() string {
-	capacity := int(c.targetSize / avgIRTreeSize)
 	s := datasize.Size(size.Of(c) * datasize.BitsInByte)
-	sizeStats := fmt.Sprintf("Cache size %d/%d(%s)\n", c.c.Len(), capacity, s.String())
+	sizeStats := fmt.Sprintf("Cache size %d/%d(%s)\n", c.c.Len(), c.capacity, s.String())
+
+	return sizeStats
+}
+
+// Returns the same output as String() but with the keys that are cached at the
+// end.
+func (c *Cache[K, V]) StringWithKeys() string {
+	sizeStats := c.String()
 	keys := spew.Sprint(c.c.Keys())
 
 	return sizeStats + "\nKeys: " + keys

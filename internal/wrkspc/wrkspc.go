@@ -10,11 +10,13 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/parsing"
+	"github.com/laytan/elephp/pkg/cache"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/samber/do"
@@ -26,20 +28,16 @@ const (
 	ErrReadFmt      = "Error reading file %s: %w"
 	ErrParseWalkFmt = "Error walking the workspace files: %w"
 
-	// Starting with a set capacity for the map increases index times by a lot.
-	// But there is a balance to be struck, if a project only has 3 files,
-	// The index will still be of the high capacity (more memory).
-	// But larger projects are more common.
-	startingIndexSize = 10000
+	irCacheCapacity      = 25
+	contentCacheCapacity = 50
 )
 
-var ErrFileNotIndexed = errors.New("File is not indexed in the workspace")
-
-var indexGoRoutinesLimit = runtime.NumCPU()
-
-var stubsPath = path.Join(pathutils.Root(), "phpstorm-stubs")
-
-var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
+var (
+	ErrFileNotIndexed    = errors.New("File is not indexed in the workspace")
+	indexGoRoutinesLimit = runtime.NumCPU()
+	stubsPath            = path.Join(pathutils.Root(), "phpstorm-stubs")
+	Config               = func() config.Config { return do.MustInvoke[config.Config](nil) }
+)
 
 type file struct {
 	content string
@@ -61,8 +59,6 @@ type Wrkspc interface {
 
 	Index(files chan<- *ParsedFile, total *atomic.Uint64, totalDone chan<- bool) error
 
-	Has(path string) bool
-
 	ContentOf(path string) (string, error)
 
 	IROf(path string) (*ir.Root, error)
@@ -80,25 +76,35 @@ func New(phpv *phpversion.PHPVersion, root string) Wrkspc {
 	// TODO: not ideal, temporary
 	stubParser := parsing.New(phpversion.EightOne())
 
+	files := cache.New[string, *file](contentCacheCapacity)
+	irs := cache.New[string, *ir.Root](irCacheCapacity)
+
+	t := time.NewTicker(time.Second * 60)
+	go func() {
+		for {
+			<-t.C
+			log.Printf("File cache: %s", files.String())
+			log.Printf("IR cache: %s", irs.String())
+		}
+	}()
+
 	return &wrkspc{
 		normalParser:   normalParser,
 		stubParser:     stubParser,
 		roots:          []string{root, path.Join(pathutils.Root(), "phpstorm-stubs")},
 		fileExtensions: Config().FileExtensions(),
-		files:          make(map[string]*file, startingIndexSize),
+		files:          files,
+		irs:            irs,
 	}
 }
 
 type wrkspc struct {
-	normalParser parsing.Parser
-	stubParser   parsing.Parser
-
-	roots []string
-
+	normalParser   parsing.Parser
+	stubParser     parsing.Parser
+	roots          []string
 	fileExtensions []string
-
-	files      map[string]*file
-	filesMutex sync.RWMutex
+	files          *cache.Cache[string, *file]
+	irs            *cache.Cache[string, *ir.Root]
 }
 
 func (w *wrkspc) Root() string {
@@ -130,13 +136,12 @@ func (w *wrkspc) Index(
 
 	if err := w.walk(func(path string, d fs.DirEntry) error {
 		g.Go(func() error {
-			file, err := w.refresh(path)
+			content, err := w.parser(path).Read(path)
 			if err != nil {
 				return err
 			}
 
-			files <- &ParsedFile{Path: path, Content: file.content}
-
+			files <- &ParsedFile{Path: path, Content: content}
 			return nil
 		})
 
@@ -152,45 +157,50 @@ func (w *wrkspc) Index(
 	return nil
 }
 
-func (w *wrkspc) Has(path string) bool {
-	w.filesMutex.RLock()
-	defer w.filesMutex.RUnlock()
-
-	_, ok := w.files[path]
-
-	return ok
-}
-
 func (w *wrkspc) ContentOf(path string) (string, error) {
-	w.filesMutex.RLock()
-	defer w.filesMutex.RUnlock()
+	file := w.files.Cached(path, func() *file {
+		what.Happens("Getting fresh content of %s", path)
 
-	what.Happens("Getting content of %s", path)
+		content, err := w.parser(path).Read(path)
+		if err != nil {
+			log.Println(err)
+			return nil
+		}
 
-	file, ok := w.files[path]
-	if !ok {
+		return newFile(content)
+	})
+
+	if file == nil {
 		return "", ErrFileNotIndexed
 	}
 
 	return file.content, nil
 }
 
-// TODO: arccache.
 func (w *wrkspc) IROf(path string) (*ir.Root, error) {
-	content, err := w.ContentOf(path)
-	if err != nil {
-		return nil, err
+	root := w.irs.Cached(path, func() *ir.Root {
+		what.Happens("Getting fresh IR of %s", path)
+
+		content, err := w.ContentOf(path)
+		if err != nil {
+			log.Println(err)
+			return nil
+		}
+
+		root, err := w.parser(path).Parse(content)
+		if err != nil {
+			log.Println(err)
+			return nil
+		}
+
+		return root
+	})
+
+	if root == nil {
+		return nil, ErrFileNotIndexed
 	}
 
-	what.Happens("Getting IR of %s", path)
-
-	ir, err := w.parser(path).Parse(content)
-	if err != nil {
-		// TODO: is this the proper way to wrap an error with fmt (does errors.Is work)?
-		return nil, fmt.Errorf(ErrParseFmt, err)
-	}
-
-	return ir, nil
+	return root, nil
 }
 
 func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
@@ -199,41 +209,35 @@ func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
 		return "", nil, err
 	}
 
-	ir, err := w.parser(path).Parse(content)
+	root, err := w.IROf(path)
 	if err != nil {
 		return "", nil, fmt.Errorf(ErrParseFmt, err)
 	}
 
-	return content, ir, nil
+	return content, root, nil
 }
 
 func (w *wrkspc) Refresh(path string) error {
-	_, err := w.refresh(path)
-	return err
+	content, err := w.parser(path).Read(path)
+	if err != nil {
+		return fmt.Errorf(ErrReadFmt, path, err)
+	}
+
+	return w.RefreshFrom(path, content)
 }
 
 func (w *wrkspc) RefreshFrom(path string, content string) error {
-	w.refreshFrom(path, content)
-	return nil
-}
-
-func (w *wrkspc) refresh(path string) (*file, error) {
-	content, err := w.parser(path).Read(path)
+	root, err := w.parser(path).Parse(content)
 	if err != nil {
-		return nil, fmt.Errorf(ErrReadFmt, path, err)
+		return err
 	}
 
-	return w.refreshFrom(path, content), nil
-}
-
-func (w *wrkspc) refreshFrom(path string, content string) *file {
-	w.filesMutex.Lock()
-	defer w.filesMutex.Unlock()
-
 	file := newFile(content)
-	w.files[path] = file
 
-	return file
+	w.files.Put(path, file)
+	w.irs.Put(path, root)
+
+	return nil
 }
 
 func (w *wrkspc) walk(walker func(path string, d fs.DirEntry) error) error {
