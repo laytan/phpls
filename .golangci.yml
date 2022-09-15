@@ -114,18 +114,9 @@ linters-settings:
           - name: errorf
             severity: warning
             disabled: false
-          #   
+
           # START CUSTOM
           #
-          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#add-constant
-          - name: add-constant
-            severity: warning
-            disabled: false
-            arguments:
-              - maxLitCount: "3"
-                allowStrs: '""," "'
-                allowInts: "0,1,2,100,64"
-                allowFloats: "0.0,0.,1.0,1.,2.0,2."
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#atomic
           - name: atomic
             severity: warning
