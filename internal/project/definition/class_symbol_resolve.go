@@ -66,11 +66,11 @@ func walkToClassSymbol(ctx context.Context, start string, startVar ir.Node) (*De
 // type definition and the relation of the context with it in terms of access (privacy).
 func down(
 	ctx context.Context,
-	properties *stack.Stack[string],
+	symbols *stack.Stack[string],
 	currentSymbol string,
 	currentVar ir.Node,
 ) (*Definition, phprivacy.Privacy, error) {
-	properties.Push(currentSymbol)
+	symbols.Push(currentSymbol)
 
 	switch variable := currentVar.(type) {
 	case *ir.SimpleVar:
@@ -84,7 +84,7 @@ func down(
 			return nil, 0, fmt.Errorf(ErrUnexpectedNodeFmt, variable.Property, "*ir.Identifier")
 		}
 
-		return down(ctx, properties, id.Value, variable.Variable)
+		return down(ctx, symbols, id.Value, variable.Variable)
 
 	case *ir.MethodCallExpr:
 		// Recursively call this.
@@ -93,7 +93,7 @@ func down(
 			return nil, 0, fmt.Errorf(ErrUnexpectedNodeFmt, variable.Method, "*ir.Identifier")
 		}
 
-		return down(ctx, properties, id.Value+"()", variable.Variable)
+		return down(ctx, symbols, id.Value+"()", variable.Variable)
 
 	default:
 		return nil, 0, fmt.Errorf(ErrUnexpectedNodeFmt, currentVar, "*ir.SimpleVar, *ir.PropertyFetchExpr or *ir.MethodCallExpr")
