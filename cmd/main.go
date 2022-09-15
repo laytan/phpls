@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	stop := logging.Configure(path.Join(pathutils.Root(), "logs"), conf.Name())
+	stop := logging.Configure(path.Join(pathutils.Root(), "logs"))
 	defer stop()
 
 	connType, err := conf.ConnType()
