@@ -2,10 +2,18 @@ package project
 
 import (
 	"errors"
-	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"path"
+	"path/filepath"
+	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
+	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
@@ -18,9 +26,205 @@ import (
 )
 
 var (
-	definitionsFolder = path.Join(pathutils.Root(), "test", "testdata", "definitions")
-	stubsFolder       = path.Join(pathutils.Root(), "phpstorm-stubs")
+	stubsRoot     = path.Join(pathutils.Root(), "phpstorm-stubs")
+	stdlibRoot    = path.Join(pathutils.Root(), "test", "testdata", "definitions", "stdlib")
+	annotatedRoot = path.Join(pathutils.Root(), "test", "testdata", "definitions", "annotated")
+	syntaxErrRoot = path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors")
 )
+
+type stdlibScenario struct {
+	in  *position.Position
+	out *position.Position
+}
+
+func TestStdlibDefinitions(t *testing.T) {
+	is := is.New(t)
+
+	stdlibPath := path.Join(stdlibRoot, "stdlib.php")
+
+	scenarios := map[string]*stdlibScenario{
+		// TODO: fix & uncomment.
+		// "use": {
+		// 	in: &position.Position{
+		// 		Row:  3,
+		// 		Col:  5,
+		// 		Path: stdlibPath,
+		// 	},
+		// 	out: &position.Position{
+		// 		Row:  7,
+		// 		Col:  1,
+		// 		Path: path.Join(stubsRoot, "swoole", "Swoole", "WebSocket", "Server.php"),
+		// 	},
+		// },
+		// "use_alias": {
+		// 	in: &position.Position{
+		// 		Row:  4,
+		// 		Col:  23,
+		// 		Path: stdlibPath,
+		// 	},
+		// 	out: &position.Position{
+		// 		Row:  7,
+		// 		Col:  1,
+		// 		Path: path.Join(stubsRoot, "swoole", "Swoole", "Process.php"),
+		// 	},
+		// },
+		"in_array": {
+			in: &position.Position{
+				Row:  10,
+				Col:  6,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  785,
+				Col:  1,
+				Path: path.Join(stubsRoot, "standard", "standard_8.php"),
+			},
+		},
+		"fqn": {
+			in: &position.Position{
+				Row:  12,
+				Col:  20,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  170,
+				Col:  1,
+				Path: path.Join(stubsRoot, "date", "date_c.php"),
+			},
+		},
+		"name": {
+			in: &position.Position{
+				Row:  15,
+				Col:  15,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  7,
+				Col:  1,
+				Path: path.Join(stubsRoot, "swoole", "Swoole", "WebSocket", "Server.php"),
+			},
+		},
+		"name_alias": {
+			in: &position.Position{
+				Row:  17,
+				Col:  16,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  7,
+				Col:  1,
+				Path: path.Join(stubsRoot, "swoole", "Swoole", "Process.php"),
+			},
+		},
+		"implements_global": {
+			in: &position.Position{
+				Row:  19,
+				Col:  41,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  13,
+				Col:  1,
+				Path: path.Join(stubsRoot, "date", "date_c.php"),
+			},
+		},
+		"extends_multiple_namespaces_in_one_file": {
+			in: &position.Position{
+				Row:  21,
+				Col:  47,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  713,
+				Col:  1,
+				Path: path.Join(stubsRoot, "http", "http3.php"),
+			},
+		},
+		"param_function_call": {
+			in: &position.Position{
+				Row:  25,
+				Col:  11,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  891,
+				Col:  1,
+				Path: path.Join(stubsRoot, "standard", "standard_1.php"),
+			},
+		},
+	}
+
+	project := setup(stdlibRoot, phpversion.EightOne())
+	err := project.ParseWithoutProgress()
+	is.NoErr(err)
+
+	for name, scenario := range scenarios {
+		t.Run(name, func(t *testing.T) {
+			is := is.New(t)
+
+			out, err := project.Definition(scenario.in)
+			is.NoErr(err)
+
+			if !reflect.DeepEqual(out, scenario.out) {
+				what.Is(out)
+				what.Is(scenario.out)
+				t.Errorf("definitions don't match, run with `-tags what` to debug")
+			}
+		})
+	}
+}
+
+func TestParserPanicIsRecovered(t *testing.T) {
+	is := is.New(t)
+
+	project := setup(
+		syntaxErrRoot,
+		&phpversion.PHPVersion{
+			Major: 7,
+			Minor: 4,
+		},
+	)
+
+	err := project.ParseWithoutProgress()
+	is.NoErr(err)
+}
+
+func TestAnnotatedDefinitions(t *testing.T) {
+	is := is.New(t)
+
+	project := setup(annotatedRoot, phpversion.EightOne())
+	err := project.ParseWithoutProgress()
+	is.NoErr(err)
+
+	scenarios := aggregateAnnotations(t, annotatedRoot)
+	for group, gscenarios := range scenarios {
+		t.Run(group, func(t *testing.T) {
+			for name, scenario := range gscenarios {
+				t.Run(name, func(t *testing.T) {
+					is := is.New(t)
+
+					if scenario.in.Path == "" {
+						t.Fatalf("invalid test scenario, no in called for '%s'", name)
+					}
+
+					if !scenario.isNoDef && scenario.out == nil {
+						t.Fatalf("invalid test scenario, no out called for '%s'", name)
+					}
+
+					out, err := project.Definition(&scenario.in)
+
+					if scenario.isNoDef {
+						is.True(errors.Is(err, ErrNoDefinitionFound))
+						return
+					}
+
+					is.NoErr(err)
+					is.True(reflect.DeepEqual(out, scenario.out))
+				})
+			}
+		})
+	}
+}
 
 func setup(root string, phpv *phpversion.PHPVersion) *Project {
 	do.OverrideValue(nil, config.Default())
@@ -31,563 +235,118 @@ func setup(root string, phpv *phpversion.PHPVersion) *Project {
 	return New()
 }
 
-type testDefinitionsInput struct {
-	file        string
-	position    *position.Position
-	outPosition *position.Position
+// out is nil when isNoDef is true.
+type annotedScenario struct {
+	isNoDef bool
+	in      position.Position
+	out     *position.Position
 }
 
-// TODO: create tests per definition provider.
-func TestDefinitions(t *testing.T) {
+var annotationRgx = regexp.MustCompile(`@t_(\w+)\(([\w\s]+), (\d+)\)`)
+
+func aggregateAnnotations(t *testing.T, root string) map[string]map[string]*annotedScenario {
 	is := is.New(t)
 
-	expectations := []testDefinitionsInput{
-		{
-			file:        "variable.php",
-			position:    &position.Position{Row: 7, Col: 8},
-			outPosition: &position.Position{Row: 5, Col: 1},
-		},
-		{
-			file:        "parameter.php",
-			position:    &position.Position{Row: 7, Col: 13},
-			outPosition: &position.Position{Row: 5, Col: 17},
-		},
-		{
-			file:        "function.php",
-			position:    &position.Position{Row: 7, Col: 1},
-			outPosition: &position.Position{Row: 3, Col: 1},
-		},
-		{
-			file:     "stdlib.php",
-			position: &position.Position{Row: 3, Col: 6},
-			outPosition: &position.Position{
-				Row:  785,
-				Col:  1,
-				Path: path.Join(stubsFolder, "standard", "standard_8.php"),
-			},
-		},
-		{
-			file:        "function.php",
-			position:    &position.Position{Row: 15, Col: 5},
-			outPosition: &position.Position{Row: 11, Col: 5},
-		},
-		{
-			file:     "function.php",
-			position: &position.Position{Row: 18, Col: 1},
-		},
-		{
-			file:     "class.php",
-			position: &position.Position{Row: 12, Col: 19},
-			outPosition: &position.Position{
-				Row:  170,
-				Col:  1,
-				Path: path.Join(stubsFolder, "date", "date_c.php"),
-			},
-		},
-		{
-			file:        "class.php",
-			position:    &position.Position{Row: 15, Col: 22},
-			outPosition: &position.Position{Row: 8, Col: 1},
-		},
-		{
-			file:     "class.php",
-			position: &position.Position{Row: 17, Col: 20},
-			outPosition: &position.Position{
-				Row:  7,
-				Col:  1,
-				Path: path.Join(stubsFolder, "swoole", "Swoole", "WebSocket", "Server.php"),
-			},
-		},
-		{
-			file:     "class.php",
-			position: &position.Position{Row: 19, Col: 16},
-			outPosition: &position.Position{
-				Row:  7,
-				Col:  1,
-				Path: path.Join(stubsFolder, "swoole", "Swoole", "Process.php"),
-			},
-		},
-		{
-			file:     path.Join("trait", "trait_user.php"),
-			position: &position.Position{Row: 7, Col: 9},
-			outPosition: &position.Position{
-				Row:  3,
-				Col:  1,
-				Path: path.Join(definitionsFolder, "trait", "trait.php"),
-			},
-		},
-		{
-			file:     path.Join("trait", "trait_user.php"),
-			position: &position.Position{Row: 8, Col: 9},
-			outPosition: &position.Position{
-				Row:  5,
-				Col:  1,
-				Path: path.Join(definitionsFolder, "trait", "trait_in_namespace.php"),
-			},
-		},
-		{
-			file:     path.Join("interface", "interface_user.php"),
-			position: &position.Position{Row: 5, Col: 43},
-			outPosition: &position.Position{
-				Row:  3,
-				Col:  1,
-				Path: path.Join(definitionsFolder, "interface", "interface.php"),
-			},
-		},
-		{
-			file:     path.Join("interface", "interface_user.php"),
-			position: &position.Position{Row: 9, Col: 46},
-			outPosition: &position.Position{
-				Row:  5,
-				Col:  1,
-				Path: path.Join(definitionsFolder, "interface", "interface_in_namespace.php"),
-			},
-		},
-		{
-			file:     path.Join("interface", "interface_user.php"),
-			position: &position.Position{Row: 13, Col: 43},
-			outPosition: &position.Position{
-				Row:  13,
-				Col:  1,
-				Path: path.Join(stubsFolder, "date", "date_c.php"),
-			},
-		},
-		{
-			file:        path.Join("interface", "interface_user.php"),
-			position:    &position.Position{Row: 21, Col: 43},
-			outPosition: &position.Position{Row: 17, Col: 1},
-		},
-		{
-			file:        path.Join("interface", "interface_user.php"),
-			position:    &position.Position{Row: 25, Col: 45},
-			outPosition: &position.Position{Row: 17, Col: 1},
-		},
-		{
-			file:     path.Join("interface", "interface_user.php"),
-			position: &position.Position{Row: 25, Col: 75},
-			outPosition: &position.Position{
-				Row:  13,
-				Col:  1,
-				Path: path.Join(stubsFolder, "date", "date_c.php"),
-			},
-		},
-		{
-			file:     "extends.php",
-			position: &position.Position{Row: 5, Col: 32},
-			outPosition: &position.Position{
-				Row:  170,
-				Col:  1,
-				Path: path.Join(stubsFolder, "date", "date_c.php"),
-			},
-		},
-		{
-			file:     "extends.php",
-			position: &position.Position{Row: 9, Col: 42},
-			outPosition: &position.Position{
-				Row:  7,
-				Col:  1,
-				Path: path.Join(stubsFolder, "swoole", "Swoole", "Client.php"),
-			},
-		},
-		{
-			file: "multiple_namespaces_in_one_file.php",
-			position: &position.Position{
-				Row: 7,
-				Col: 47,
-			},
-			outPosition: &position.Position{
-				Row:  713,
-				Col:  1,
-				Path: path.Join(stubsFolder, "http", "http3.php"),
-			},
-		},
-		{
-			file:     "use.php",
-			position: &position.Position{Row: 3, Col: 5},
-			outPosition: &position.Position{
-				Row:  7,
-				Col:  1,
-				Path: path.Join(stubsFolder, "swoole", "Swoole", "Client.php"),
-			},
-		},
-		{
-			file:     "use.php",
-			position: &position.Position{Row: 4, Col: 6},
-			outPosition: &position.Position{
-				Row:  170,
-				Col:  1,
-				Path: path.Join(stubsFolder, "date", "date_c.php"),
-			},
-		},
-		{
-			file:        path.Join("methods", "methods.php"),
-			position:    &position.Position{Row: 28, Col: 10},
-			outPosition: &position.Position{Row: 12, Col: 1},
-		},
-		{
-			file:        path.Join("methods", "methods.php"),
-			position:    &position.Position{Row: 28, Col: 16},
-			outPosition: &position.Position{Row: 14, Col: 5},
-		},
-		{
-			file:        path.Join("methods", "methods.php"),
-			position:    &position.Position{Row: 29, Col: 16},
-			outPosition: &position.Position{Row: 18, Col: 5},
-		},
-		{
-			file:        path.Join("methods", "methods.php"),
-			position:    &position.Position{Row: 30, Col: 16},
-			outPosition: &position.Position{Row: 22, Col: 5},
-		},
-		{
-			file:     path.Join("methods", "methods_child.php"),
-			position: &position.Position{Row: 10, Col: 16},
-			outPosition: &position.Position{
-				Row:  18,
-				Col:  5,
-				Path: path.Join(definitionsFolder, "methods", "methods.php"),
-			},
-		},
-		{
-			file:        path.Join("methods", "methods_child.php"),
-			position:    &position.Position{Row: 18, Col: 16},
-			outPosition: nil,
-		},
-		{
-			file:        path.Join("methods", "methods_child.php"),
-			position:    &position.Position{Row: 12, Col: 16},
-			outPosition: &position.Position{Row: 15, Col: 5},
-		},
-		{
-			file:        path.Join("methods", "methods_trait.php"),
-			position:    &position.Position{Row: 13, Col: 16},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:     path.Join("methods", "methods.php"),
-			position: &position.Position{Row: 41, Col: 16},
-			outPosition: &position.Position{
-				Row:  7,
-				Col:  5,
-				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-			},
-		},
-		{
-			file:     path.Join("methods", "methods.php"),
-			position: &position.Position{Row: 42, Col: 16},
-			outPosition: &position.Position{
-				Row:  11,
-				Col:  5,
-				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-			},
-		},
-		{
-			file:     path.Join("methods", "methods.php"),
-			position: &position.Position{Row: 43, Col: 16},
-			outPosition: &position.Position{
-				Row:  16,
-				Col:  5,
-				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-			},
-		},
-		{
-			file:     path.Join("methods", "methods_child.php"),
-			position: &position.Position{Row: 9, Col: 16},
-			outPosition: &position.Position{
-				Row:  14,
-				Col:  5,
-				Path: path.Join(definitionsFolder, "methods", "methods.php"),
-			},
-		},
-		{
-			file:     path.Join("methods", "methods_child.php"),
-			position: &position.Position{Row: 21, Col: 16},
-			outPosition: &position.Position{
-				Row:  16,
-				Col:  5,
-				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-			},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 13, Col: 17},
-			outPosition: &position.Position{Row: 5, Col: 1},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 13, Col: 23},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 18, Col: 50},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:     path.Join("properties", "properties.php"),
-			position: &position.Position{Row: 19, Col: 24},
-		},
-		{
-			file:     path.Join("properties", "properties.php"),
-			position: &position.Position{Row: 20, Col: 24},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 26, Col: 18},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 32, Col: 21},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:        path.Join("methods", "methods.php"),
-			position:    &position.Position{Row: 56, Col: 21},
-			outPosition: &position.Position{Row: 14, Col: 5},
-		},
-		{
-			file:     path.Join("methods", "methods.php"),
-			position: &position.Position{Row: 57, Col: 21},
-		},
-		{
-			file:     path.Join("methods", "methods.php"),
-			position: &position.Position{Row: 58, Col: 21},
-		},
-		{
-			file:     path.Join("methods", "methods.php"),
-			position: &position.Position{Row: 60, Col: 21},
-			outPosition: &position.Position{
-				Row:  16,
-				Col:  5,
-				Path: path.Join(definitionsFolder, "methods", "methods_trait.php"),
-			},
-		},
-		{
-			file:        path.Join("methods", "methods.php"),
-			position:    &position.Position{Row: 66, Col: 18},
-			outPosition: &position.Position{Row: 14, Col: 5},
-		},
-		{
-			file:        path.Join("methods", "methods.php"),
-			position:    &position.Position{Row: 72, Col: 21},
-			outPosition: &position.Position{Row: 14, Col: 5},
-		},
-		{
-			file:        "parameter.php",
-			position:    &position.Position{Row: 13, Col: 10},
-			outPosition: &position.Position{Row: 12, Col: 26},
-		},
-		{
-			file:        "parameter.php",
-			position:    &position.Position{Row: 17, Col: 10},
-			outPosition: &position.Position{Row: 16, Col: 27},
-		},
-		{
-			file:        "parameter.php",
-			position:    &position.Position{Row: 20, Col: 6},
-			outPosition: &position.Position{Row: 10, Col: 19},
-		},
-		{
-			file:     "parameter.php",
-			position: &position.Position{Row: 23, Col: 10},
-			outPosition: &position.Position{
-				Row:  891,
-				Col:  1,
-				Path: path.Join(stubsFolder, "standard", "standard_1.php"),
-			},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 57, Col: 31},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 58, Col: 30},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 59, Col: 37},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:     path.Join("properties", "properties.php"),
-			position: &position.Position{Row: 60, Col: 31},
-		},
-		{
-			file:     path.Join("properties", "properties.php"),
-			position: &position.Position{Row: 61, Col: 31},
-		},
-		{
-			file:     path.Join("properties", "properties.php"),
-			position: &position.Position{Row: 62, Col: 34},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 69, Col: 26},
-			outPosition: &position.Position{Row: 41, Col: 5},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 69, Col: 36},
-			outPosition: &position.Position{Row: 7, Col: 5},
-		},
-		{
-			file:     path.Join("properties", "properties.php"),
-			position: &position.Position{Row: 70, Col: 34},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 102, Col: 20},
-			outPosition: &position.Position{Row: 98, Col: 5},
-		},
-		{
-			file:        "namespaced_functions.php",
-			position:    &position.Position{Row: 15, Col: 1},
-			outPosition: &position.Position{Row: 3, Col: 1},
-		},
-		// TODO: Why does this fail, this is not methods.
-		// {
-		// 	file:     "namespaced_functions.php",
-		// 	position: &position.Position{Row: 16, Col: 1},
-		// },
-		// {
-		// 	file:        path.Join("methods", "static.php"),
-		// 	position:    &position.Position{Row: 23, Col: 20},
-		// 	outPosition: &position.Position{Row: 6, Col: 5},
-		// },
-		// {
-		// 	file:     path.Join("methods", "static.php"),
-		// 	position: &position.Position{Row: 24, Col: 20},
-		// },
-		// {
-		// 	file:     path.Join("methods", "static.php"),
-		// 	position: &position.Position{Row: 25, Col: 20},
-		// },
-		// {
-		// 	file:        path.Join("methods", "static.php"),
-		// 	position:    &position.Position{Row: 27, Col: 20},
-		// 	outPosition: &position.Position{Row: 6, Col: 5},
-		// },
-		// {
-		// 	file:     path.Join("methods", "static.php"),
-		// 	position: &position.Position{Row: 28, Col: 20},
-		// },
-		// {
-		// 	file:     path.Join("methods", "static.php"),
-		// 	position: &position.Position{Row: 29, Col: 20},
-		// },
-		// {
-		// 	file:        path.Join("methods", "static.php"),
-		// 	position:    &position.Position{Row: 32, Col: 8},
-		// 	outPosition: &position.Position{Row: 6, Col: 5},
-		// },
-		{
-			file:        "variable.php",
-			position:    &position.Position{Row: 10, Col: 6},
-			outPosition: &position.Position{Row: 9, Col: 11},
-		},
-		{
-			file:        "variable.php",
-			position:    &position.Position{Row: 13, Col: 6},
-			outPosition: &position.Position{Row: 12, Col: 15},
-		},
-		{
-			file:        "variable.php",
-			position:    &position.Position{Row: 16, Col: 6},
-			outPosition: &position.Position{Row: 15, Col: 2},
-		},
-		{
-			file:        "variable.php",
-			position:    &position.Position{Row: 19, Col: 6},
-			outPosition: &position.Position{Row: 18, Col: 6},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 93, Col: 21},
-			outPosition: &position.Position{Row: 74, Col: 5},
-		},
-		{
-			file:        path.Join("properties", "properties.php"),
-			position:    &position.Position{Row: 94, Col: 22},
-			outPosition: &position.Position{Row: 74, Col: 5},
-		},
-	}
+	scenarios := make(map[string]map[string]*annotedScenario)
+	var scenarioLen uint
+	aggrStart := time.Now()
 
-	project := setup(definitionsFolder, phpversion.EightOne())
-	err := project.ParseWithoutProgress()
-	is.NoErr(err)
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
 
-	for _, test := range expectations {
-		t.Run(
-			fmt.Sprintf("%s:%d,%d", test.file, test.position.Row, test.position.Col),
-			func(t *testing.T) {
-				is := is.New(t)
+		content, err := ioutil.ReadFile(path)
+		is.NoErr(err)
 
-				testPath := path.Join(definitionsFolder, test.file)
-				test.position.Path = testPath
+		strcontent := string(content)
 
-				pos, err := project.Definition(test.position)
+		indexes := annotationRgx.FindAllStringIndex(strcontent, -1)
+		matches := annotationRgx.FindAllStringSubmatch(strcontent, -1)
+		is.Equal(len(indexes), len(matches))
 
-				// Error is expected when no out position is given.
-				if test.outPosition == nil {
-					is.True(errors.Is(err, ErrNoDefinitionFound))
-				} else {
-					is.NoErr(err)
+		for i, match := range matches {
+			is.True(len(match) > 3)
+
+			row, _ := position.PosToLoc(strcontent, uint(indexes[i][0]))
+			function := match[1]
+			name := match[2]
+			col := match[3]
+
+			colint, err := strconv.Atoi(col)
+			is.NoErr(err)
+
+			group, name, ok := strings.Cut(name, "_")
+			if !ok {
+				name = group
+				group = ""
+			}
+
+			g, ok := scenarios[group]
+			if !ok {
+				g = make(map[string]*annotedScenario)
+				scenarios[group] = g
+			}
+
+			s, ok := g[name]
+			if !ok {
+				s = &annotedScenario{
+					isNoDef: false,
+					in:      position.Position{},
+					out:     nil,
+				}
+				g[name] = s
+				scenarioLen++
+			}
+
+			pos := position.Position{
+				Row:  row,
+				Col:  uint(colint),
+				Path: path,
+			}
+
+			switch function {
+			case "in":
+				// Already had an int for this, so it's a naming collision.
+				if s.in.Path != "" {
+					t.Fatalf("naming collision, t_in is already set for test with name '%s'", name)
 				}
 
-				// If test out position has no path, assume the same path as the input.
-				if test.outPosition != nil && test.outPosition.Path == "" && pos.Path != "" {
-					is.Equal(testPath, pos.Path)
-					is.Equal(test.outPosition.Row, pos.Row)
-					is.Equal(test.outPosition.Col, pos.Col)
-				} else {
-					is.Equal(pos, test.outPosition)
-				}
-			},
-		)
-	}
-}
+				s.in = pos
 
-func BenchmarkStdlibFunction(b *testing.B) {
-	is := is.New(b)
-	project := setup(definitionsFolder, phpversion.EightOne())
-	err := project.ParseWithoutProgress()
+			case "out":
+				// Already had an out for this, so it's a naming collision.
+				if s.out != nil {
+					t.Fatalf("naming collision, t_out is already set for test with name '%s'", name)
+				}
+
+				s.out = &pos
+
+			case "nodef":
+				if ok {
+					t.Fatalf("naming collision, there is already a test with the name: '%s'", name)
+				}
+
+				s.isNoDef = true
+				s.in = pos
+
+			default:
+				// Invalid option so we ignore it.
+				t.Logf("skipping %s, invalid function %s called", name, function)
+				delete(g, name)
+				scenarioLen--
+			}
+		}
+
+		return nil
+	})
 	is.NoErr(err)
 
-	for i := 0; i < b.N; i++ {
-		_, err := project.Definition(&position.Position{
-			Row:  3,
-			Col:  6,
-			Path: path.Join(definitionsFolder, "stdlib.php"),
-		})
-		is.NoErr(err)
-	}
-}
-
-func BenchmarkParsing(b *testing.B) {
-	is := is.New(b)
-
-	for i := 0; i < b.N; i++ {
-		project := setup(definitionsFolder, phpversion.EightOne())
-		err := project.ParseWithoutProgress()
-		is.NoErr(err)
-	}
-}
-
-func TestParserPanicIsRecovered(t *testing.T) {
-	is := is.New(t)
-
-	project := setup(
-		path.Join(pathutils.Root(), "test", "testdata", "syntaxerrors"),
-		&phpversion.PHPVersion{
-			Major: 7,
-			Minor: 4,
-		},
+	t.Logf(
+		"aggregated %d test scenarios from annotations in %s, running now",
+		scenarioLen,
+		time.Since(aggrStart),
 	)
 
-	err := project.ParseWithoutProgress()
-	is.NoErr(err)
+	return scenarios
 }
