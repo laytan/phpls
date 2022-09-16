@@ -14,6 +14,7 @@ import (
 )
 
 func Test_typer_Returns(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		source             string
 		funcOrMethodGetter func(*ir.Root) ir.Node
@@ -169,6 +170,7 @@ func Test_typer_Returns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ast, err := parser.Parse([]byte(tt.args.source), parseConfig)
 			if err != nil {
 				t.Error(err)

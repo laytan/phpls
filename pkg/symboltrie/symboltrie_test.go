@@ -10,6 +10,7 @@ type testNode struct {
 }
 
 func TestSymbolTrieSearchPrefix(t *testing.T) {
+	t.Parallel()
 	trie := New[*testNode]()
 
 	trie.Put("Test", &testNode{"Test", "Test One"})

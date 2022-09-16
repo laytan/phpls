@@ -159,6 +159,7 @@ func TestStdlibDefinitions(t *testing.T) {
 
 	for name, scenario := range scenarios {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			out, err := project.Definition(scenario.in)
@@ -174,6 +175,7 @@ func TestStdlibDefinitions(t *testing.T) {
 }
 
 func TestParserPanicIsRecovered(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	project := setup(
@@ -198,6 +200,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 	scenarios := aggregateAnnotations(t, annotatedRoot)
 	for group, gscenarios := range scenarios {
 		t.Run(group, func(t *testing.T) {
+			t.Parallel()
 			for name, scenario := range gscenarios {
 				t.Run(name, func(t *testing.T) {
 					is := is.New(t)

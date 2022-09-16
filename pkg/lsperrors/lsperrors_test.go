@@ -10,6 +10,7 @@ import (
 )
 
 func TestErrorCodes(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	expectations := map[int]error{

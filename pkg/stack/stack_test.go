@@ -7,6 +7,7 @@ import (
 )
 
 func TestQueue(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	q := New[int]()
