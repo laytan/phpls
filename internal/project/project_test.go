@@ -37,7 +37,6 @@ type stdlibScenario struct {
 }
 
 func TestStdlibDefinitions(t *testing.T) {
-	t.Parallel()
 	is := is.New(t)
 
 	stdlibPath := filepath.Join(stdlibRoot, "stdlib.php")
@@ -192,7 +191,6 @@ func TestParserPanicIsRecovered(t *testing.T) {
 }
 
 func TestAnnotatedDefinitions(t *testing.T) {
-	t.Parallel()
 	is := is.New(t)
 
 	project := setup(annotatedRoot, phpversion.EightOne())
