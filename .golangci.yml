@@ -6,21 +6,111 @@ linters:
     disable-all: true
     enable:
         - bidichk
+        - decorder
+        - dupl
+        - durationcheck
+        - errcheck
+        - errchkjson
         - errname
+        - errorlint
         - exhaustive
+        - exportloopref
+        - forbidigo
+        - gocritic
         - godot
+        - gofumpt
         - gosec
         - gosimple
         - govet
         - ineffassign
+        - makezero
+        - misspell
         - nakedret
+        - paralleltest
         - prealloc
         - predeclared
-        - staticcheck
-        - wrapcheck
         - revive
+        - staticcheck
+        - tenv
+        - testpackage
+        - thelper
+        - tparallel
+        - typecheck
+        - unused
+        - whitespace
+        - wrapcheck
 
 linters-settings:
+    makezero:
+        always: true
+
+    forbidigo:
+        forbid:
+            - 'fmt\.Print.*(# do not commit print statements)?'
+            - '^path\..*(# use filepath package for Windows support)?'
+
+    gocritic:
+        enabled-checks:
+            # START DEFAULTS
+            - appendAssign
+            - argOrder
+            - assignOp
+            - badCall
+            - badCond
+            - captLocal
+            - caseOrder
+            - codegenComment
+            - commentFormatting
+            - defaultCaseOrder
+            - deprecatedComment
+            - dupArg
+            - dupBranchBody
+            - dupCase
+            - dupSubExpr
+            - elseif
+            - exitAfterDefer
+            - flagDeref
+            - flagName
+            - ifElseChain
+            - mapKey
+            - newDeref
+            - offBy1
+            - regexpMust
+            - singleCaseSwitch
+            - sloppyLen
+            - sloppyTypeAssert
+            - switchTrue
+            - typeSwitchVar
+            - underef
+            - unlambda
+            - unslice
+            - valSwap
+            - wrapperFunc
+            # START OTHERS STYLE
+            - deferUnlambda
+            - emptyStringTest
+            - ioutilDeprecated
+            - nestingReduce
+            - preferFilepathJoin
+            - stringConcatSimplify
+            - typeDefFirst
+            - unnamedResult
+            - whyNoLint
+            - yodaStyleExpr
+            # START OTHERS PERFORMANCE
+            - appendCombine
+            - equalFold
+            - hugeParam
+            - indexAlloc
+            - preferDecodeRune
+            - preferFprint
+            - preferStringWriter
+            - preferWriteByte
+            - rangeExprCopy
+            - rangeValCopy
+            - sliceClear
+            - stringXbytes
+
     exhaustive:
         default-signifies-exhaustive: true
     gosimple:
@@ -154,10 +244,3 @@ linters-settings:
           - .WithStack(
           - jsonrpc2.NewError(
           - lsperrors.ErrRequestFailed
-
-issues:
-    exclude-rules:
-        # This is ok because we use statsviz for locally visualizing, this is not opened to
-        # the internet.
-        - path: cmd/main.go
-          text: Use of net/http serve function that has no support for setting timeouts

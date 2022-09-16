@@ -56,9 +56,9 @@ func (c *lsConfig) Initialize() (shownHelp bool, err error) {
 		return false, nil
 	}
 
-	specificErr, ok := err.(*flags.Error)
-	if !ok {
-		return false, fmt.Errorf("Unexpected error parsing flags: %w", err)
+	var specificErr *flags.Error
+	if !errors.As(err, &specificErr) {
+		return false, fmt.Errorf("unexpected error parsing flags: %w", err)
 	}
 
 	if specificErr.Type == flags.ErrHelp {
@@ -119,9 +119,9 @@ func (c *lsConfig) Version() string {
 }
 
 func (c *lsConfig) FileExtensions() []string {
-	exts := make([]string, len(c.opts.FileExtensions))
-	for i, ext := range c.opts.FileExtensions {
-		exts[i] = "." + strings.TrimSpace(ext)
+	exts := make([]string, 0, len(c.opts.FileExtensions))
+	for _, ext := range c.opts.FileExtensions {
+		exts = append(exts, "."+strings.TrimSpace(ext))
 	}
 
 	return exts

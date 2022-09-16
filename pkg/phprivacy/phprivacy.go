@@ -14,10 +14,11 @@ const (
 
 // If I am calling from the p scope relative to the pb class, is that allowed?
 //
-// For examples:
-//   p = PrivacyPublic,  pb = PrivacyPrivate -> false
-//   p = PrivacyPublic,  pb = PrivacyPublic  -> true
-//   p = PrivacyPrivate, pb = PrivacyPublic  -> true
+// For example:
+//
+//	p = PrivacyPublic,  pb = PrivacyPrivate -> false
+//	p = PrivacyPublic,  pb = PrivacyPublic  -> true
+//	p = PrivacyPrivate, pb = PrivacyPublic  -> true
 func (p Privacy) CanAccess(pb Privacy) bool {
 	return p >= pb
 }

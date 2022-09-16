@@ -22,7 +22,7 @@ func NewServer(client protocol.ClientCloser) *Server {
 type Server struct {
 	client protocol.ClientCloser
 
-	// Untill this is true, the server should only allow 'initialize' and 'initialized' requests.
+	// Until this is true, the server should only allow 'initialize' and 'initialized' requests.
 	isInitialized bool
 
 	// When this is true, the server should only allow 'exit' requests.
@@ -59,19 +59,12 @@ func (s *Server) isMethodAllowed(method string) error {
 }
 
 func (s *Server) showAndLogErr(ctx context.Context, t protocol.MessageType, err error) {
-	s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+	if err := s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
 		Type:    t,
 		Message: fmt.Sprintf("%v", err),
-	})
+	}); err != nil {
+		log.Println(err)
+	}
 
 	log.Println(err)
-}
-
-func (s *Server) showAndLogMsg(ctx context.Context, t protocol.MessageType, msg string) {
-	s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
-		Type:    t,
-		Message: msg,
-	})
-
-	log.Println(msg)
 }

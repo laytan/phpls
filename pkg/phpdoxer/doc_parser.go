@@ -14,14 +14,14 @@ var (
 func ParseDoc(doc string) ([]Node, error) {
 	matches := groupRgx.FindAllStringSubmatch(doc, -1)
 
-	parsed := make([]Node, len(matches))
-	for i, match := range matches {
+	parsed := make([]Node, 0, len(matches))
+	for _, match := range matches {
 		res, err := parseGroup(match[1], match[2])
 		if err != nil {
 			return nil, err
 		}
 
-		parsed[i] = res
+		parsed = append(parsed, res)
 	}
 
 	return parsed, nil
@@ -107,8 +107,8 @@ func cleanGroupValue(value string) string {
 	return strings.Join(outLines, "\n")
 }
 
-func splitTypeAndRest(value string) (string, string) {
+func splitTypeAndRest(value string) (docType string, rest string) {
 	split := strings.Fields(value)
-	rest := strings.TrimSpace(strings.TrimPrefix(value, split[0]))
+	rest = strings.TrimSpace(strings.TrimPrefix(value, split[0]))
 	return split[0], rest
 }

@@ -109,7 +109,7 @@ var (
 func ParseType(value string) (Type, error) {
 	value = strings.TrimSpace(value)
 
-	if len(value) == 0 {
+	if value == "" {
 		return nil, ErrEmpty
 	}
 
@@ -516,7 +516,7 @@ func parseIterable(value string) (bool, Type, error) {
 	}
 
 	valTypeRaw := iterableMatch[iterRgxValG]
-	if len(valTypeRaw) == 0 {
+	if valTypeRaw == "" {
 		return true, &TypeIterable{
 			ItemType: keyType,
 		}, nil
@@ -565,7 +565,7 @@ func parseArrayShape(value string) (bool, Type, error) {
 	values = strings.ReplaceAll(values, " ", "")
 
 	indiVals := strings.Split(values, typeSeperator)
-	vals := make([]*TypeArrayShapeValue, len(indiVals))
+	vals := make([]*TypeArrayShapeValue, 0, len(indiVals))
 	for i, val := range indiVals {
 		keyval := strings.Split(val, ":")
 		if len(keyval) == 1 {
@@ -579,7 +579,7 @@ func parseArrayShape(value string) (bool, Type, error) {
 				)
 			}
 
-			vals[i] = &TypeArrayShapeValue{Key: fmt.Sprintf("%d", i), Type: valType}
+			vals = append(vals, &TypeArrayShapeValue{Key: fmt.Sprintf("%d", i), Type: valType})
 			continue
 		}
 
@@ -598,8 +598,7 @@ func parseArrayShape(value string) (bool, Type, error) {
 			)
 		}
 
-		vals[i] = &TypeArrayShapeValue{Key: key, Type: valType, Optional: optional}
-
+		vals = append(vals, &TypeArrayShapeValue{Key: key, Type: valType, Optional: optional})
 	}
 
 	return true, &TypeArrayShape{Values: vals}, nil
@@ -723,8 +722,8 @@ func parseIntMask(value string) (bool, Type, error) {
 	}
 
 	valuesRaw := strings.Split(match[intMskRgxVlsG], typeSeperator)
-	values := make([]int, len(valuesRaw))
-	for i, v := range valuesRaw {
+	values := make([]int, 0, len(valuesRaw))
+	for _, v := range valuesRaw {
 		v = strings.TrimSpace(v)
 		intVal, err := strconv.Atoi(v)
 		if err != nil {
@@ -736,7 +735,7 @@ func parseIntMask(value string) (bool, Type, error) {
 			)
 		}
 
-		values[i] = intVal
+		values = append(values, intVal)
 	}
 
 	return true, &TypeIntMask{
@@ -835,14 +834,14 @@ func parseGenericClass(value string) (bool, Type, error) {
 	fullyQualified := name[0:1] == namespaceSeperator
 
 	rawGenOver := strings.Split(match[genClsRgxGenOverG], typeSeperator)
-	genOver := make([]Type, len(rawGenOver))
-	for i, v := range rawGenOver {
+	genOver := make([]Type, 0, len(rawGenOver))
+	for _, v := range rawGenOver {
 		parsed, err := ParseType(v)
 		if err != nil {
 			return true, nil, fmt.Errorf("Error parsing generic type %s of %s: %w", v, value, err)
 		}
 
-		genOver[i] = parsed
+		genOver = append(genOver, parsed)
 	}
 
 	return true, &TypeClassLike{

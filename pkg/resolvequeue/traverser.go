@@ -80,16 +80,16 @@ func (r *Resolver) LeaveNode(_ ir.Node) {
 }
 
 func (r *Resolver) toNames(nodes []ir.Node) []*ir.Name {
-	names := make([]*ir.Name, len(nodes))
+	names := make([]*ir.Name, 0, len(nodes))
 
-	for i, trait := range nodes {
+	for _, trait := range nodes {
 		name, ok := trait.(*ir.Name)
 		if !ok {
 			log.Printf("Resolver.toNames: expected type %T to be ir.Name\n", trait)
 			continue
 		}
 
-		names[i] = name
+		names = append(names, name)
 	}
 
 	return names

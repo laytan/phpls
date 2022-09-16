@@ -18,7 +18,7 @@ const (
 	dateLayout = "2006-01-02"
 	fileType   = ".log"
 
-	filePerms = 0666
+	filePerms = 0o666
 )
 
 var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }

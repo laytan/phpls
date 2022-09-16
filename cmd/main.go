@@ -33,9 +33,7 @@ func main() {
 	}
 
 	if err != nil {
-		if _, err := fmt.Println(err); err != nil {
-			panic(err)
-		}
+		panic(err)
 	}
 
 	stop := logging.Configure(filepath.Join(pathutils.Root(), "logs"))
@@ -43,7 +41,7 @@ func main() {
 
 	connType, err := conf.ConnType()
 	if err != nil {
-		log.Fatal(err)
+		log.Panicln(err)
 	}
 
 	if pid, isset := conf.ClientPid(); isset {
@@ -58,7 +56,13 @@ func main() {
 				log.Println(fmt.Errorf("Unable to register statsviz routes: %w", err))
 			}
 
-			log.Println(http.ListenAndServe("localhost:6060", nil))
+			log.Println(
+				//nolint:gosec // This is ok because we use statsviz for locally visualizing, this is not opened to the internet.
+				http.ListenAndServe(
+					"localhost:6060",
+					nil,
+				),
+			)
 		}()
 	}
 
@@ -81,6 +85,6 @@ func main() {
 	rpcConn.Go(ctx, protocol.Handlers(protocol.ServerHandler(server, jsonrpc2.MethodNotFound)))
 	<-rpcConn.Done()
 	if err := rpcConn.Err(); err != nil {
-		log.Fatal(err)
+		log.Panicln(err)
 	}
 }

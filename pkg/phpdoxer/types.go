@@ -102,9 +102,9 @@ func (t *TypeClassLike) String() string {
 		return t.Name
 	}
 
-	genStr := make([]string, len(t.GenericOver))
-	for i, gen := range t.GenericOver {
-		genStr[i] = gen.String()
+	genStr := make([]string, 0, len(t.GenericOver))
+	for _, gen := range t.GenericOver {
+		genStr = append(genStr, gen.String())
 	}
 
 	return fmt.Sprintf("%s<%s>", t.Name, strings.Join(genStr, typeSeperator+" "))
@@ -214,9 +214,9 @@ func (t *TypeCallable) String() string {
 		return "callable"
 	}
 
-	params := make([]string, len(t.Parameters))
-	for i, param := range t.Parameters {
-		params[i] = param.String()
+	params := make([]string, 0, len(t.Parameters))
+	for _, param := range t.Parameters {
+		params = append(params, param.String())
 	}
 
 	return fmt.Sprintf(
@@ -514,9 +514,9 @@ type TypeArrayShape struct {
 }
 
 func (t *TypeArrayShape) String() string {
-	values := make([]string, len(t.Values))
-	for i, v := range t.Values {
-		values[i] = v.String()
+	values := make([]string, 0, len(t.Values))
+	for _, v := range t.Values {
+		values = append(values, v.String())
 	}
 
 	return fmt.Sprintf("array{%s}", strings.Join(values, typeSeperator+" "))
@@ -585,9 +585,9 @@ type TypeIntMask struct {
 }
 
 func (t *TypeIntMask) String() string {
-	values := make([]string, len(t.Values))
-	for i, v := range t.Values {
-		values[i] = fmt.Sprintf("%d", v)
+	values := make([]string, 0, len(t.Values))
+	for _, v := range t.Values {
+		values = append(values, fmt.Sprintf("%d", v))
 	}
 
 	return fmt.Sprintf("int-mask<%s>", strings.Join(values, typeSeperator+" "))

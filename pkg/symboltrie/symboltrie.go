@@ -42,9 +42,9 @@ type SearchResult[T any] struct {
 }
 
 func SearchResultKeys[T any](results []*SearchResult[T]) []string {
-	keys := make([]string, len(results))
-	for i, result := range results {
-		keys[i] = result.Key
+	keys := make([]string, 0, len(results))
+	for _, result := range results {
+		keys = append(keys, result.Key)
 	}
 
 	return keys

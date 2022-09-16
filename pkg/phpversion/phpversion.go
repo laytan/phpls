@@ -29,7 +29,7 @@ func Get() (*PHPVersion, error) {
 	cmd := exec.Command("php", "-v")
 	output, err := cmd.Output()
 	if err != nil && reflect.TypeOf(err) != reflect.TypeOf(exec.ExitError{}) {
-		return nil, fmt.Errorf("Error parsing 'php -v' ouput: %w", err)
+		return nil, fmt.Errorf("Error parsing 'php -v' output: %w", err)
 	}
 
 	parts := strings.Split(string(output), " ")

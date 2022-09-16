@@ -28,7 +28,7 @@ func NewStdio(in io.ReadCloser, out io.WriteCloser) *Stdio {
 func (s *Stdio) Read(b []byte) (int, error) {
 	n, err := s.in.Read(b)
 	if err != nil {
-		return 0, fmt.Errorf("Error reading from stdio: %v", err)
+		return 0, fmt.Errorf("Error reading from stdio: %w", err)
 	}
 
 	return n, nil
@@ -38,7 +38,7 @@ func (s *Stdio) Read(b []byte) (int, error) {
 func (s *Stdio) Write(b []byte) (int, error) {
 	n, err := s.out.Write(b)
 	if err != nil {
-		return 0, fmt.Errorf("Error writing to stdio: %v", err)
+		return 0, fmt.Errorf("Error writing to stdio: %w", err)
 	}
 
 	return n, nil
@@ -49,8 +49,12 @@ func (s *Stdio) Close() error {
 	errIn := s.in.Close()
 	errOut := s.out.Close()
 
-	if errIn != nil || errOut != nil {
-		return fmt.Errorf("Errors closing stdio, stdin: %v, stdout: %v", errIn, errOut)
+	if errIn != nil {
+		return fmt.Errorf("Error closing stdio stdin: %w", errIn)
+	}
+
+	if errOut != nil {
+		return fmt.Errorf("Errors closing stdio stdout: %w", errOut)
 	}
 
 	return nil

@@ -41,7 +41,7 @@ func (p *Project) Namespace(pos *position.Position) *position.Position {
 }
 
 // Returns whether the file at given pos needs a use statement for the given fqn.
-func (p *Project) NeedsUseStmtFor(pos *position.Position, FQN string) bool {
+func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
 	root, err := Wrkspc().IROf(pos.Path)
 	if err != nil {
 		log.Println(
@@ -53,14 +53,14 @@ func (p *Project) NeedsUseStmtFor(pos *position.Position, FQN string) bool {
 		)
 	}
 
-	parts := strings.Split(FQN, `\`)
+	parts := strings.Split(fqn, `\`)
 	className := parts[len(parts)-1]
 
 	// Get how it would be resolved in the current file state.
 	actFQN := definition.FullyQualify(root, className)
 
 	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
-	return actFQN.String() != FQN
+	return actFQN.String() != fqn
 }
 
 // func (p *Project) method(

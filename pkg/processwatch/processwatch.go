@@ -81,7 +81,7 @@ func IsProcessRunning(pid uint) bool {
 		return false
 	}
 
-	errno, ok := err.(syscall.Errno)
+	errno, ok := err.(syscall.Errno) // nolint:errorlint // False positive, we are retrieving the number, not the typed error.
 	if !ok {
 		return false
 	}

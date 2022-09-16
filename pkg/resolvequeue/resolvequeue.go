@@ -37,7 +37,7 @@ func New(rootRetriever func(*Node) (*ir.Root, error), node *Node) *ResolveQueue 
 
 func (r *ResolveQueue) Resolve(
 	node *Node,
-) ([]*Node, []*Node, []*Node) {
+) (uses []*Node, extends []*Node, implements []*Node) {
 	root, err := r.rootRetriever(node)
 	if err != nil {
 		log.Println(fmt.Errorf("ResolveQueue.Resolve error during parsing: %w", err))
@@ -47,28 +47,29 @@ func (r *ResolveQueue) Resolve(
 	traverser := NewResolver(node)
 	root.Walk(traverser)
 
-	var (
-		uses       = make([]*Node, len(traverser.Uses))
-		extends    = make([]*Node, len(traverser.Extends))
-		implements = make([]*Node, len(traverser.Implements))
-	)
+	uses = make([]*Node, 0, len(traverser.Uses))
+	extends = make([]*Node, 0, len(traverser.Extends))
+	implements = make([]*Node, 0, len(traverser.Implements))
 
 	fqnTraverser := typer.NewFQNTraverser()
 	root.Walk(fqnTraverser)
 
-	for i, use := range traverser.Uses {
-		uses[i] = &Node{FQN: fqnTraverser.ResultFor(use), Kind: ir.KindTraitStmt}
+	for _, use := range traverser.Uses {
+		uses = append(uses, &Node{FQN: fqnTraverser.ResultFor(use), Kind: ir.KindTraitStmt})
 	}
 
-	for i, extend := range traverser.Extends {
-		extends[i] = &Node{FQN: fqnTraverser.ResultFor(extend), Kind: ir.KindClassStmt}
+	for _, extend := range traverser.Extends {
+		extends = append(
+			extends,
+			&Node{FQN: fqnTraverser.ResultFor(extend), Kind: ir.KindClassStmt},
+		)
 	}
 
-	for i, implement := range traverser.Implements {
-		implements[i] = &Node{
+	for _, implement := range traverser.Implements {
+		implements = append(implements, &Node{
 			FQN:  fqnTraverser.ResultFor(implement),
 			Kind: ir.KindInterfaceStmt,
-		}
+		})
 	}
 
 	return uses, extends, implements

@@ -20,7 +20,7 @@ func (p *Project) Complete(
 	pos *position.Position,
 ) []*traversers.TrieNode {
 	query := p.getCompletionQuery(pos)
-	if len(query) == 0 {
+	if query == "" {
 		return nil
 	}
 
@@ -40,7 +40,6 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	for i := 0; scanner.Scan(); i++ {
-
 		// The target line:
 		if uint(i) != pos.Row-1 {
 			continue

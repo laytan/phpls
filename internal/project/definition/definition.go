@@ -171,7 +171,6 @@ func VariableType(
 			case *ir.MatchExpr, *ir.ArrayDimFetchExpr, *ir.AnonClassExpr:
 			default:
 				return nil, 0, ErrNoDefinitionFound
-
 			}
 		}
 

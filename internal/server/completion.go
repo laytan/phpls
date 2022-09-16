@@ -31,35 +31,38 @@ func (s *Server) Completion(
 
 	results := s.project.Complete(pos)
 
-	items := make([]protocol.CompletionItem, len(results))
-	for i, res := range results {
-		items[i] = protocol.CompletionItem{
+	items := make([]protocol.CompletionItem, 0, len(results))
+	for _, res := range results {
+		item := protocol.CompletionItem{
 			Label: res.Symbol.Identifier(),
 			Data:  string(pathData),
 		}
 
 		if res.Namespace == "" {
+			items = append(items, item)
 			continue
 		}
 
 		switch res.Symbol.NodeKind() {
 		case ir.KindFunctionStmt:
-			items[i].Kind = protocol.FunctionCompletion
+			item.Kind = protocol.FunctionCompletion
 		case ir.KindClassStmt:
-			items[i].Kind = protocol.ClassCompletion
+			item.Kind = protocol.ClassCompletion
 		case ir.KindTraitStmt:
-			// NOTE: there is no trait kind, module seems appropiate.
-			items[i].Kind = protocol.ModuleCompletion
+			// NOTE: there is no trait kind, module seems appropriate.
+			item.Kind = protocol.ModuleCompletion
 		case ir.KindInterfaceStmt:
-			items[i].Kind = protocol.InterfaceCompletion
+			item.Kind = protocol.InterfaceCompletion
 		default:
 		}
 
-		items[i].Detail = fmt.Sprintf(`%s\%s`, res.Namespace, res.Symbol.Identifier())
+		item.Detail = fmt.Sprintf(`%s\%s`, res.Namespace, res.Symbol.Identifier())
 
 		// NOTE: adding an additional text edit, so the client shows it in the UI.
 		// NOTE: the actual text edit is added in the Resolve method.
-		items[i].AdditionalTextEdits = []protocol.TextEdit{{}}
+		item.AdditionalTextEdits = []protocol.TextEdit{{}}
+
+		items = append(items, item)
 	}
 
 	log.Printf("Returning %d completion items\n", len(items))

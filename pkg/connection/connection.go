@@ -20,16 +20,16 @@ const (
 
 func NewConnectionListener(
 	connType ConnType,
-	URL string,
+	url string,
 	connChan chan<- net.Conn,
 	listeningChann chan<- bool,
 ) {
 	switch connType {
 	case ConnWs:
-		ws(URL, connChan, listeningChann)
+		ws(url, connChan, listeningChann)
 		return
 	case ConnTCP:
-		tcp(URL, connChan, listeningChann)
+		tcp(url, connChan, listeningChann)
 		return
 	case ConnStdio:
 		listeningChann <- true
@@ -41,8 +41,8 @@ func NewConnectionListener(
 	}
 }
 
-func tcp(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
-	lis, err := net.Listen("tcp", URL)
+func tcp(url string, connChan chan<- net.Conn, listeningChann chan<- bool) {
+	lis, err := net.Listen("tcp", url)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,15 +54,15 @@ func tcp(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
 
 	conn, err := lis.Accept()
 	if err != nil {
-		log.Fatal(err)
+		log.Panicln(err)
 	}
 
 	connChan <- conn
 	close(connChan)
 }
 
-func ws(URL string, connChan chan<- net.Conn, listeningChann chan<- bool) {
-	srv := http.Server{Addr: URL, ReadHeaderTimeout: time.Second}
+func ws(url string, connChan chan<- net.Conn, listeningChann chan<- bool) {
+	srv := http.Server{Addr: url, ReadHeaderTimeout: time.Second}
 
 	upgrader := websocket.Upgrader{}
 

@@ -30,7 +30,6 @@ func (s *Symbol) SetPath(path string) {
 
 func (s *Symbol) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
-
 	case *ir.NamespaceStmt:
 		if typedNode.NamespaceName != nil {
 			s.currentNamespace = typedNode.NamespaceName.Value
@@ -45,7 +44,6 @@ func (s *Symbol) EnterNode(node ir.Node) bool {
 
 	default:
 		return true
-
 	}
 }
 

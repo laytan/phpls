@@ -41,7 +41,7 @@ type Index interface {
 	// The given namespace must be fully qualified.
 	//
 	// Giving this no kinds or ir.KindRoot will return any kind.
-	Find(FQN string, kind ...ir.NodeKind) (*traversers.TrieNode, error)
+	Find(fqn string, kind ...ir.NodeKind) (*traversers.TrieNode, error)
 
 	// Finds a prefix/completes a string.
 	// Do not call this with a namespaced symbol, only the class or function name.
@@ -94,7 +94,7 @@ func (i *index) Index(path string, content string) error {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Println(
-					fmt.Errorf("Could not index %s, parse/syntax error: %v", path, err),
+					fmt.Errorf("Could not index %s, parse/syntax error: %w", path, err),
 				)
 			}
 		}()
@@ -107,8 +107,8 @@ func (i *index) Index(path string, content string) error {
 	return nil
 }
 
-func (i *index) Find(FQN string, kind ...ir.NodeKind) (*traversers.TrieNode, error) {
-	FQNObj := typer.NewFQN(FQN)
+func (i *index) Find(fqn string, kind ...ir.NodeKind) (*traversers.TrieNode, error) {
+	FQNObj := typer.NewFQN(fqn)
 
 	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
 
@@ -123,7 +123,7 @@ func (i *index) Find(FQN string, kind ...ir.NodeKind) (*traversers.TrieNode, err
 		}
 	}
 
-	return nil, fmt.Errorf(errNotFoundFmt, FQN, kind)
+	return nil, fmt.Errorf(errNotFoundFmt, fqn, kind)
 }
 
 func (i *index) FindPrefix(prefix string, max uint, kind ...ir.NodeKind) []*traversers.TrieNode {
@@ -131,10 +131,10 @@ func (i *index) FindPrefix(prefix string, max uint, kind ...ir.NodeKind) []*trav
 
 	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
 
-	values := make([]*traversers.TrieNode, len(results))
-	for i, result := range results {
+	values := make([]*traversers.TrieNode, 0, len(results))
+	for _, result := range results {
 		if retAll || slices.Contains(kind, result.Value.Symbol.NodeKind()) {
-			values[i] = result.Value
+			values = append(values, result.Value)
 		}
 	}
 

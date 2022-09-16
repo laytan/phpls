@@ -29,11 +29,6 @@ const (
 	indexingDecayTime = 2 * time.Second
 )
 
-type serverInfo struct {
-	Name    string `json:"name"`
-	Version string `json:"version,omitempty"`
-}
-
 // Entrypoint, must be requested first by the client.
 func (s *Server) Initialize(
 	ctx context.Context,
@@ -57,7 +52,7 @@ func (s *Server) Initialize(
 
 	// OPTIM: support 'workspaceFolders'.
 	s.root = strings.TrimPrefix(string(params.RootURI), "file://")
-	if len(s.root) == 0 {
+	if s.root == "" {
 		return nil, lsperrors.ErrRequestFailed("LSP Server requires RootURI to be set")
 	}
 
@@ -107,7 +102,10 @@ func (s *Server) Initialize(
 			},
 			HoverProvider: true,
 		},
-		ServerInfo: serverInfo{
+		ServerInfo: struct {
+			Name    string `json:"name"`
+			Version string `json:"version,omitempty"`
+		}{
 			Name:    Config().Name(),
 			Version: Config().Version(),
 		},
@@ -202,7 +200,7 @@ func (s *Server) index() {
 	go func() {
 		msg, _ := message()
 
-		s.client.Progress(ctx, &protocol.ProgressParams{
+		if err := s.client.Progress(ctx, &protocol.ProgressParams{
 			Token: indexingProgressToken,
 			Value: progress{
 				Kind:       progressKindBegin,
@@ -210,43 +208,52 @@ func (s *Server) index() {
 				Message:    msg,
 				Percentage: 0,
 			},
-		})
+		}); err != nil {
+			log.Println(err)
+		}
 
 		for {
 			select {
 			case <-doneChan:
 				msg, _ := message()
 
-				s.client.Progress(ctx, &protocol.ProgressParams{
+				if err := s.client.Progress(ctx, &protocol.ProgressParams{
 					Token: indexingProgressToken,
 					Value: progress{
 						Kind:       progressKindReport,
 						Message:    msg,
 						Percentage: 100,
 					},
-				})
+				}); err != nil {
+					log.Println(err)
+				}
 
 				time.Sleep(indexingDecayTime)
 
-				s.client.Progress(ctx, &protocol.ProgressParams{
+				if err := s.client.Progress(ctx, &protocol.ProgressParams{
 					Token: indexingProgressToken,
 					Value: progress{
 						Kind: progressKindEnd,
 					},
-				})
+				}); err != nil {
+					log.Println(err)
+				}
+
 				return
 
 			case <-ticker.C:
 				msg, percentage := message()
 
-				s.client.Progress(ctx, &protocol.ProgressParams{
+				if err := s.client.Progress(ctx, &protocol.ProgressParams{
 					Token: indexingProgressToken,
 					Value: progress{
 						Kind:       progressKindReport,
 						Message:    msg,
 						Percentage: percentage,
 					},
-				})
+				}); err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	}()

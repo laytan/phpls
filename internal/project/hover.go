@@ -195,6 +195,5 @@ func withoutStmts(node ir.Node) ir.Node {
 
 	default:
 		return node
-
 	}
 }

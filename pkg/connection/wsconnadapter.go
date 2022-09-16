@@ -75,19 +75,19 @@ func (a *Adapter) Write(b []byte) (int, error) {
 
 	nextWriter, err := a.conn.NextWriter(websocket.TextMessage)
 	if err != nil {
-		return 0, fmt.Errorf("Error writing websocket message: %v", err)
+		return 0, fmt.Errorf("Error writing websocket message: %w", err)
 	}
 
 	defer nextWriter.Close()
 
 	bytesWritten, err := nextWriter.Write(b)
 
-	return bytesWritten, fmt.Errorf("Error writing websocket message: %v", err)
+	return bytesWritten, fmt.Errorf("Error writing websocket message: %w", err)
 }
 
 func (a *Adapter) Close() error {
 	if err := a.conn.Close(); err != nil {
-		return fmt.Errorf("Error closing websocket connection: %v", err)
+		return fmt.Errorf("Error closing websocket connection: %w", err)
 	}
 
 	return nil
@@ -111,7 +111,7 @@ func (a *Adapter) SetDeadline(t time.Time) error {
 
 func (a *Adapter) SetReadDeadline(t time.Time) error {
 	if err := a.conn.SetReadDeadline(t); err != nil {
-		return fmt.Errorf("Error setting read deadline: %v", err)
+		return fmt.Errorf("Error setting read deadline: %w", err)
 	}
 
 	return nil
@@ -119,7 +119,7 @@ func (a *Adapter) SetReadDeadline(t time.Time) error {
 
 func (a *Adapter) SetWriteDeadline(t time.Time) error {
 	if err := a.conn.SetWriteDeadline(t); err != nil {
-		return fmt.Errorf("Error setting write deadline: %v", err)
+		return fmt.Errorf("Error setting write deadline: %w", err)
 	}
 
 	return nil

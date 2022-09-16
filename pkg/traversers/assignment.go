@@ -65,7 +65,6 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 				a.Scope = typedNode
 			}
 		}
-
 	}
 
 	return true
