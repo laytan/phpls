@@ -3,7 +3,6 @@ package context
 import (
 	"fmt"
 
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
@@ -110,8 +109,6 @@ func (c *context) Start() *position.Position {
 	return c.start
 }
 
-var got bool
-
 func (c *context) init() error {
 	content, root, err := Wrkspc().AllOf(c.start.Path)
 	if err != nil {
@@ -122,22 +119,9 @@ func (c *context) init() error {
 		)
 	}
 
-	if !got {
-		what.Is(content)
-		what.Is(root)
-
-	}
-
 	apos := position.LocToPos(content, c.start.Row, c.start.Col)
-	what.Happens("Row: %d, Col: %d -> Pos: %d", c.start.Row, c.start.Col, apos)
-
 	nap := traversers.NewNodeAtPos(apos)
 	root.Walk(nap)
-
-	if !got {
-		what.Is(nap.Nodes)
-		got = true
-	}
 
 	c.nodes = nap.Nodes
 	c.curr = len(nap.Nodes)

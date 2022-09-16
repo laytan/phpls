@@ -18,7 +18,7 @@ type Cache[K comparable, V any] struct {
 
 // Creates a new cache with some sane defaults.
 func New[K comparable, V any](capacity int) *Cache[K, V] {
-	log.Printf("Creating arc cache of capacity %d\n", capacity)
+	log.Printf("Creating cache of capacity %d\n", capacity)
 
 	c, err := lru.New(capacity)
 	if err != nil {

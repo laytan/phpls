@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/laytan/elephp/pkg/pathutils"
@@ -19,6 +20,18 @@ func TestPosition(t *testing.T) {
 		46: {5, 1},
 		61: {5, 16},
 		66: {5, 21},
+	}
+
+	// Adjusted positions because windows uses \r\n,
+	// meaning each line will be 1 rune longer.
+	if runtime.GOOS == "windows" {
+		expectations = map[uint][]uint{
+			80: {7, 5},
+			38: {4, 1},
+			50: {5, 1},
+			65: {5, 16},
+			70: {5, 21},
+		}
 	}
 
 	content, err := ioutil.ReadFile(
