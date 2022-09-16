@@ -6,6 +6,7 @@ import (
 )
 
 func TestParseDoc(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		args    string
@@ -152,6 +153,7 @@ func TestParseDoc(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := ParseDoc(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseDoc() error = %v, wantErr %v", err, tt.wantErr)

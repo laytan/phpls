@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -21,6 +22,7 @@ type connTypeTestInput struct {
 }
 
 func TestConfigConnType(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	expectations := []connTypeTestInput{
@@ -50,15 +52,19 @@ func TestConfigConnType(t *testing.T) {
 		},
 	}
 
-	for _, test := range expectations {
-		c := newTestConfig(test.args)
-		shownHelp, err := c.Initialize()
-		is.Equal(shownHelp, false)
-		is.NoErr(err)
+	for i, test := range expectations {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			t.Parallel()
+			is := is.New(t)
+			c := newTestConfig(test.args)
+			shownHelp, err := c.Initialize()
+			is.Equal(shownHelp, false)
+			is.NoErr(err)
 
-		connType, err := c.ConnType()
-		is.Equal(connType, test.connType)
-		is.Equal(err, test.err)
+			connType, err := c.ConnType()
+			is.Equal(connType, test.connType)
+			is.Equal(err, test.err)
+		})
 	}
 }
 
@@ -70,6 +76,7 @@ type pidTestInput struct {
 }
 
 func TestClientPid(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	expectations := []pidTestInput{
@@ -98,22 +105,27 @@ func TestClientPid(t *testing.T) {
 		},
 	}
 
-	for _, test := range expectations {
-		config := newTestConfig(test.args)
-		shownHelp, err := config.Initialize()
-		is.Equal(shownHelp, false)
+	for i, test := range expectations {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			t.Parallel()
+			is := is.New(t)
+			config := newTestConfig(test.args)
+			shownHelp, err := config.Initialize()
+			is.Equal(shownHelp, false)
 
-		if !test.error {
-			is.NoErr(err)
-		}
+			if !test.error {
+				is.NoErr(err)
+			}
 
-		pid, ok := config.ClientPid()
-		is.Equal(pid, test.pid)
-		is.Equal(ok, test.ok)
+			pid, ok := config.ClientPid()
+			is.Equal(pid, test.pid)
+			is.Equal(ok, test.ok)
+		})
 	}
 }
 
 func TestStatsviz(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	config := newTestConfig([]string{"--statsviz"})
@@ -130,6 +142,7 @@ func TestStatsviz(t *testing.T) {
 }
 
 func TestConnUrl(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	config := newTestConfig([]string{})
@@ -146,6 +159,7 @@ func TestConnUrl(t *testing.T) {
 }
 
 func TestConstructor(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	config := New()
@@ -155,6 +169,7 @@ func TestConstructor(t *testing.T) {
 }
 
 func TestHelp(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	expectations := [][]string{
@@ -162,9 +177,13 @@ func TestHelp(t *testing.T) {
 		{"-h"},
 	}
 
-	for _, test := range expectations {
-		config := newTestConfig(test)
-		shownHelp, _ := config.Initialize()
-		is.Equal(shownHelp, true)
+	for i, test := range expectations {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			t.Parallel()
+			is := is.New(t)
+			config := newTestConfig(test)
+			shownHelp, _ := config.Initialize()
+			is.Equal(shownHelp, true)
+		})
 	}
 }

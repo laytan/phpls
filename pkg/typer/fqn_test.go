@@ -8,6 +8,8 @@ import (
 )
 
 func TestFQN(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		FQN       string
 		Name      string
@@ -37,6 +39,7 @@ func TestFQN(t *testing.T) {
 
 	for i, test := range cases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			f := NewFQN(test.FQN)

@@ -3,6 +3,7 @@ package phprivacy
 import "testing"
 
 func TestPrivacy_CanAccess(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		p    Privacy
@@ -36,6 +37,7 @@ func TestPrivacy_CanAccess(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.p.CanAccess(tt.pb); got != tt.want {
 				t.Errorf("Privacy.CanAccess() = %v, want %v", got, tt.want)
 			}

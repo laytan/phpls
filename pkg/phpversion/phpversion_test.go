@@ -3,6 +3,7 @@ package phpversion
 import "testing"
 
 func TestPHPVersion_String(t *testing.T) {
+	t.Parallel()
 	type fields struct {
 		Major uint8
 		Minor uint8
@@ -27,6 +28,7 @@ func TestPHPVersion_String(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			v := &PHPVersion{
 				Major: tt.fields.Major,
 				Minor: tt.fields.Minor,

@@ -12,6 +12,7 @@ import (
 )
 
 func TestPosition(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	expectations := map[uint][]uint{
@@ -47,6 +48,7 @@ func TestPosition(t *testing.T) {
 
 	for pos, loc := range expectations {
 		t.Run(fmt.Sprint(pos), func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			row, col := PosToLoc(string(content), pos)
@@ -57,6 +59,7 @@ func TestPosition(t *testing.T) {
 
 	for want, loc := range expectations {
 		t.Run(fmt.Sprint(want), func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			pos := LocToPos(string(content), loc[0], loc[1])
