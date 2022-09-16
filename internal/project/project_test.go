@@ -16,7 +16,6 @@ import (
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
-	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
@@ -195,8 +194,8 @@ func TestParserPanicIsRecovered(t *testing.T) {
 func TestAnnotatedDefinitions(t *testing.T) {
 	is := is.New(t)
 
-	project := setup(annotatedRoot, phpversion.EightOne())
-	err := project.ParseWithoutProgress()
+	proj := setup(annotatedRoot, phpversion.EightOne())
+	err := proj.ParseWithoutProgress()
 	is.NoErr(err)
 
 	scenarios := aggregateAnnotations(t, annotatedRoot)
@@ -215,10 +214,10 @@ func TestAnnotatedDefinitions(t *testing.T) {
 						t.Fatalf("invalid test scenario, no out called for '%s'", name)
 					}
 
-					out, err := project.Definition(&scenario.in)
+					out, err := proj.Definition(&scenario.in)
 
 					if scenario.isNoDef {
-						is.True(errors.Is(err, definition.ErrNoDefinitionFound))
+						is.True(errors.Is(err, project.ErrNoDefinitionFound))
 						return
 					}
 
