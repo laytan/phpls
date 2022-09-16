@@ -33,5 +33,8 @@ jobs:
         cache: true
         go-version-file: go.mod
 
+    - name: Install richgo
+      run: go install github.com/kyoh86/richgo@v0.3.10
+
     - name: Test
-      run: go test -cover -race -shuffle=on -timeout=10s -v -tags what ./...
+      run: richgo test -cover -race -shuffle=on -timeout=10s -v -tags what ./...
