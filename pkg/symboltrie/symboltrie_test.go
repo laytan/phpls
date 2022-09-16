@@ -1,7 +1,9 @@
-package symboltrie
+package symboltrie_test
 
 import (
 	"testing"
+
+	"github.com/laytan/elephp/pkg/symboltrie"
 )
 
 type testNode struct {
@@ -11,7 +13,7 @@ type testNode struct {
 
 func TestSymbolTrieSearchPrefix(t *testing.T) {
 	t.Parallel()
-	trie := New[*testNode]()
+	trie := symboltrie.New[*testNode]()
 
 	trie.Put("Test", &testNode{"Test", "Test One"})
 	trie.Put("Test", &testNode{"Test", "Test Two"})

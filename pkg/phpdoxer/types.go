@@ -317,7 +317,7 @@ const (
 	StringConstraintCallable
 	StringConstraintNumeric
 	StringConstraintNonEmpty
-	stringConstraintLiteral
+	StringConstraintLiteral
 )
 
 type TypeString struct {
@@ -341,7 +341,7 @@ func (t *TypeString) String() string {
 		return "numeric-string"
 	case StringConstraintNonEmpty:
 		return "non-empty-string"
-	case stringConstraintLiteral:
+	case StringConstraintLiteral:
 		return "literal-string"
 	default:
 		return "string"

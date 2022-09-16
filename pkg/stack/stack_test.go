@@ -1,8 +1,9 @@
-package stack
+package stack_test
 
 import (
 	"testing"
 
+	"github.com/laytan/elephp/pkg/stack"
 	"github.com/matryer/is"
 )
 
@@ -10,7 +11,7 @@ func TestQueue(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
 
-	q := New[int]()
+	q := stack.New[int]()
 
 	v := q.Pop()
 	is.Equal(v, 0)

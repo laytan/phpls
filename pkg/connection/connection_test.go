@@ -1,10 +1,11 @@
-package connection
+package connection_test
 
 import (
 	"net"
 	"testing"
 
 	"github.com/gorilla/websocket"
+	"github.com/laytan/elephp/pkg/connection"
 	"github.com/matryer/is"
 )
 
@@ -14,7 +15,9 @@ func TestTcp(t *testing.T) {
 
 	connChan := make(chan net.Conn)
 	listeningChann := make(chan bool)
-	go func() { NewConnectionListener(ConnTCP, ":1112", connChan, listeningChann) }()
+	go func() {
+		connection.NewConnectionListener(connection.ConnTCP, ":1112", connChan, listeningChann)
+	}()
 
 	listening, ok := <-listeningChann
 	is.True(listening)
@@ -52,7 +55,9 @@ func TestWs(t *testing.T) {
 
 	connChan := make(chan net.Conn)
 	listeningChann := make(chan bool)
-	go func() { NewConnectionListener(ConnWs, ":1113", connChan, listeningChann) }()
+	go func() {
+		connection.NewConnectionListener(connection.ConnWs, ":1113", connChan, listeningChann)
+	}()
 
 	listening, ok := <-listeningChann
 	is.True(listening)

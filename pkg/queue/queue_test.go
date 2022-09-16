@@ -1,8 +1,9 @@
-package queue
+package queue_test
 
 import (
 	"testing"
 
+	"github.com/laytan/elephp/pkg/queue"
 	"github.com/matryer/is"
 )
 
@@ -10,7 +11,7 @@ func TestQueue(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
 
-	q := New[int]()
+	q := queue.New[int]()
 
 	v := q.Dequeue()
 	is.Equal(v, 0)

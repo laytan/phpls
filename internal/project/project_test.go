@@ -1,4 +1,4 @@
-package project
+package project_test
 
 import (
 	"errors"
@@ -15,6 +15,8 @@ import (
 	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/project"
+	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
@@ -216,7 +218,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 					out, err := project.Definition(&scenario.in)
 
 					if scenario.isNoDef {
-						is.True(errors.Is(err, ErrNoDefinitionFound))
+						is.True(errors.Is(err, definition.ErrNoDefinitionFound))
 						return
 					}
 
@@ -228,13 +230,13 @@ func TestAnnotatedDefinitions(t *testing.T) {
 	}
 }
 
-func setup(root string, phpv *phpversion.PHPVersion) *Project {
+func setup(root string, phpv *phpversion.PHPVersion) *project.Project {
 	do.OverrideValue(nil, config.Default())
 	do.OverrideValue(nil, index.New(phpv))
 	do.OverrideValue(nil, wrkspc.New(phpv, root))
 	do.OverrideValue(nil, typer.New())
 
-	return New()
+	return project.New()
 }
 
 // out is nil when isNoDef is true.

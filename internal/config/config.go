@@ -15,9 +15,11 @@ var ErrIncorrectConnTypeAmt = errors.New(
 )
 
 func New() Config {
-	return &lsConfig{
-		Args: os.Args,
-	}
+	return &lsConfig{Args: os.Args}
+}
+
+func NewWithArgs(args []string) Config {
+	return &lsConfig{Args: args}
 }
 
 func Default() Config {

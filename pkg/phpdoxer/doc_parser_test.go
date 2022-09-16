@@ -1,8 +1,10 @@
-package phpdoxer
+package phpdoxer_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
 func TestParseDoc(t *testing.T) {
@@ -10,7 +12,7 @@ func TestParseDoc(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    string
-		want    []Node
+		want    []phpdoxer.Node
 		wantErr bool
 	}{
 		{
@@ -20,36 +22,36 @@ func TestParseDoc(t *testing.T) {
              * @return string
              */
             `,
-			want: []Node{
-				&NodeReturn{
-					Type: &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeReturn{
+					Type: &phpdoxer.TypeString{},
 				},
 			},
 		},
 		{
 			name: "simple at return single line block comment",
 			args: "/** @return string */",
-			want: []Node{
-				&NodeReturn{
-					Type: &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeReturn{
+					Type: &phpdoxer.TypeString{},
 				},
 			},
 		},
 		{
 			name: "simple at return single line comment",
 			args: "// @return string",
-			want: []Node{
-				&NodeReturn{
-					Type: &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeReturn{
+					Type: &phpdoxer.TypeString{},
 				},
 			},
 		},
 		{
 			name: "at return with description single line comment",
 			args: "// @return string HelloWorld",
-			want: []Node{
-				&NodeReturn{
-					Type:        &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeReturn{
+					Type:        &phpdoxer.TypeString{},
 					Description: "HelloWorld",
 				},
 			},
@@ -61,9 +63,9 @@ func TestParseDoc(t *testing.T) {
              * @return string HelloWorld
              */
             `,
-			want: []Node{
-				&NodeReturn{
-					Type:        &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeReturn{
+					Type:        &phpdoxer.TypeString{},
 					Description: "HelloWorld",
 				},
 			},
@@ -77,9 +79,9 @@ func TestParseDoc(t *testing.T) {
              *
              */
             `,
-			want: []Node{
-				&NodeReturn{
-					Type:        &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeReturn{
+					Type:        &phpdoxer.TypeString{},
 					Description: "Hello World",
 				},
 			},
@@ -87,18 +89,18 @@ func TestParseDoc(t *testing.T) {
 		{
 			name: "simple @var",
 			args: "// @var string",
-			want: []Node{
-				&NodeVar{
-					Type: &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeVar{
+					Type: &phpdoxer.TypeString{},
 				},
 			},
 		},
 		{
 			name: "block comment @var",
 			args: "/** @var string */",
-			want: []Node{
-				&NodeVar{
-					Type: &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeVar{
+					Type: &phpdoxer.TypeString{},
 				},
 			},
 		},
@@ -108,9 +110,9 @@ func TestParseDoc(t *testing.T) {
             /**
              * @var string
              */`,
-			want: []Node{
-				&NodeVar{
-					Type: &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeVar{
+					Type: &phpdoxer.TypeString{},
 				},
 			},
 		},
@@ -121,8 +123,8 @@ func TestParseDoc(t *testing.T) {
              * @methody lalosie posie
              */
             `,
-			want: []Node{
-				&NodeUnknown{
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeUnknown{
 					At:    "methody",
 					Value: "lalosie posie",
 				},
@@ -139,12 +141,12 @@ func TestParseDoc(t *testing.T) {
              *
              */
             `,
-			want: []Node{
-				&NodeVar{
-					Type: &TypeString{},
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeVar{
+					Type: &phpdoxer.TypeString{},
 				},
-				&NodeReturn{
-					Type:        &TypeString{},
+				&phpdoxer.NodeReturn{
+					Type:        &phpdoxer.TypeString{},
 					Description: "The return value is a string",
 				},
 			},
@@ -154,7 +156,7 @@ func TestParseDoc(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ParseDoc(tt.args)
+			got, err := phpdoxer.ParseDoc(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseDoc() error = %v, wantErr %v", err, tt.wantErr)
 				return
