@@ -3,7 +3,7 @@ package project_test
 import (
 	"errors"
 	"io/fs"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -38,6 +38,7 @@ type stdlibScenario struct {
 }
 
 func TestStdlibDefinitions(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	stdlibPath := filepath.Join(stdlibRoot, "stdlib.php")
@@ -159,6 +160,7 @@ func TestStdlibDefinitions(t *testing.T) {
 	is.NoErr(err)
 
 	for name, scenario := range scenarios {
+		name, scenario := name, scenario
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
@@ -192,6 +194,7 @@ func TestParserPanicIsRecovered(t *testing.T) {
 }
 
 func TestAnnotatedDefinitions(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	proj := setup(annotatedRoot, phpversion.EightOne())
@@ -200,10 +203,13 @@ func TestAnnotatedDefinitions(t *testing.T) {
 
 	scenarios := aggregateAnnotations(t, annotatedRoot)
 	for group, gscenarios := range scenarios {
+		group, gscenarios := group, gscenarios
 		t.Run(group, func(t *testing.T) {
 			t.Parallel()
 			for name, scenario := range gscenarios {
+				name, scenario := name, scenario
 				t.Run(name, func(t *testing.T) {
+					t.Parallel()
 					is := is.New(t)
 
 					if scenario.in.Path == "" {
@@ -248,6 +254,7 @@ type annotedScenario struct {
 var annotationRgx = regexp.MustCompile(`@t_(\w+)\(([\w\s]+), (\d+)\)`)
 
 func aggregateAnnotations(t *testing.T, root string) map[string]map[string]*annotedScenario {
+	t.Helper()
 	is := is.New(t)
 
 	scenarios := make(map[string]map[string]*annotedScenario)
@@ -259,8 +266,8 @@ func aggregateAnnotations(t *testing.T, root string) map[string]map[string]*anno
 			return nil
 		}
 
-		content, err := ioutil.ReadFile(path)
-		is.NoErr(err)
+		content, rErr := os.ReadFile(path)
+		is.NoErr(rErr)
 
 		strcontent := string(content)
 

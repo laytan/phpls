@@ -2,7 +2,6 @@ package index_test
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -39,7 +38,7 @@ func BenchmarkCountWalk(b *testing.B) {
 		is.NoErr(err)
 	}
 
-	fmt.Printf("BenchmarkCountWalk: %d\n", count)
+	b.Logf("BenchmarkCountWalk: %d\n", count)
 }
 
 func BenchmarkCountWalkDir(b *testing.B) {
@@ -64,7 +63,7 @@ func BenchmarkCountWalkDir(b *testing.B) {
 		is.NoErr(err)
 	}
 
-	fmt.Printf("BenchmarkCountWalkDir: %d\n", count)
+	b.Logf("BenchmarkCountWalkDir: %d\n", count)
 }
 
 func BenchmarkCountFindShell(b *testing.B) {
@@ -72,7 +71,6 @@ func BenchmarkCountFindShell(b *testing.B) {
 
 	count := 0
 	for i := 0; i < b.N; i++ {
-		count = 0
 		c1 := exec.Command("find", root, "-type", "f")
 		c2 := exec.Command("wc", "-l")
 
@@ -83,11 +81,20 @@ func BenchmarkCountFindShell(b *testing.B) {
 		var b2 bytes.Buffer
 		c2.Stdout = &b2
 
-		c1.Start()
-		c2.Start()
-		c1.Wait()
-		w.Close()
-		c2.Wait()
+		err := c1.Start()
+		is.NoErr(err)
+
+		err = c2.Start()
+		is.NoErr(err)
+
+		err = c1.Wait()
+		is.NoErr(err)
+
+		err = w.Close()
+		is.NoErr(err)
+
+		err = c2.Wait()
+		is.NoErr(err)
 
 		countStr := strings.TrimSpace(b2.String())
 		c, err := strconv.Atoi(countStr)
@@ -95,7 +102,7 @@ func BenchmarkCountFindShell(b *testing.B) {
 		count = c
 	}
 
-	fmt.Printf("BenchmarkCountFindShell: %d\n", count)
+	b.Logf("BenchmarkCountFindShell: %d\n", count)
 }
 
 // func BenchmarkIndex(b *testing.B) {

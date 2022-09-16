@@ -1,5 +1,5 @@
 run:
-    tests: false
+    tests: true
     go: '1.18'
 
 linters:

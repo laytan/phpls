@@ -2,7 +2,7 @@ package position_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -36,7 +36,7 @@ func TestPosition(t *testing.T) {
 		}
 	}
 
-	content, err := ioutil.ReadFile(
+	content, err := os.ReadFile(
 		filepath.Join(
 			pathutils.Root(),
 			"test",
@@ -48,6 +48,7 @@ func TestPosition(t *testing.T) {
 	is.NoErr(err)
 
 	for pos, loc := range expectations {
+		pos, loc := pos, loc
 		t.Run(fmt.Sprint(pos), func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
@@ -59,6 +60,7 @@ func TestPosition(t *testing.T) {
 	}
 
 	for want, loc := range expectations {
+		want, loc := want, loc
 		t.Run(fmt.Sprint(want), func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)

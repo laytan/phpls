@@ -39,6 +39,7 @@ func TestFQN(t *testing.T) {
 	}
 
 	for i, test := range cases {
+		i, test := i, test
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)

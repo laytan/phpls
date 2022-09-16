@@ -51,6 +51,7 @@ func TestConfigConnType(t *testing.T) {
 	}
 
 	for i, test := range expectations {
+		i, test := i, test
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
@@ -104,6 +105,7 @@ func TestClientPid(t *testing.T) {
 	}
 
 	for i, test := range expectations {
+		i, test := i, test
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
@@ -166,6 +168,7 @@ func TestHelp(t *testing.T) {
 	}
 
 	for i, test := range expectations {
+		i, test := i, test
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
