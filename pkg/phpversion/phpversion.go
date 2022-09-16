@@ -65,7 +65,7 @@ func Get() (*PHPVersion, error) {
 }
 
 func EightOne() *PHPVersion {
-	return &PHPVersion{Major: 8, Minor: 1} //nolint:revive
+	return &PHPVersion{Major: 8, Minor: 1}
 }
 
 func versionConversionErr(err error) error {

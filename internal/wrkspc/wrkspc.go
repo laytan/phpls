@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	ErrParseFmt     = "Error parsing file into syntax nodes: %w"
+	ErrParseFmt     = "Error parsing file %s syntax nodes: %w"
 	ErrReadFmt      = "Error reading file %s: %w"
 	ErrParseWalkFmt = "Error walking the workspace files: %w"
 
@@ -138,7 +138,7 @@ func (w *wrkspc) Index(
 		g.Go(func() error {
 			content, err := w.parser(path).Read(path)
 			if err != nil {
-				return err
+				return fmt.Errorf(ErrReadFmt, path, err)
 			}
 
 			files <- &ParsedFile{Path: path, Content: content}
@@ -211,7 +211,7 @@ func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
 
 	root, err := w.IROf(path)
 	if err != nil {
-		return "", nil, fmt.Errorf(ErrParseFmt, err)
+		return "", nil, fmt.Errorf(ErrParseFmt, path, err)
 	}
 
 	return content, root, nil
@@ -229,7 +229,7 @@ func (w *wrkspc) Refresh(path string) error {
 func (w *wrkspc) RefreshFrom(path string, content string) error {
 	root, err := w.parser(path).Parse(content)
 	if err != nil {
-		return err
+		return fmt.Errorf(ErrParseFmt, path, err)
 	}
 
 	file := newFile(content)

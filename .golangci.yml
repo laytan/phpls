@@ -6,20 +6,17 @@ linters:
     disable-all: true
     enable:
         - bidichk
-        - deadcode
         - errname
         - exhaustive
         - godot
         - gosec
         - gosimple
         - govet
-        - ifshort
         - ineffassign
         - nakedret
         - prealloc
         - predeclared
         - staticcheck
-        - varcheck
         - wrapcheck
         - revive
 
@@ -157,3 +154,10 @@ linters-settings:
           - .WithStack(
           - jsonrpc2.NewError(
           - lsperrors.ErrRequestFailed
+
+issues:
+    exclude-rules:
+        # This is ok because we use statsviz for locally visualizing, this is not opened to
+        # the internet.
+        - path: cmd/main.go
+          text: Use of net/http serve function that has no support for setting timeouts

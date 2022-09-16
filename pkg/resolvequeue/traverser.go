@@ -7,8 +7,8 @@ import (
 	"github.com/laytan/elephp/pkg/symbol"
 )
 
-func NewResolver(target *Node) *resolver {
-	return &resolver{
+func NewResolver(target *Node) *Resolver {
+	return &Resolver{
 		Uses:       []*ir.Name{},
 		Extends:    []*ir.Name{},
 		Implements: []*ir.Name{},
@@ -16,9 +16,9 @@ func NewResolver(target *Node) *resolver {
 	}
 }
 
-// resolver implements ir.Visitor.
-// resolver retrieves the Trait Uses, Extended and implemented names of the target class.
-type resolver struct {
+// Resolver implements ir.Visitor.
+// Resolver retrieves the Trait Uses, Extended and implemented names of the target class.
+type Resolver struct {
 	Uses       []*ir.Name
 	Extends    []*ir.Name
 	Implements []*ir.Name
@@ -27,7 +27,7 @@ type resolver struct {
 	currNamespace string
 }
 
-func (r *resolver) EnterNode(node ir.Node) bool {
+func (r *Resolver) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
 	case *ir.Root:
 		return true
@@ -76,10 +76,10 @@ func (r *resolver) EnterNode(node ir.Node) bool {
 	}
 }
 
-func (r *resolver) LeaveNode(_ ir.Node) {
+func (r *Resolver) LeaveNode(_ ir.Node) {
 }
 
-func (r *resolver) toNames(nodes []ir.Node) []*ir.Name {
+func (r *Resolver) toNames(nodes []ir.Node) []*ir.Name {
 	names := make([]*ir.Name, len(nodes))
 
 	for i, trait := range nodes {

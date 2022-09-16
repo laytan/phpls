@@ -11,7 +11,7 @@ func RemoveWhitespace(text string) string {
 	b.Grow(len(text))
 	for _, ch := range text {
 		if !unicode.IsSpace(ch) {
-			b.WriteRune(ch)
+			_, _ = b.WriteRune(ch) // This always returns a nil error.
 		}
 	}
 

@@ -1,6 +1,8 @@
 package providers
 
 import (
+	"log"
+
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
@@ -24,5 +26,11 @@ func (p *PropertyProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 func (p *PropertyProvider) Define(ctx context.Context) (*definition.Definition, error) {
 	n := ctx.Current().(*ir.PropertyFetchExpr)
 
-	return definition.WalkToProperty(ctx, n)
+	def, err := definition.WalkToProperty(ctx, n)
+	if err != nil {
+		log.Println(err)
+		return nil, definition.ErrNoDefinitionFound
+	}
+
+	return def, nil
 }

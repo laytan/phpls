@@ -131,7 +131,12 @@ func up(
 				what.Happens("Checking %s for symbol %s\n", wc.FQN, prop)
 				root, err := Wrkspc().IROf(wc.Curr.Path)
 				if err != nil {
-					return true, err
+					return true, fmt.Errorf(
+						"unable to get IR of %s at %s: %w",
+						wc.FQN,
+						wc.Curr.Path,
+						err,
+					)
 				}
 
 				var result ir.Node
@@ -294,7 +299,17 @@ func walkResolveQueue(
 				return nil, ErrNoDefinitionFound
 			}
 
-			return Wrkspc().IROf(def.Path)
+			root, err := Wrkspc().IROf(def.Path)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"unable to get IR root of %s in %s: %w",
+					n.FQN,
+					def.Path,
+					err,
+				)
+			}
+
+			return root, nil
 		},
 		&resolvequeue.Node{FQN: fqn, Kind: start.NodeKind()},
 	)
