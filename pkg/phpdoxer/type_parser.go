@@ -143,7 +143,7 @@ func ParseType(value string) (Type, error) {
 	case "non-empty-string":
 		return &TypeString{Constraint: StringConstraintNonEmpty}, nil
 	case "literal-string":
-		return &TypeString{Constraint: stringConstraintLiteral}, nil
+		return &TypeString{Constraint: StringConstraintLiteral}, nil
 	case "object":
 		return &TypeObject{}, nil
 	case "scalar":

@@ -1,37 +1,41 @@
-package phprivacy
+package phprivacy_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/laytan/elephp/pkg/phprivacy"
+)
 
 func TestPrivacy_CanAccess(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name string
-		p    Privacy
-		pb   Privacy
+		p    phprivacy.Privacy
+		pb   phprivacy.Privacy
 		want bool
 	}{
 		{
 			name: "Public -> Private",
-			p:    PrivacyPublic,
-			pb:   PrivacyPrivate,
+			p:    phprivacy.PrivacyPublic,
+			pb:   phprivacy.PrivacyPrivate,
 			want: false,
 		},
 		{
 			name: "Private -> Public",
-			p:    PrivacyPrivate,
-			pb:   PrivacyPublic,
+			p:    phprivacy.PrivacyPrivate,
+			pb:   phprivacy.PrivacyPublic,
 			want: true,
 		},
 		{
 			name: "Protected -> Public",
-			p:    PrivacyProtected,
-			pb:   PrivacyPublic,
+			p:    phprivacy.PrivacyProtected,
+			pb:   phprivacy.PrivacyPublic,
 			want: true,
 		},
 		{
 			name: "Private -> Private",
-			p:    PrivacyPrivate,
-			pb:   PrivacyPrivate,
+			p:    phprivacy.PrivacyPrivate,
+			pb:   phprivacy.PrivacyPrivate,
 			want: true,
 		},
 	}
@@ -39,7 +43,7 @@ func TestPrivacy_CanAccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := tt.p.CanAccess(tt.pb); got != tt.want {
-				t.Errorf("Privacy.CanAccess() = %v, want %v", got, tt.want)
+				t.Errorf("phprivacy.Privacy.CanAccess() = %v, want %v", got, tt.want)
 			}
 		})
 	}

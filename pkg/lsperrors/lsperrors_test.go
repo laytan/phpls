@@ -1,4 +1,4 @@
-package lsperrors
+package lsperrors_test
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/matryer/is"
 )
 
@@ -14,11 +15,11 @@ func TestErrorCodes(t *testing.T) {
 	is := is.New(t)
 
 	expectations := map[int]error{
-		-32002: ErrServerNotInitialized,
-		-32803: ErrRequestFailed(""),
-		-32802: ErrServerCancelled,
-		-32801: ErrContentModified,
-		-32800: ErrRequestCancelled,
+		-32002: lsperrors.ErrServerNotInitialized,
+		-32803: lsperrors.ErrRequestFailed(""),
+		-32802: lsperrors.ErrServerCancelled,
+		-32801: lsperrors.ErrContentModified,
+		-32800: lsperrors.ErrRequestCancelled,
 	}
 
 	for code, err := range expectations {

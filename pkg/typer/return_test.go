@@ -1,4 +1,4 @@
-package typer
+package typer_test
 
 import (
 	"reflect"
@@ -11,6 +11,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/elephp/pkg/typer"
 )
 
 func Test_typer_Returns(t *testing.T) {
@@ -157,7 +158,7 @@ func Test_typer_Returns(t *testing.T) {
 		},
 	}
 
-	tr := &typer{}
+	tr := typer.New()
 	parseConfig := conf.Config{
 		Version: &version.Version{
 			Major: 8,

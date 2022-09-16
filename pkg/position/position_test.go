@@ -1,4 +1,4 @@
-package position
+package position_test
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/laytan/elephp/pkg/pathutils"
+	"github.com/laytan/elephp/pkg/position"
 	"github.com/matryer/is"
 )
 
@@ -51,7 +52,7 @@ func TestPosition(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
 
-			row, col := PosToLoc(string(content), pos)
+			row, col := position.PosToLoc(string(content), pos)
 			is.Equal(row, loc[0])
 			is.Equal(col, loc[1])
 		})
@@ -62,7 +63,7 @@ func TestPosition(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
 
-			pos := LocToPos(string(content), loc[0], loc[1])
+			pos := position.LocToPos(string(content), loc[0], loc[1])
 			is.Equal(pos, want)
 		})
 	}

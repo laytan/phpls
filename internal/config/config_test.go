@@ -1,18 +1,16 @@
-package config
+package config_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/connection"
 	"github.com/matryer/is"
 )
 
-func newTestConfig(args []string) *lsConfig {
-	return &lsConfig{
-		Args: args,
-	}
+func newTestConfig(args []string) config.Config {
+	return config.NewWithArgs(args)
 }
 
 type connTypeTestInput struct {
@@ -40,15 +38,15 @@ func TestConfigConnType(t *testing.T) {
 		},
 		{
 			args: []string{"--ws", "--tcp"},
-			err:  ErrIncorrectConnTypeAmt,
+			err:  config.ErrIncorrectConnTypeAmt,
 		},
 		{
 			args: []string{"--ws", "--tcp", "--stdio"},
-			err:  ErrIncorrectConnTypeAmt,
+			err:  config.ErrIncorrectConnTypeAmt,
 		},
 		{
 			args: []string{},
-			err:  ErrIncorrectConnTypeAmt,
+			err:  config.ErrIncorrectConnTypeAmt,
 		},
 	}
 
@@ -156,16 +154,6 @@ func TestConnUrl(t *testing.T) {
 	is.Equal(shownHelp, false)
 	is.NoErr(err)
 	is.Equal(config.ConnURL(), "127.0.0.1:2003")
-}
-
-func TestConstructor(t *testing.T) {
-	t.Parallel()
-	is := is.New(t)
-
-	config := New()
-	inner, ok := config.(*lsConfig)
-	is.Equal(ok, true)
-	is.Equal(inner.Args, os.Args)
 }
 
 func TestHelp(t *testing.T) {

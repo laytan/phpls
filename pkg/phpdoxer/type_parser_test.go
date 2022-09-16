@@ -1,9 +1,11 @@
-package phpdoxer
+package phpdoxer_test
 
 import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
 func TestParse(t *testing.T) {
@@ -11,7 +13,7 @@ func TestParse(t *testing.T) {
 	tests := []struct {
 		name             string
 		args             string
-		want             Type
+		want             phpdoxer.Type
 		wantErr          bool
 		wantSpecificErr  error
 		wantEqualStrings bool
@@ -19,68 +21,71 @@ func TestParse(t *testing.T) {
 		{
 			name:            "empty",
 			wantErr:         true,
-			wantSpecificErr: ErrEmpty,
+			wantSpecificErr: phpdoxer.ErrEmpty,
 		},
 		{
 			name:            "what is this",
 			args:            "array<",
 			wantErr:         true,
-			wantSpecificErr: ErrUnknown,
+			wantSpecificErr: phpdoxer.ErrUnknown,
 		},
 		{
 			name:             "mixed",
 			args:             "mixed",
-			want:             &TypeMixed{},
+			want:             &phpdoxer.TypeMixed{},
 			wantEqualStrings: true,
 		},
 		{
-			name:             "union",
-			args:             "array|string",
-			want:             &TypeUnion{Left: &TypeArray{}, Right: &TypeString{}},
+			name: "union",
+			args: "array|string",
+			want: &phpdoxer.TypeUnion{
+				Left:  &phpdoxer.TypeArray{},
+				Right: &phpdoxer.TypeString{},
+			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "this",
 			args: "$this",
-			want: &TypeClassLike{Name: "$this"},
+			want: &phpdoxer.TypeClassLike{Name: "$this"},
 		},
 		{
 			name: "static",
 			args: "static",
-			want: &TypeClassLike{Name: "static"},
+			want: &phpdoxer.TypeClassLike{Name: "static"},
 		},
 		{
 			name: "intersection",
 			args: "non-empty-array&positive-int",
-			want: &TypeIntersection{
-				Left:  &TypeArray{NonEmpty: true},
-				Right: &TypeInt{HasPositiveConstraint: true},
+			want: &phpdoxer.TypeIntersection{
+				Left:  &phpdoxer.TypeArray{NonEmpty: true},
+				Right: &phpdoxer.TypeInt{HasPositiveConstraint: true},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "precedenced union & intersection",
 			args: "(negative-int|string)&array",
-			want: &TypeIntersection{
-				Left: &TypePrecedence{
-					Type: &TypeUnion{
-						Left:  &TypeInt{HasNegativeConstraint: true},
-						Right: &TypeString{},
+			want: &phpdoxer.TypeIntersection{
+				Left: &phpdoxer.TypePrecedence{
+					Type: &phpdoxer.TypeUnion{
+						Left:  &phpdoxer.TypeInt{HasNegativeConstraint: true},
+						Right: &phpdoxer.TypeString{},
 					},
 				},
-				Right: &TypeArray{},
+				Right: &phpdoxer.TypeArray{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "precedenced union at end & intersection",
 			args: "array&(negative-int|string)",
-			want: &TypeIntersection{
-				Left: &TypeArray{},
-				Right: &TypePrecedence{
-					Type: &TypeUnion{
-						Left:  &TypeInt{HasNegativeConstraint: true},
-						Right: &TypeString{},
+			want: &phpdoxer.TypeIntersection{
+				Left: &phpdoxer.TypeArray{},
+				Right: &phpdoxer.TypePrecedence{
+					Type: &phpdoxer.TypeUnion{
+						Left:  &phpdoxer.TypeInt{HasNegativeConstraint: true},
+						Right: &phpdoxer.TypeString{},
 					},
 				},
 			},
@@ -89,16 +94,16 @@ func TestParse(t *testing.T) {
 		{
 			name: "precedenced union in middle & intersection",
 			args: "array&(negative-int|string)|int",
-			want: &TypeIntersection{
-				Left: &TypeArray{},
-				Right: &TypeUnion{
-					Left: &TypePrecedence{
-						Type: &TypeUnion{
-							Left:  &TypeInt{HasNegativeConstraint: true},
-							Right: &TypeString{},
+			want: &phpdoxer.TypeIntersection{
+				Left: &phpdoxer.TypeArray{},
+				Right: &phpdoxer.TypeUnion{
+					Left: &phpdoxer.TypePrecedence{
+						Type: &phpdoxer.TypeUnion{
+							Left:  &phpdoxer.TypeInt{HasNegativeConstraint: true},
+							Right: &phpdoxer.TypeString{},
 						},
 					},
-					Right: &TypeInt{},
+					Right: &phpdoxer.TypeInt{},
 				},
 			},
 			wantEqualStrings: true,
@@ -107,20 +112,20 @@ func TestParse(t *testing.T) {
 			name: "double precedence",
 			args: "array&(negative-int|string)|(int|false)",
 			// NOTE: this is in a weird order but is technically correct.
-			want: &TypeUnion{
-				Left: &TypeIntersection{
-					Left: &TypeArray{},
-					Right: &TypePrecedence{
-						Type: &TypeUnion{
-							Left:  &TypeInt{HasNegativeConstraint: true},
-							Right: &TypeString{},
+			want: &phpdoxer.TypeUnion{
+				Left: &phpdoxer.TypeIntersection{
+					Left: &phpdoxer.TypeArray{},
+					Right: &phpdoxer.TypePrecedence{
+						Type: &phpdoxer.TypeUnion{
+							Left:  &phpdoxer.TypeInt{HasNegativeConstraint: true},
+							Right: &phpdoxer.TypeString{},
 						},
 					},
 				},
-				Right: &TypePrecedence{
-					Type: &TypeUnion{
-						Left:  &TypeInt{},
-						Right: &TypeBool{Accepts: BoolAcceptsFalse},
+				Right: &phpdoxer.TypePrecedence{
+					Type: &phpdoxer.TypeUnion{
+						Left:  &phpdoxer.TypeInt{},
+						Right: &phpdoxer.TypeBool{Accepts: phpdoxer.BoolAcceptsFalse},
 					},
 				},
 			},
@@ -129,19 +134,19 @@ func TestParse(t *testing.T) {
 		{
 			name:             "complex int",
 			args:             "int<3, 5>",
-			want:             &TypeInt{Min: "3", Max: "5"},
+			want:             &phpdoxer.TypeInt{Min: "3", Max: "5"},
 			wantEqualStrings: true,
 		},
 		{
 			name:             "complex int min",
 			args:             "int<min, 5>",
-			want:             &TypeInt{Min: "min", Max: "5"},
+			want:             &phpdoxer.TypeInt{Min: "min", Max: "5"},
 			wantEqualStrings: true,
 		},
 		{
 			name:             "complex int max",
 			args:             "int<3, max>",
-			want:             &TypeInt{Min: "3", Max: "max"},
+			want:             &phpdoxer.TypeInt{Min: "3", Max: "max"},
 			wantEqualStrings: true,
 		},
 		{
@@ -157,7 +162,7 @@ func TestParse(t *testing.T) {
 		{
 			name:             "int, using negative",
 			args:             "int<min, -1>",
-			want:             &TypeInt{Min: "min", Max: "-1"},
+			want:             &phpdoxer.TypeInt{Min: "min", Max: "-1"},
 			wantEqualStrings: true,
 		},
 		{
@@ -168,28 +173,31 @@ func TestParse(t *testing.T) {
 		{
 			name:             "complex array",
 			args:             "array<string>",
-			want:             &TypeArray{ItemType: &TypeString{}},
+			want:             &phpdoxer.TypeArray{ItemType: &phpdoxer.TypeString{}},
 			wantEqualStrings: true,
 		},
 		{
 			name:             "complex array nonempty",
 			args:             "non-empty-array<string>",
-			want:             &TypeArray{NonEmpty: true, ItemType: &TypeString{}},
+			want:             &phpdoxer.TypeArray{NonEmpty: true, ItemType: &phpdoxer.TypeString{}},
 			wantEqualStrings: true,
 		},
 		{
-			name:             "complex array key value",
-			args:             "array<string, int>",
-			want:             &TypeArray{ItemType: &TypeInt{}, KeyType: &TypeString{}},
+			name: "complex array key value",
+			args: "array<string, int>",
+			want: &phpdoxer.TypeArray{
+				ItemType: &phpdoxer.TypeInt{},
+				KeyType:  &phpdoxer.TypeString{},
+			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "complex array key value nonempty",
 			args: "non-empty-array<string, int>",
-			want: &TypeArray{
+			want: &phpdoxer.TypeArray{
 				NonEmpty: true,
-				ItemType: &TypeInt{},
-				KeyType:  &TypeString{},
+				ItemType: &phpdoxer.TypeInt{},
+				KeyType:  &phpdoxer.TypeString{},
 			},
 			wantEqualStrings: true,
 		},
@@ -201,32 +209,40 @@ func TestParse(t *testing.T) {
 		{
 			name: "complex type array",
 			args: "string[]",
-			want: &TypeArray{ItemType: &TypeString{}},
+			want: &phpdoxer.TypeArray{ItemType: &phpdoxer.TypeString{}},
 		},
 		{
 			name: "complex type array class",
 			args: `\Test\Class[]`,
-			want: &TypeArray{ItemType: &TypeClassLike{Name: `\Test\Class`, FullyQualified: true}},
+			want: &phpdoxer.TypeArray{
+				ItemType: &phpdoxer.TypeClassLike{Name: `\Test\Class`, FullyQualified: true},
+			},
 		},
 		{
 			name: "complex type array class non-qualified",
 			args: `Class[]`,
-			want: &TypeArray{ItemType: &TypeClassLike{Name: `Class`}},
+			want: &phpdoxer.TypeArray{ItemType: &phpdoxer.TypeClassLike{Name: `Class`}},
 		},
 		{
 			name: "string constraints",
 			args: `string|class-string|callable-string|numeric-string|non-empty-string|literal-string`,
-			want: &TypeUnion{
-				Left: &TypeString{Constraint: StringConstraintNone},
-				Right: &TypeUnion{
-					Left: &TypeString{Constraint: StringConstraintClass},
-					Right: &TypeUnion{
-						Left: &TypeString{Constraint: StringConstraintCallable},
-						Right: &TypeUnion{
-							Left: &TypeString{Constraint: StringConstraintNumeric},
-							Right: &TypeUnion{
-								Left:  &TypeString{Constraint: StringConstraintNonEmpty},
-								Right: &TypeString{Constraint: stringConstraintLiteral},
+			want: &phpdoxer.TypeUnion{
+				Left: &phpdoxer.TypeString{Constraint: phpdoxer.StringConstraintNone},
+				Right: &phpdoxer.TypeUnion{
+					Left: &phpdoxer.TypeString{Constraint: phpdoxer.StringConstraintClass},
+					Right: &phpdoxer.TypeUnion{
+						Left: &phpdoxer.TypeString{Constraint: phpdoxer.StringConstraintCallable},
+						Right: &phpdoxer.TypeUnion{
+							Left: &phpdoxer.TypeString{
+								Constraint: phpdoxer.StringConstraintNumeric,
+							},
+							Right: &phpdoxer.TypeUnion{
+								Left: &phpdoxer.TypeString{
+									Constraint: phpdoxer.StringConstraintNonEmpty,
+								},
+								Right: &phpdoxer.TypeString{
+									Constraint: phpdoxer.StringConstraintLiteral,
+								},
 							},
 						},
 					},
@@ -237,18 +253,18 @@ func TestParse(t *testing.T) {
 		{
 			name: "generic class string",
 			args: "class-string<Foo>",
-			want: &TypeString{
-				Constraint:  StringConstraintClass,
-				GenericOver: &TypeClassLike{Name: "Foo"},
+			want: &phpdoxer.TypeString{
+				Constraint:  phpdoxer.StringConstraintClass,
+				GenericOver: &phpdoxer.TypeClassLike{Name: "Foo"},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "generic class string",
 			args: `class-string<\Test\Foo>`,
-			want: &TypeString{
-				Constraint:  StringConstraintClass,
-				GenericOver: &TypeClassLike{Name: `\Test\Foo`, FullyQualified: true},
+			want: &phpdoxer.TypeString{
+				Constraint:  phpdoxer.StringConstraintClass,
+				GenericOver: &phpdoxer.TypeClassLike{Name: `\Test\Foo`, FullyQualified: true},
 			},
 			wantEqualStrings: true,
 		},
@@ -260,8 +276,8 @@ func TestParse(t *testing.T) {
 		{
 			name: "key-of",
 			args: "key-of<Foo::BAR>",
-			want: &TypeKeyOf{
-				Class: &TypeClassLike{Name: "Foo"},
+			want: &phpdoxer.TypeKeyOf{
+				Class: &phpdoxer.TypeClassLike{Name: "Foo"},
 				Const: "BAR",
 			},
 			wantEqualStrings: true,
@@ -269,8 +285,8 @@ func TestParse(t *testing.T) {
 		{
 			name: "key-of namespaced",
 			args: `key-of<\Foo\FooBar::BAR>`,
-			want: &TypeKeyOf{
-				Class: &TypeClassLike{Name: `\Foo\FooBar`},
+			want: &phpdoxer.TypeKeyOf{
+				Class: &phpdoxer.TypeClassLike{Name: `\Foo\FooBar`},
 				Const: "BAR",
 			},
 			wantEqualStrings: true,
@@ -278,8 +294,8 @@ func TestParse(t *testing.T) {
 		{
 			name: "value-of",
 			args: "value-of<Foo::BAR>",
-			want: &TypeValueOf{
-				Class: &TypeClassLike{Name: "Foo"},
+			want: &phpdoxer.TypeValueOf{
+				Class: &phpdoxer.TypeClassLike{Name: "Foo"},
 				Const: "BAR",
 			},
 			wantEqualStrings: true,
@@ -287,8 +303,8 @@ func TestParse(t *testing.T) {
 		{
 			name: "value-of namespaced",
 			args: `value-of<\Foo\FooBar::BAR>`,
-			want: &TypeValueOf{
-				Class: &TypeClassLike{Name: `\Foo\FooBar`},
+			want: &phpdoxer.TypeValueOf{
+				Class: &phpdoxer.TypeClassLike{Name: `\Foo\FooBar`},
 				Const: "BAR",
 			},
 			wantEqualStrings: true,
@@ -296,8 +312,8 @@ func TestParse(t *testing.T) {
 		{
 			name: "value-of enum",
 			args: `value-of<Foo>`,
-			want: &TypeValueOf{
-				Class:  &TypeClassLike{Name: `Foo`},
+			want: &phpdoxer.TypeValueOf{
+				Class:  &phpdoxer.TypeClassLike{Name: `Foo`},
 				IsEnum: true,
 			},
 			wantEqualStrings: true,
@@ -305,105 +321,108 @@ func TestParse(t *testing.T) {
 		{
 			name:             "iterable",
 			args:             "iterable",
-			want:             &TypeIterable{},
+			want:             &phpdoxer.TypeIterable{},
 			wantEqualStrings: true,
 		},
 		{
 			name:             "iterable with type",
 			args:             "iterable<int>",
-			want:             &TypeIterable{ItemType: &TypeInt{}},
+			want:             &phpdoxer.TypeIterable{ItemType: &phpdoxer.TypeInt{}},
 			wantEqualStrings: true,
 		},
 		{
-			name:             "iterable with key and value type",
-			args:             "iterable<string, int>",
-			want:             &TypeIterable{KeyType: &TypeString{}, ItemType: &TypeInt{}},
+			name: "iterable with key and value type",
+			args: "iterable<string, int>",
+			want: &phpdoxer.TypeIterable{
+				KeyType:  &phpdoxer.TypeString{},
+				ItemType: &phpdoxer.TypeInt{},
+			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "custom class",
 			args: "Test<int, int>",
-			want: &TypeClassLike{
+			want: &phpdoxer.TypeClassLike{
 				Name:        "Test",
-				GenericOver: []Type{&TypeInt{}, &TypeInt{}},
+				GenericOver: []phpdoxer.Type{&phpdoxer.TypeInt{}, &phpdoxer.TypeInt{}},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "custom class+namespace",
 			args: `\Test\Test<int>`,
-			want: &TypeClassLike{
+			want: &phpdoxer.TypeClassLike{
 				Name:           `\Test\Test`,
 				FullyQualified: true,
-				GenericOver:    []Type{&TypeInt{}},
+				GenericOver:    []phpdoxer.Type{&phpdoxer.TypeInt{}},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "array shape 1",
 			args: `array{'foo': int, "bar": string}`,
-			want: &TypeArrayShape{
-				Values: []*TypeArrayShapeValue{
-					{Key: "foo", Type: &TypeInt{}},
-					{Key: "bar", Type: &TypeString{}},
+			want: &phpdoxer.TypeArrayShape{
+				Values: []*phpdoxer.TypeArrayShapeValue{
+					{Key: "foo", Type: &phpdoxer.TypeInt{}},
+					{Key: "bar", Type: &phpdoxer.TypeString{}},
 				},
 			},
 		},
 		{
 			name: "array shape 2",
 			args: `array{0: int, 1?: int}`,
-			want: &TypeArrayShape{
-				Values: []*TypeArrayShapeValue{
-					{Key: "0", Type: &TypeInt{}},
-					{Key: "1", Type: &TypeInt{}, Optional: true},
+			want: &phpdoxer.TypeArrayShape{
+				Values: []*phpdoxer.TypeArrayShapeValue{
+					{Key: "0", Type: &phpdoxer.TypeInt{}},
+					{Key: "1", Type: &phpdoxer.TypeInt{}, Optional: true},
 				},
 			},
 		},
 		{
 			name: "array shape 3",
 			args: `array{int, int}`,
-			want: &TypeArrayShape{
-				Values: []*TypeArrayShapeValue{
-					{Key: "0", Type: &TypeInt{}},
-					{Key: "1", Type: &TypeInt{}},
+			want: &phpdoxer.TypeArrayShape{
+				Values: []*phpdoxer.TypeArrayShapeValue{
+					{Key: "0", Type: &phpdoxer.TypeInt{}},
+					{Key: "1", Type: &phpdoxer.TypeInt{}},
 				},
 			},
 		},
 		{
 			name: "array shape 4",
 			args: `array{foo:int, bar: string}`,
-			want: &TypeArrayShape{
-				Values: []*TypeArrayShapeValue{
-					{Key: "foo", Type: &TypeInt{}},
-					{Key: "bar", Type: &TypeString{}},
+			want: &phpdoxer.TypeArrayShape{
+				Values: []*phpdoxer.TypeArrayShapeValue{
+					{Key: "foo", Type: &phpdoxer.TypeInt{}},
+					{Key: "bar", Type: &phpdoxer.TypeString{}},
 				},
 			},
 		},
 		{
 			name:             "string literal single quote",
 			args:             "'foo'",
-			want:             &TypeStringLiteral{Value: "foo"},
+			want:             &phpdoxer.TypeStringLiteral{Value: "foo"},
 			wantEqualStrings: true,
 		},
 		{
 			name: "string literal double quote",
 			args: `"foo"`,
-			want: &TypeStringLiteral{Value: "foo"},
+			want: &phpdoxer.TypeStringLiteral{Value: "foo"},
 		},
 		{
 			name: "string literal union",
 			args: "'foo'|'bar'",
-			want: &TypeUnion{
-				Left:  &TypeStringLiteral{Value: "foo"},
-				Right: &TypeStringLiteral{Value: "bar"},
+			want: &phpdoxer.TypeUnion{
+				Left:  &phpdoxer.TypeStringLiteral{Value: "foo"},
+				Right: &phpdoxer.TypeStringLiteral{Value: "bar"},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "class constant",
 			args: "Foo::SOME_CONSTANT",
-			want: &TypeConstant{
-				Class: &TypeClassLike{Name: "Foo"},
+			want: &phpdoxer.TypeConstant{
+				Class: &phpdoxer.TypeClassLike{Name: "Foo"},
 				Const: "SOME_CONSTANT",
 			},
 			wantEqualStrings: true,
@@ -411,8 +430,8 @@ func TestParse(t *testing.T) {
 		{
 			name: "class constant wildcard",
 			args: "Foo::SOME_*",
-			want: &TypeConstant{
-				Class: &TypeClassLike{Name: "Foo"},
+			want: &phpdoxer.TypeConstant{
+				Class: &phpdoxer.TypeClassLike{Name: "Foo"},
 				Const: "SOME_*",
 			},
 			wantEqualStrings: true,
@@ -420,8 +439,8 @@ func TestParse(t *testing.T) {
 		{
 			name: "class constant namespaced",
 			args: `Foo\Bar::SOME_CONSTANT`,
-			want: &TypeConstant{
-				Class: &TypeClassLike{Name: `Foo\Bar`},
+			want: &phpdoxer.TypeConstant{
+				Class: &phpdoxer.TypeClassLike{Name: `Foo\Bar`},
 				Const: "SOME_CONSTANT",
 			},
 			wantEqualStrings: true,
@@ -429,7 +448,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "global constant",
 			args: "SOME_CONSTANT",
-			want: &TypeConstant{
+			want: &phpdoxer.TypeConstant{
 				Const: "SOME_CONSTANT",
 			},
 			wantEqualStrings: true,
@@ -437,54 +456,54 @@ func TestParse(t *testing.T) {
 		{
 			name:             "global constant wrong (require uppercase)",
 			args:             "SOME_CONSTANt",
-			want:             &TypeClassLike{Name: "SOME_CONSTANt"},
+			want:             &phpdoxer.TypeClassLike{Name: "SOME_CONSTANt"},
 			wantEqualStrings: true,
 		},
 		{
 			name:             "callable",
 			args:             "callable",
-			want:             &TypeCallable{},
+			want:             &phpdoxer.TypeCallable{},
 			wantEqualStrings: true,
 		},
 		{
 			name: "callable returns",
 			args: "callable(): string",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{},
-				Return:     &TypeString{},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{},
+				Return:     &phpdoxer.TypeString{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "callable parameter",
 			args: "callable(int): int",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{{Type: &TypeInt{}}},
-				Return:     &TypeInt{},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{{Type: &phpdoxer.TypeInt{}}},
+				Return:     &phpdoxer.TypeInt{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "callable double parameter",
 			args: "callable(int, string): int",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{
-					{Type: &TypeInt{}},
-					{Type: &TypeString{}},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{
+					{Type: &phpdoxer.TypeInt{}},
+					{Type: &phpdoxer.TypeString{}},
 				},
-				Return: &TypeInt{},
+				Return: &phpdoxer.TypeInt{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "callable double parameter with optional",
 			args: "callable(int, int=): int",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{
-					{Type: &TypeInt{}},
-					{Type: &TypeInt{}, Optional: true},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{
+					{Type: &phpdoxer.TypeInt{}},
+					{Type: &phpdoxer.TypeInt{}, Optional: true},
 				},
-				Return: &TypeInt{},
+				Return: &phpdoxer.TypeInt{},
 			},
 			wantEqualStrings: true,
 		},
@@ -496,74 +515,84 @@ func TestParse(t *testing.T) {
 		{
 			name: "callable with parameter names",
 			args: "callable(int $foo, int $bar): void",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{
-					{Type: &TypeInt{}, Name: "$foo"},
-					{Type: &TypeInt{}, Name: "$bar"},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{
+					{Type: &phpdoxer.TypeInt{}, Name: "$foo"},
+					{Type: &phpdoxer.TypeInt{}, Name: "$bar"},
 				},
-				Return: &TypeVoid{},
+				Return: &phpdoxer.TypeVoid{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "callable with parameter names, no spaces",
 			args: "callable(int$foo,int$bar):void",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{
-					{Type: &TypeInt{}, Name: "$foo"},
-					{Type: &TypeInt{}, Name: "$bar"},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{
+					{Type: &phpdoxer.TypeInt{}, Name: "$foo"},
+					{Type: &phpdoxer.TypeInt{}, Name: "$bar"},
 				},
-				Return: &TypeVoid{},
+				Return: &phpdoxer.TypeVoid{},
 			},
 		},
 		{
 			name: "callable with parameter passed by reference",
 			args: "callable(string &$foo): mixed",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{
-					{Type: &TypeString{}, ByRef: true, Name: "$foo"},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{
+					{Type: &phpdoxer.TypeString{}, ByRef: true, Name: "$foo"},
 				},
-				Return: &TypeMixed{},
+				Return: &phpdoxer.TypeMixed{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "callable with variadic args, returning union",
 			args: "callable(float ...$floats): (int|null)",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{
-					{Type: &TypeFloat{}, Name: "$floats", Variadic: true},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{
+					{Type: &phpdoxer.TypeFloat{}, Name: "$floats", Variadic: true},
 				},
-				Return: &TypePrecedence{Type: &TypeUnion{Left: &TypeInt{}, Right: &TypeNull{}}},
+				Return: &phpdoxer.TypePrecedence{
+					Type: &phpdoxer.TypeUnion{
+						Left:  &phpdoxer.TypeInt{},
+						Right: &phpdoxer.TypeNull{},
+					},
+				},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "callable with variadic args, returning union",
 			args: "callable(float...): (int|null)",
-			want: &TypeCallable{
-				Parameters: []*CallableParameter{
-					{Type: &TypeFloat{}, Variadic: true},
+			want: &phpdoxer.TypeCallable{
+				Parameters: []*phpdoxer.CallableParameter{
+					{Type: &phpdoxer.TypeFloat{}, Variadic: true},
 				},
-				Return: &TypePrecedence{Type: &TypeUnion{Left: &TypeInt{}, Right: &TypeNull{}}},
+				Return: &phpdoxer.TypePrecedence{
+					Type: &phpdoxer.TypeUnion{
+						Left:  &phpdoxer.TypeInt{},
+						Right: &phpdoxer.TypeNull{},
+					},
+				},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name:             "int-mask",
 			args:             "int-mask<1, 2, 4>",
-			want:             &TypeIntMask{Values: []int{1, 2, 4}},
+			want:             &phpdoxer.TypeIntMask{Values: []int{1, 2, 4}},
 			wantEqualStrings: true,
 		},
 		{
 			name: "int-mask-of union",
 			args: "int-mask-of<1|2|4>",
-			want: &TypeIntMaskOf{
-				Type: &TypeUnion{
-					Left: &TypeIntLiteral{Value: 1},
-					Right: &TypeUnion{
-						Left:  &TypeIntLiteral{Value: 2},
-						Right: &TypeIntLiteral{Value: 4},
+			want: &phpdoxer.TypeIntMaskOf{
+				Type: &phpdoxer.TypeUnion{
+					Left: &phpdoxer.TypeIntLiteral{Value: 1},
+					Right: &phpdoxer.TypeUnion{
+						Left:  &phpdoxer.TypeIntLiteral{Value: 2},
+						Right: &phpdoxer.TypeIntLiteral{Value: 4},
 					},
 				},
 			},
@@ -572,9 +601,9 @@ func TestParse(t *testing.T) {
 		{
 			name: "int-mask-of class constants",
 			args: "int-mask-of<Foo::INT_*>",
-			want: &TypeIntMaskOf{
-				Type: &TypeConstant{
-					Class: &TypeClassLike{Name: "Foo"},
+			want: &phpdoxer.TypeIntMaskOf{
+				Type: &phpdoxer.TypeConstant{
+					Class: &phpdoxer.TypeClassLike{Name: "Foo"},
 					Const: "INT_*",
 				},
 			},
@@ -583,59 +612,59 @@ func TestParse(t *testing.T) {
 		{
 			name: "conditional return with parameter",
 			args: "($foo is int ? int : string)",
-			want: &TypeConditionalReturn{
-				Condition: &ConditionalReturnCondition{
+			want: &phpdoxer.TypeConditionalReturn{
+				Condition: &phpdoxer.ConditionalReturnCondition{
 					Left:  "$foo",
-					Right: &TypeInt{},
+					Right: &phpdoxer.TypeInt{},
 				},
-				IfTrue:  &TypeInt{},
-				IfFalse: &TypeString{},
+				IfTrue:  &phpdoxer.TypeInt{},
+				IfFalse: &phpdoxer.TypeString{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "conditional return with generic type",
 			args: "(T is array ? array<T> : null)",
-			want: &TypeConditionalReturn{
-				Condition: &ConditionalReturnCondition{
+			want: &phpdoxer.TypeConditionalReturn{
+				Condition: &phpdoxer.ConditionalReturnCondition{
 					Left:  "T",
-					Right: &TypeArray{},
+					Right: &phpdoxer.TypeArray{},
 				},
-				IfTrue:  &TypeArray{ItemType: &TypeConstant{Const: "T"}},
-				IfFalse: &TypeNull{},
+				IfTrue:  &phpdoxer.TypeArray{ItemType: &phpdoxer.TypeConstant{Const: "T"}},
+				IfFalse: &phpdoxer.TypeNull{},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "generic template",
 			args: `T of \Exception`,
-			want: &TypeGenericTemplate{
+			want: &phpdoxer.TypeGenericTemplate{
 				Name: "T",
-				Of:   &TypeClassLike{Name: `\Exception`, FullyQualified: true},
+				Of:   &phpdoxer.TypeClassLike{Name: `\Exception`, FullyQualified: true},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "generic class",
 			args: `\Generator<int, string>`,
-			want: &TypeClassLike{
+			want: &phpdoxer.TypeClassLike{
 				FullyQualified: true,
 				Name:           `\Generator`,
-				GenericOver:    []Type{&TypeInt{}, &TypeString{}},
+				GenericOver:    []phpdoxer.Type{&phpdoxer.TypeInt{}, &phpdoxer.TypeString{}},
 			},
 			wantEqualStrings: true,
 		},
 		{
 			name: "generic class multiple",
 			args: `\Generator<int, string, int, Bar>`,
-			want: &TypeClassLike{
+			want: &phpdoxer.TypeClassLike{
 				FullyQualified: true,
 				Name:           `\Generator`,
-				GenericOver: []Type{
-					&TypeInt{},
-					&TypeString{},
-					&TypeInt{},
-					&TypeClassLike{Name: "Bar"},
+				GenericOver: []phpdoxer.Type{
+					&phpdoxer.TypeInt{},
+					&phpdoxer.TypeString{},
+					&phpdoxer.TypeInt{},
+					&phpdoxer.TypeClassLike{Name: "Bar"},
 				},
 			},
 			wantEqualStrings: true,
@@ -645,7 +674,7 @@ func TestParse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ParseType(tt.args)
+			got, err := phpdoxer.ParseType(tt.args)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)

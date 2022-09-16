@@ -1,4 +1,4 @@
-package project
+package project_test
 
 import (
 	"errors"
@@ -15,6 +15,7 @@ import (
 	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
@@ -193,8 +194,8 @@ func TestParserPanicIsRecovered(t *testing.T) {
 func TestAnnotatedDefinitions(t *testing.T) {
 	is := is.New(t)
 
-	project := setup(annotatedRoot, phpversion.EightOne())
-	err := project.ParseWithoutProgress()
+	proj := setup(annotatedRoot, phpversion.EightOne())
+	err := proj.ParseWithoutProgress()
 	is.NoErr(err)
 
 	scenarios := aggregateAnnotations(t, annotatedRoot)
@@ -213,10 +214,10 @@ func TestAnnotatedDefinitions(t *testing.T) {
 						t.Fatalf("invalid test scenario, no out called for '%s'", name)
 					}
 
-					out, err := project.Definition(&scenario.in)
+					out, err := proj.Definition(&scenario.in)
 
 					if scenario.isNoDef {
-						is.True(errors.Is(err, ErrNoDefinitionFound))
+						is.True(errors.Is(err, project.ErrNoDefinitionFound))
 						return
 					}
 
@@ -228,13 +229,13 @@ func TestAnnotatedDefinitions(t *testing.T) {
 	}
 }
 
-func setup(root string, phpv *phpversion.PHPVersion) *Project {
+func setup(root string, phpv *phpversion.PHPVersion) *project.Project {
 	do.OverrideValue(nil, config.Default())
 	do.OverrideValue(nil, index.New(phpv))
 	do.OverrideValue(nil, wrkspc.New(phpv, root))
 	do.OverrideValue(nil, typer.New())
 
-	return New()
+	return project.New()
 }
 
 // out is nil when isNoDef is true.
