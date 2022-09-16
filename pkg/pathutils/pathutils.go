@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"appliedgo.net/what"
 )
 
 var root string
@@ -25,13 +23,9 @@ func Root() string {
 	// If we are testing the project, the wd is that of the current test file
 	// and the os.Executable is a temporary file.
 	// In this case we go back 2 directories.
-	// NOTE: If we have nested packages in the future this needs adjustment.
 	if isInTests() {
-		// NOTE: Intentionally not setting root here so it gets evaluated every
-		// call, as tests will have different wd's.
-		r := filepath.Join(wd, "..", "..")
-		what.Happens("Root is: %s", r)
-		return r
+		root = filepath.Join(wd, "..", "..")
+		return root
 	}
 
 	// When running through `go run cmd/main.go` the os.Executable call below
