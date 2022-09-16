@@ -37,8 +37,8 @@ type stdlibScenario struct {
 	out *position.Position
 }
 
+//nolint:paralleltest,tparallel // Causes data race (indexing while testing?)
 func TestStdlibDefinitions(t *testing.T) {
-	t.Parallel()
 	is := is.New(t)
 
 	stdlibPath := filepath.Join(stdlibRoot, "stdlib.php")
@@ -193,8 +193,8 @@ func TestParserPanicIsRecovered(t *testing.T) {
 	is.NoErr(err)
 }
 
+//nolint:paralleltest,tparallel // Causes data race (indexing while testing?)
 func TestAnnotatedDefinitions(t *testing.T) {
-	t.Parallel()
 	is := is.New(t)
 
 	proj := setup(annotatedRoot, phpversion.EightOne())
