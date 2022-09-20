@@ -18,6 +18,7 @@ var (
 		providers.NewThis(),     // $this
 		providers.NewFunction(), // explode()
 		providers.NewVariable(), // $a
+		providers.NewUse(),      // use Foo, use Foo\Bar\FooBar as Foo
 		providers.NewName(),     // new Class, Class::
 		providers.NewProperty(), // $this->foo, $foo->foo->bar
 		providers.NewMethod(),   // $this->test(), $foo->foo->test()
