@@ -37,6 +37,6 @@ jobs:
       run: go install github.com/kyoh86/richgo@v0.3.10
 
     - name: Test
-      run: richgo test -cover -race -shuffle=on -timeout=10s -v -tags what ./...
+      run: richgo test -cover -race -shuffle=on -timeout=60s -v -tags what ./...
       env:
         RICHGO_FORCE_COLOR: 1
