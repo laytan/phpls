@@ -13,4 +13,4 @@ function test_namespaced_function_1()
 namespace TestingNamespacedFunctions2;
 
 testing_namespaced_function_global_ok(); // @t_in(func_namespaced, 1)
-test_namespaced_function_1(); // TODO: fix&add: @t_skip_nodef(func_from_other_namespace_nodef, 1)
+test_namespaced_function_1(); // @t_nodef(func_from_other_namespace_nodef, 1)

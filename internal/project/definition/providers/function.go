@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/index"
@@ -35,38 +36,59 @@ func (p *FunctionProvider) Define(ctx context.Context) (*definition.Definition, 
 	n := ctx.Current().(*ir.FunctionCallExpr)
 	name := n.Function.(*ir.Name).Value
 
-	if def := p.checkLocal(ctx.Scope(), ctx.Start().Path, name); def != nil {
+	if def := p.checkLocal(ctx, name); def != nil {
 		return def, nil
 	}
 
-	if def := p.checkGlobal(ctx, name); def != nil {
+	if def := p.checkNamespaced(ctx, name); def != nil {
+		return def, nil
+	}
+
+	if def := p.checkGlobal(name); def != nil {
 		return def, nil
 	}
 
 	return nil, definition.ErrNoDefinitionFound
 }
 
-func (p *FunctionProvider) checkLocal(
-	scope ir.Node,
-	path string,
-	name string,
-) *definition.Definition {
+// Checks for local functions (defined inside other functions or constructs).
+func (p *FunctionProvider) checkLocal(ctx context.Context, name string) *definition.Definition {
+	if ir.GetNodeKind(ctx.Scope()) == ir.KindRoot {
+		return nil
+	}
+
 	t := traversers.NewFunction(name)
-	scope.Walk(t)
+	ctx.Scope().Walk(t)
 
 	if t.Function == nil {
 		return nil
 	}
 
 	return &definition.Definition{
-		Path: path,
+		Path: ctx.Start().Path,
 		Node: symbol.NewFunction(t.Function),
 	}
 }
 
-func (p *FunctionProvider) checkGlobal(ctx context.Context, name string) *definition.Definition {
-	n, err := Index().Find(`\`+name, ir.KindFunctionStmt)
+// Check for other functions, defined in namespaces.
+func (p *FunctionProvider) checkNamespaced(
+	ctx context.Context,
+	name string,
+) *definition.Definition {
+	def, ok := definition.FindFullyQualified(ctx.Root(), name, ir.KindFunctionStmt)
+	if !ok {
+		what.Happens("could not find namespaced function definition for %s", name)
+		return nil
+	}
+
+	return def
+}
+
+// Check for global functions.
+func (p *FunctionProvider) checkGlobal(name string) *definition.Definition {
+	def, err := Index().Find(`\`+name, ir.KindFunctionStmt)
 	if err != nil {
+		what.Happens(err.Error())
 		if !errors.Is(err, index.ErrNotFound) {
 			log.Println(err)
 		}
@@ -75,7 +97,7 @@ func (p *FunctionProvider) checkGlobal(ctx context.Context, name string) *defini
 	}
 
 	return &definition.Definition{
-		Node: n.Symbol,
-		Path: n.Path,
+		Path: def.Path,
+		Node: def.Symbol,
 	}
 }
