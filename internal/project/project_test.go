@@ -177,8 +177,8 @@ func TestStdlibDefinitions(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest,tparallel // Causes data race (indexing while testing?)
 func TestParserPanicIsRecovered(t *testing.T) {
-	t.Parallel()
 	is := is.New(t)
 
 	project := setup(
@@ -211,6 +211,10 @@ func TestAnnotatedDefinitions(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					t.Parallel()
 					is := is.New(t)
+
+					if scenario.shouldSkip {
+						t.SkipNow()
+					}
 
 					if scenario.in.Path == "" {
 						t.Fatalf("invalid test scenario, no in called for '%s'", name)
@@ -246,9 +250,10 @@ func setup(root string, phpv *phpversion.PHPVersion) *project.Project {
 
 // out is nil when isNoDef is true.
 type annotedScenario struct {
-	isNoDef bool
-	in      position.Position
-	out     *position.Position
+	isNoDef    bool
+	shouldSkip bool
+	in         position.Position
+	out        *position.Position
 }
 
 var annotationRgx = regexp.MustCompile(`@t_(\w+)\(([\w\s]+), (\d+)\)`)
@@ -309,6 +314,11 @@ func aggregateAnnotations(t *testing.T, root string) map[string]map[string]*anno
 				scenarioLen++
 			}
 
+			if strings.HasPrefix(function, "skip_") {
+				s.shouldSkip = true
+				function = strings.TrimPrefix(function, "skip_")
+			}
+
 			pos := position.Position{
 				Row:  row,
 				Col:  uint(colint),
@@ -341,10 +351,7 @@ func aggregateAnnotations(t *testing.T, root string) map[string]map[string]*anno
 				s.in = pos
 
 			default:
-				// Invalid option so we ignore it.
-				t.Logf("skipping %s, invalid function %s called", name, function)
-				delete(g, name)
-				scenarioLen--
+				t.Fatalf("unsupported @t_ function: %s_%s", group, name)
 			}
 		}
 
