@@ -80,6 +80,12 @@ func New(phpv *phpversion.PHPVersion) Index {
 }
 
 func (i *index) Index(path string, content string) error {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Could not index %s, parse/syntax error: %v", path, r)
+		}
+	}()
+
 	root, err := i.parser(path).Parse(content)
 	if err != nil {
 		return fmt.Errorf(errParseFmt, path, err)
@@ -87,20 +93,8 @@ func (i *index) Index(path string, content string) error {
 
 	traverser := i.symbolTraversers.Get()
 	t := traverser.(*traversers.Symbol)
-
 	t.SetPath(path)
-
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Println(
-					fmt.Errorf("Could not index %s, parse/syntax error: %w", path, err),
-				)
-			}
-		}()
-
-		root.Walk(t)
-	}()
+	root.Walk(t)
 
 	i.symbolTraversers.Put(traverser)
 
