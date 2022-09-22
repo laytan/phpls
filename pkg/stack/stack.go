@@ -1,6 +1,12 @@
 package stack
 
-import "sync"
+import (
+	"fmt"
+	"strings"
+	"sync"
+
+	"appliedgo.net/what"
+)
 
 type node[V any] struct {
 	value V
@@ -53,4 +59,16 @@ func (s *Stack[V]) Peek() V {
 	}
 
 	return s.tail.value
+}
+
+func (s *Stack[V]) String() string {
+	out := []string{}
+
+	t := s.tail
+	for curr := t; curr != nil; curr = curr.next {
+		what.Happens("%T", curr.value)
+		out = append(out, fmt.Sprintf("%v", curr.value))
+	}
+
+	return strings.Join(out, "-")
 }

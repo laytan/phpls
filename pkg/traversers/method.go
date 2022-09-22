@@ -14,12 +14,22 @@ func NewMethod(name string, classLikeName string, privacy phprivacy.Privacy) *Me
 	}
 }
 
+func NewMethodStatic(name, classLikeName string, privacy phprivacy.Privacy) *Method {
+	return &Method{
+		name:          name,
+		classLikeName: classLikeName,
+		privacy:       privacy,
+		static:        true,
+	}
+}
+
 // Method implements ir.Visitor.
 type Method struct {
 	Method        *ir.ClassMethodStmt
 	name          string
 	classLikeName string
 	privacy       phprivacy.Privacy
+	static        bool
 }
 
 func (m *Method) EnterNode(node ir.Node) bool {
@@ -39,6 +49,10 @@ func (m *Method) EnterNode(node ir.Node) bool {
 
 		hasPrivacy := false
 		for _, mod := range typedNode.Modifiers {
+			if mod.Value == "static" && !m.static {
+				continue
+			}
+
 			privacy, err := phprivacy.FromString(mod.Value)
 			if err != nil {
 				continue

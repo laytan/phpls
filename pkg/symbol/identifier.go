@@ -92,6 +92,20 @@ func GetIdentifier(n ir.Node) string {
 
 		return ""
 
+	case *ir.MethodCallExpr:
+		if i, ok := n.Method.(*ir.Identifier); ok {
+			return i.Value
+		}
+
+		return ""
+
+	case *ir.StaticCallExpr:
+		if c, ok := n.Call.(*ir.Identifier); ok {
+			return c.Value
+		}
+
+		return ""
+
 	default:
 		return ""
 	}

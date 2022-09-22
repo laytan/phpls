@@ -34,17 +34,27 @@ func (p *FunctionProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 func (p *FunctionProvider) Define(ctx context.Context) (*definition.Definition, error) {
 	// No error checking needed, this is all validated in the CanDefine above.
 	n := ctx.Current().(*ir.FunctionCallExpr)
-	name := n.Function.(*ir.Name).Value
+	return DefineFunction(ctx.Start().Path, ctx.Root(), ctx.Scope(), n)
+}
 
-	if def := p.checkLocal(ctx, name); def != nil {
+func DefineFunction(
+	path string,
+	root *ir.Root,
+	scope ir.Node,
+	call *ir.FunctionCallExpr,
+) (*definition.Definition, error) {
+	// No error checking needed, this is all validated in the CanDefine above.
+	name := call.Function.(*ir.Name).Value
+
+	if def := checkLocal(path, scope, name); def != nil {
 		return def, nil
 	}
 
-	if def := p.checkNamespaced(ctx, name); def != nil {
+	if def := checkNamespaced(root, name); def != nil {
 		return def, nil
 	}
 
-	if def := p.checkGlobal(name); def != nil {
+	if def := checkGlobal(name); def != nil {
 		return def, nil
 	}
 
@@ -52,30 +62,30 @@ func (p *FunctionProvider) Define(ctx context.Context) (*definition.Definition, 
 }
 
 // Checks for local functions (defined inside other functions or constructs).
-func (p *FunctionProvider) checkLocal(ctx context.Context, name string) *definition.Definition {
-	if ir.GetNodeKind(ctx.Scope()) == ir.KindRoot {
+func checkLocal(path string, scope ir.Node, name string) *definition.Definition {
+	if ir.GetNodeKind(scope) == ir.KindRoot {
 		return nil
 	}
 
 	t := traversers.NewFunction(name)
-	ctx.Scope().Walk(t)
+	scope.Walk(t)
 
 	if t.Function == nil {
 		return nil
 	}
 
 	return &definition.Definition{
-		Path: ctx.Start().Path,
+		Path: path,
 		Node: symbol.NewFunction(t.Function),
 	}
 }
 
 // Check for other functions, defined in namespaces.
-func (p *FunctionProvider) checkNamespaced(
-	ctx context.Context,
+func checkNamespaced(
+	root *ir.Root,
 	name string,
 ) *definition.Definition {
-	def, ok := definition.FindFullyQualified(ctx.Root(), name, ir.KindFunctionStmt)
+	def, ok := definition.FindFullyQualified(root, name, ir.KindFunctionStmt)
 	if !ok {
 		what.Happens("could not find namespaced function definition for %s", name)
 		return nil
@@ -85,7 +95,7 @@ func (p *FunctionProvider) checkNamespaced(
 }
 
 // Check for global functions.
-func (p *FunctionProvider) checkGlobal(name string) *definition.Definition {
+func checkGlobal(name string) *definition.Definition {
 	def, err := Index().Find(`\`+name, ir.KindFunctionStmt)
 	if err != nil {
 		what.Happens(err.Error())
