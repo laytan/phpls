@@ -2,21 +2,16 @@ package project_test
 
 import (
 	"errors"
-	"io/fs"
-	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
-	"strconv"
-	"strings"
 	"testing"
-	"time"
 
 	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/annotated"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
@@ -201,7 +196,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 	err := proj.ParseWithoutProgress()
 	is.NoErr(err)
 
-	scenarios := aggregateAnnotations(t, annotatedRoot)
+	scenarios := annotated.Aggregate(t, annotatedRoot)
 	for group, gscenarios := range scenarios {
 		group, gscenarios := group, gscenarios
 		t.Run(group, func(t *testing.T) {
@@ -212,27 +207,27 @@ func TestAnnotatedDefinitions(t *testing.T) {
 					t.Parallel()
 					is := is.New(t)
 
-					if scenario.shouldSkip {
+					if scenario.ShouldSkip {
 						t.SkipNow()
 					}
 
-					if scenario.in.Path == "" {
+					if scenario.In.Path == "" {
 						t.Fatalf("invalid test scenario, no in called for '%s'", name)
 					}
 
-					if !scenario.isNoDef && scenario.out == nil {
+					if !scenario.IsNoDef && scenario.Out == nil {
 						t.Fatalf("invalid test scenario, no out called for '%s'", name)
 					}
 
-					out, err := proj.Definition(&scenario.in)
+					out, err := proj.Definition(&scenario.In)
 
-					if scenario.isNoDef {
+					if scenario.IsNoDef {
 						is.True(errors.Is(err, project.ErrNoDefinitionFound))
 						return
 					}
 
 					is.NoErr(err)
-					is.True(reflect.DeepEqual(out, scenario.out))
+					is.True(reflect.DeepEqual(out, scenario.Out))
 				})
 			}
 		})
@@ -246,124 +241,4 @@ func setup(root string, phpv *phpversion.PHPVersion) *project.Project {
 	do.OverrideValue(nil, typer.New())
 
 	return project.New()
-}
-
-// out is nil when isNoDef is true.
-type annotedScenario struct {
-	isNoDef    bool
-	shouldSkip bool
-	in         position.Position
-	out        *position.Position
-}
-
-var annotationRgx = regexp.MustCompile(`@t_(\w+)\(([\w\s]+), (\d+)\)`)
-
-func aggregateAnnotations(t *testing.T, root string) map[string]map[string]*annotedScenario {
-	t.Helper()
-	is := is.New(t)
-
-	scenarios := make(map[string]map[string]*annotedScenario)
-	var scenarioLen uint
-	aggrStart := time.Now()
-
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
-
-		content, rErr := os.ReadFile(path)
-		is.NoErr(rErr)
-
-		strcontent := string(content)
-
-		indexes := annotationRgx.FindAllStringIndex(strcontent, -1)
-		matches := annotationRgx.FindAllStringSubmatch(strcontent, -1)
-		is.Equal(len(indexes), len(matches))
-
-		for i, match := range matches {
-			is.True(len(match) > 3)
-
-			row, _ := position.PosToLoc(strcontent, uint(indexes[i][0]))
-			function := match[1]
-			name := match[2]
-			col := match[3]
-
-			colint, err := strconv.Atoi(col)
-			is.NoErr(err)
-
-			group, name, ok := strings.Cut(name, "_")
-			if !ok {
-				name = group
-				group = ""
-			}
-
-			g, ok := scenarios[group]
-			if !ok {
-				g = make(map[string]*annotedScenario)
-				scenarios[group] = g
-			}
-
-			s, ok := g[name]
-			if !ok {
-				s = &annotedScenario{
-					isNoDef: false,
-					in:      position.Position{},
-					out:     nil,
-				}
-				g[name] = s
-				scenarioLen++
-			}
-
-			if strings.HasPrefix(function, "skip_") {
-				s.shouldSkip = true
-				function = strings.TrimPrefix(function, "skip_")
-			}
-
-			pos := position.Position{
-				Row:  row,
-				Col:  uint(colint),
-				Path: path,
-			}
-
-			switch function {
-			case "in":
-				// Already had an int for this, so it's a naming collision.
-				if s.in.Path != "" {
-					t.Fatalf("naming collision, t_in is already set for test with name '%s'", name)
-				}
-
-				s.in = pos
-
-			case "out":
-				// Already had an out for this, so it's a naming collision.
-				if s.out != nil {
-					t.Fatalf("naming collision, t_out is already set for test with name '%s'", name)
-				}
-
-				s.out = &pos
-
-			case "nodef":
-				if ok {
-					t.Fatalf("naming collision, there is already a test with the name: '%s'", name)
-				}
-
-				s.isNoDef = true
-				s.in = pos
-
-			default:
-				t.Fatalf("unsupported @t_ function: %s_%s", group, name)
-			}
-		}
-
-		return nil
-	})
-	is.NoErr(err)
-
-	t.Logf(
-		"aggregated %d test scenarios from annotations in %s, running now",
-		scenarioLen,
-		time.Since(aggrStart),
-	)
-
-	return scenarios
 }
