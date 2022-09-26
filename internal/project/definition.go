@@ -22,6 +22,7 @@ var (
 		providers.NewName(),     // new Class, Class::
 		providers.NewProperty(), // $this->foo, $foo->foo->bar
 		providers.NewMethod(),   // $this->test(), $foo->foo->test()
+		providers.NewStatic(),   // Foo::bar(), Foo::bar()->baz() // TODO: add tests.
 	}
 
 	ErrNoDefinitionFound = errors.New(

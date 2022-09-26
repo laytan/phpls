@@ -31,7 +31,7 @@ Below list is what needs to be done before v1 (or at least the first release).
         - [x] On variables created using new X()
         - [x] On variables with @var phpdoc
         - [x] On typed property chains $foo->bar->foobar->test()
-        - [ ] Static
+        - [x] Static
         - [ ] Final methods
         - [ ] @method PhpDoc
         - [ ] parent::__construct
