@@ -32,30 +32,55 @@ func (p *propertyResolver) Down(
 
 func (p *propertyResolver) Up(
 	ctx *phpdoxer.TypeClassLike,
+	privacy phprivacy.Privacy,
 	toResolve *DownResolvement,
-) (*phpdoxer.TypeClassLike, bool) {
+) (*Resolved, *phpdoxer.TypeClassLike, bool) {
 	if toResolve.ExprType != ExprTypeProperty {
-		return nil, false
+		return nil, nil, false
 	}
 
-	return createAndWalkResolveQueue(ctx, func(wc *walkContext) *phpdoxer.TypeClassLike {
-		// TODO: proper privacy handling.
-		// TODO: move the property traverser to this package.
-		t := traversers.NewProperty(toResolve.Identifier, wc.FQN.Name(), phprivacy.PrivacyPrivate)
-		wc.Root.Walk(t)
+	// Is this the first iteration/classlike we are checking?
+	isFirst := true
 
-		if t.Property == nil {
-			return nil
-		}
+	// Is this the first class or traits used by the first class?
+	isFirstClass := true
 
-		res := Typer().Property(wc.Root, t.Property)
-		clsRes, ok := res.(*phpdoxer.TypeClassLike)
-		if !ok {
-			return nil
-		}
+	return createAndWalkResolveQueue(
+		ctx,
+		func(wc *walkContext) (*Resolved, *phpdoxer.TypeClassLike) {
+			defer func() { isFirst = false }()
 
-		return clsRes
-	})
+			currKind := wc.Curr.Symbol.NodeKind()
+
+			// if this is a class, but not the first one.
+			if !isFirst && currKind == ir.KindClassStmt {
+				isFirstClass = false
+			}
+
+			actPrivacy := determinePrivacy(privacy, currKind, isFirst, isFirstClass)
+
+			// TODO: move the property traverser to this package.
+			t := traversers.NewProperty(toResolve.Identifier, wc.FQN.Name(), actPrivacy)
+			wc.Root.Walk(t)
+
+			if t.Property == nil {
+				return nil, nil
+			}
+
+			resolved := &Resolved{
+				Node: t.Property,
+				Path: wc.Curr.Path,
+			}
+
+			res := Typer().Property(wc.Root, t.Property)
+			clsRes, ok := res.(*phpdoxer.TypeClassLike)
+			if !ok {
+				return resolved, nil
+			}
+
+			return resolved, clsRes
+		},
+	)
 }
 
 type methodResolver struct{}
@@ -76,30 +101,55 @@ func (p *methodResolver) Down(
 
 func (p *methodResolver) Up(
 	ctx *phpdoxer.TypeClassLike,
+	privacy phprivacy.Privacy,
 	toResolve *DownResolvement,
-) (*phpdoxer.TypeClassLike, bool) {
+) (*Resolved, *phpdoxer.TypeClassLike, bool) {
 	if toResolve.ExprType != ExprTypeMethod {
-		return nil, false
+		return nil, nil, false
 	}
 
-	return createAndWalkResolveQueue(ctx, func(wc *walkContext) *phpdoxer.TypeClassLike {
-		// TODO: proper privacy handling.
-		// TODO: move the property method to this package.
-		t := traversers.NewMethod(toResolve.Identifier, wc.FQN.Name(), phprivacy.PrivacyPrivate)
-		wc.Root.Walk(t)
+	// Is this the first iteration/classlike we are checking?
+	isFirst := true
 
-		if t.Method == nil {
-			return nil
-		}
+	// Is this the first class or traits used by the first class?
+	isFirstClass := true
 
-		res := Typer().Returns(wc.Root, t.Method)
-		clsRes, ok := res.(*phpdoxer.TypeClassLike)
-		if !ok {
-			return nil
-		}
+	return createAndWalkResolveQueue(
+		ctx,
+		func(wc *walkContext) (*Resolved, *phpdoxer.TypeClassLike) {
+			defer func() { isFirst = false }()
 
-		return clsRes
-	})
+			currKind := wc.Curr.Symbol.NodeKind()
+
+			// if this is a class, but not the first one.
+			if !isFirst && currKind == ir.KindClassStmt {
+				isFirstClass = false
+			}
+
+			actPrivacy := determinePrivacy(privacy, currKind, isFirst, isFirstClass)
+
+			// TODO: move the property method to this package.
+			t := traversers.NewMethod(toResolve.Identifier, wc.FQN.Name(), actPrivacy)
+			wc.Root.Walk(t)
+
+			if t.Method == nil {
+				return nil, nil
+			}
+
+			resolved := &Resolved{
+				Node: t.Method,
+				Path: wc.Curr.Path,
+			}
+
+			res := Typer().Returns(wc.Root, t.Method)
+			clsRes, ok := res.(*phpdoxer.TypeClassLike)
+			if !ok {
+				return resolved, nil
+			}
+
+			return resolved, clsRes
+		},
+	)
 }
 
 type staticMethodResolver struct{}
@@ -120,32 +170,82 @@ func (p *staticMethodResolver) Down(
 
 func (p *staticMethodResolver) Up(
 	ctx *phpdoxer.TypeClassLike,
+	privacy phprivacy.Privacy,
 	toResolve *DownResolvement,
-) (*phpdoxer.TypeClassLike, bool) {
+) (*Resolved, *phpdoxer.TypeClassLike, bool) {
 	if toResolve.ExprType != ExprTypeStaticMethod {
-		return nil, false
+		return nil, nil, false
 	}
 
-	return createAndWalkResolveQueue(ctx, func(wc *walkContext) *phpdoxer.TypeClassLike {
-		// TODO: proper privacy handling.
-		// TODO: move the property method to this package.
-		t := traversers.NewMethodStatic(
-			toResolve.Identifier,
-			wc.FQN.Name(),
-			phprivacy.PrivacyPrivate,
-		)
-		wc.Root.Walk(t)
+	// Is this the first iteration/classlike we are checking?
+	isFirst := true
 
-		if t.Method == nil {
-			return nil
-		}
+	// Is this the first class or traits used by the first class?
+	isFirstClass := true
 
-		res := Typer().Returns(wc.Root, t.Method)
-		clsRes, ok := res.(*phpdoxer.TypeClassLike)
-		if !ok {
-			return nil
-		}
+	return createAndWalkResolveQueue(
+		ctx,
+		func(wc *walkContext) (*Resolved, *phpdoxer.TypeClassLike) {
+			defer func() { isFirst = false }()
 
-		return clsRes
-	})
+			currKind := wc.Curr.Symbol.NodeKind()
+
+			// if this is a class, but not the first one.
+			if !isFirst && currKind == ir.KindClassStmt {
+				isFirstClass = false
+			}
+
+			actPrivacy := determinePrivacy(privacy, currKind, isFirst, isFirstClass)
+
+			// TODO: move the property method to this package.
+			t := traversers.NewMethodStatic(
+				toResolve.Identifier,
+				wc.FQN.Name(),
+				actPrivacy,
+			)
+			wc.Root.Walk(t)
+
+			if t.Method == nil {
+				return nil, nil
+			}
+
+			resolved := &Resolved{
+				Node: t.Method,
+				Path: wc.Curr.Path,
+			}
+
+			res := Typer().Returns(wc.Root, t.Method)
+			clsRes, ok := res.(*phpdoxer.TypeClassLike)
+			if !ok {
+				return resolved, nil
+			}
+
+			return resolved, clsRes
+		},
+	)
+}
+
+// Determines the privacy to search for based on all the conditions determined
+// by PHP.
+func determinePrivacy(
+	startPrivacy phprivacy.Privacy,
+	currKind ir.NodeKind,
+	isFirst, isFirstClass bool,
+) phprivacy.Privacy {
+	actPrivacy := startPrivacy
+
+	// If we are in the class, the first run can check >= private members,
+	// the rest only >= protected members.
+	if !isFirst && actPrivacy == phprivacy.PrivacyPrivate {
+		actPrivacy = phprivacy.PrivacyProtected
+	}
+
+	// If this is a trait, and it is used from the first class,
+	// private methods are also accessible.
+	if isFirstClass && actPrivacy == phprivacy.PrivacyProtected &&
+		currKind == ir.KindTraitStmt {
+		actPrivacy = phprivacy.PrivacyPrivate
+	}
+
+	return actPrivacy
 }

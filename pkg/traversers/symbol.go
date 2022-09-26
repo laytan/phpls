@@ -12,6 +12,10 @@ type TrieNode struct {
 	Symbol    symbol.Symbol
 }
 
+func (t *TrieNode) Fqn() string {
+	return `\` + t.Namespace + `\` + t.Symbol.Identifier()
+}
+
 // Symbol implements ir.Visitor.
 type Symbol struct {
 	trie             *symboltrie.Trie[*TrieNode]

@@ -24,6 +24,8 @@ func (p *ThisProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 	return n.Name == "this"
 }
 
+// TODO: use DefineExpr.
+// TODO: merge with variable provider.
 func (p *ThisProvider) Define(ctx context.Context) (*definition.Definition, error) {
 	if ir.GetNodeKind(ctx.Current()) == ir.KindRoot {
 		return nil, definition.ErrNoDefinitionFound

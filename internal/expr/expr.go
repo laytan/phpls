@@ -5,10 +5,10 @@ import (
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/stack"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -26,6 +26,7 @@ const (
 	ExprTypeName
 	ExprTypeStaticMethod
 	ExprTypeFunction
+	ExprTypeNew
 )
 
 var (
@@ -46,23 +47,30 @@ type DownResolvement struct {
 	Identifier string
 }
 
+type UpResolvement struct {
+	ExprType   ExprType
+	Identifier string
+	Class      *phpdoxer.TypeClassLike
+}
+
 type Resolver interface {
-	Down(node ir.Node) (resolvemenet *DownResolvement, next ir.Node, done bool)
+	Down(node ir.Node) (resolvement *DownResolvement, next ir.Node, done bool)
 }
 type ClassResolver interface {
 	Resolver
 	Up(
 		ctx *phpdoxer.TypeClassLike,
+		privacy phprivacy.Privacy,
 		toResolve *DownResolvement,
-	) (nextCtx *phpdoxer.TypeClassLike, done bool)
+	) (result *Resolved, nextCtx *phpdoxer.TypeClassLike, done bool)
 }
 
 type StartResolver interface {
 	Resolver
 	Up(
-		scoes Scopes,
+		scopes Scopes,
 		toResolve *DownResolvement,
-	) (nextCtx *phpdoxer.TypeClassLike, done bool)
+	) (result *Resolved, nextCtx *phpdoxer.TypeClassLike, privacy phprivacy.Privacy, done bool)
 }
 
 func AllResolvers() *map[ExprType]Resolver {
@@ -78,48 +86,71 @@ func AllResolvers() *map[ExprType]Resolver {
 	return &all
 }
 
-func Resolve(ctx context.Context) *phpdoxer.TypeClassLike {
+type Resolved struct {
+	Node ir.Node
+	Path string
+}
+
+// TODO: accept scopes as a pointer.
+func Resolve(
+	node ir.Node,
+	scopes Scopes,
+) (result *Resolved, lastClass *phpdoxer.TypeClassLike, left int) {
 	symbols := stack.New[*DownResolvement]()
-	Down(AllResolvers(), symbols, ctx.Current())
+	Down(AllResolvers(), symbols, node)
 
 	what.Happens("Symbols: %v", symbols.String())
 
-	// We don't give the ctx to the resolvers as the Current() is misleading,
-	// because it points to the end node when this is the start node.
-	scopes := Scopes{
-		Path:  ctx.Start().Path,
-		Root:  ctx.Root(),
-		Class: ctx.ClassScope(),
-		Block: ctx.Scope(),
+	if symbols.Peek() == nil {
+		return nil, nil, 0
 	}
 
 	start := symbols.Pop()
-	what.Is(start)
+	var res *Resolved
 	var next *phpdoxer.TypeClassLike
+	var privacy phprivacy.Privacy
 	for _, starter := range starters {
-		if n, ok := starter.Up(scopes, start); ok {
+		if r, n, p, ok := starter.Up(scopes, start); ok {
+			res = r
+			privacy = p
 			next = n
 			break
 		}
 	}
 
 	if next == nil {
-		return nil
-	}
+		if res != nil {
+			// Run out the stack, to see how many were left to do.
+			left = 0
+			for curr := symbols.Pop(); curr != nil; curr = symbols.Pop() {
+				left++
+			}
 
-	what.Is(next)
+			return res, nil, left
+		}
+
+		return nil, nil, 0
+	}
 
 	for curr := symbols.Pop(); curr != nil; curr = symbols.Pop() {
 		resolver := resolvers[curr.ExprType]
-		n, ok := resolver.Up(next, curr)
+		res, n, ok := resolver.Up(next, privacy, curr)
 		if !ok {
-			return nil
+
+			// Run out the stack, to see how many were left to do.
+			left = 1
+			for curr = symbols.Pop(); curr != nil; curr = symbols.Pop() {
+				left++
+			}
+
+			return res, n, left
 		}
 
 		next = n
+		result = res
 	}
 
-	return next
+	return result, next, 0
 }
 
 func Down(
@@ -213,19 +244,21 @@ func walkResolveQueue(
 
 func createAndWalkResolveQueue(
 	ctx *phpdoxer.TypeClassLike,
-	walker func(*walkContext) *phpdoxer.TypeClassLike,
-) (*phpdoxer.TypeClassLike, bool) {
+	walker func(*walkContext) (*Resolved, *phpdoxer.TypeClassLike),
+) (*Resolved, *phpdoxer.TypeClassLike, bool) {
 	queue, err := newResolveQueue(ctx)
 	if err != nil {
 		log.Println(err)
-		return nil, false
+		return nil, nil, false
 	}
 
-	var result *phpdoxer.TypeClassLike
+	var resultNode *Resolved
+	var resultClass *phpdoxer.TypeClassLike
 	err = walkResolveQueue(queue, func(wc *walkContext) (done bool, err error) {
-		res := walker(wc)
-		if res != nil {
-			result = res
+		rn, rc := walker(wc)
+		if rn != nil || rc != nil {
+			resultNode = rn
+			resultClass = rc
 			return true, nil
 		}
 
@@ -233,12 +266,12 @@ func createAndWalkResolveQueue(
 	})
 	if err != nil {
 		log.Println(err)
-		return nil, false
+		return nil, nil, false
 	}
 
-	if result == nil {
-		return nil, false
+	if resultNode == nil && resultClass == nil {
+		return nil, nil, false
 	}
 
-	return result, true
+	return resultNode, resultClass, true
 }

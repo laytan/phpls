@@ -8,6 +8,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/traversers"
 )
@@ -88,4 +89,57 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 	}
 
 	return ""
+}
+
+// Returns the position for the namespace statement that matches the given position.
+func (p *Project) Namespace(pos *position.Position) *position.Position {
+	content, root, err := Wrkspc().AllOf(pos.Path)
+	if err != nil {
+		log.Println(
+			fmt.Errorf(
+				"Getting namespace, could not get content/nodes of %s: %w",
+				pos.Path,
+				err,
+			),
+		)
+	}
+
+	traverser := traversers.NewNamespace(pos.Row)
+	root.Walk(traverser)
+
+	if traverser.Result == nil {
+		log.Println("Did not find namespace")
+		return nil
+	}
+
+	row, col := position.PosToLoc(content, uint(traverser.Result.Position.StartPos))
+
+	return &position.Position{
+		Row:  row,
+		Col:  col,
+		Path: pos.Path,
+	}
+}
+
+// Returns whether the file at given pos needs a use statement for the given fqn.
+func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
+	root, err := Wrkspc().IROf(pos.Path)
+	if err != nil {
+		log.Println(
+			fmt.Errorf(
+				"Checking use statement needed, could not get nodes of %s: %w",
+				pos.Path,
+				err,
+			),
+		)
+	}
+
+	parts := strings.Split(fqn, `\`)
+	className := parts[len(parts)-1]
+
+	// Get how it would be resolved in the current file state.
+	actFQN := common.FullyQualify(root, className)
+
+	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
+	return actFQN.String() != fqn
 }

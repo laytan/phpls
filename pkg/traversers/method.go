@@ -1,6 +1,7 @@
 package traversers
 
 import (
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -46,6 +47,8 @@ func (m *Method) EnterNode(node ir.Node) bool {
 		if typedNode.MethodName.Value != m.name {
 			return false
 		}
+
+		what.Happens("Found method %s", symbol.GetIdentifier(typedNode))
 
 		hasPrivacy := false
 		for _, mod := range typedNode.Modifiers {

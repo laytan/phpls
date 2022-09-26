@@ -2,6 +2,7 @@ package providers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -28,8 +29,9 @@ func (p *NameProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 	return true
 }
 
+// TODO: use DefineExpr.
 func (p *NameProvider) Define(ctx context.Context) (*definition.Definition, error) {
-	def, ok := definition.FindFullyQualified(
+	tdef, ok := common.FindFullyQualified(
 		ctx.Root(),
 		ctx.Current().(*ir.Name).Value,
 		symbol.ClassLikeScopes...)
@@ -37,5 +39,5 @@ func (p *NameProvider) Define(ctx context.Context) (*definition.Definition, erro
 		return nil, definition.ErrNoDefinitionFound
 	}
 
-	return def, nil
+	return definition.TrieNodeToDef(tdef), nil
 }

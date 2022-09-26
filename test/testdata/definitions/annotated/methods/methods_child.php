@@ -8,7 +8,7 @@ class TestMethodsChildClass extends TestMethodsClass
     {
         $this->testPublic(); // @t_in(methods_child_override_2, 16)
         $this->testProtected(); // @t_in(methods_child_protected, 16)
-        $this->testPrivate(); // TODO: fix&enable: @t_skip_nodef(methods_child_private_nodef, 16)
+        $this->testPrivate(); // @t_nodef(methods_child_private_nodef, 16)
         $this->testMethodToOverride(); // @t_in(methods_child_override, 16)
     }
 

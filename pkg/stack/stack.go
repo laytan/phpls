@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-
-	"appliedgo.net/what"
 )
 
 type node[V any] struct {
@@ -63,12 +61,9 @@ func (s *Stack[V]) Peek() V {
 
 func (s *Stack[V]) String() string {
 	out := []string{}
-
-	t := s.tail
-	for curr := t; curr != nil; curr = curr.next {
-		what.Happens("%T", curr.value)
+	for curr := s.tail; curr != nil; curr = curr.prev {
 		out = append(out, fmt.Sprintf("%v", curr.value))
 	}
 
-	return strings.Join(out, "-")
+	return strings.Join(out, " -> ")
 }

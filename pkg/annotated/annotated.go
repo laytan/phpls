@@ -43,6 +43,10 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 		strcontent := string(content)
 
 		indexes := annotationRgx.FindAllStringIndex(strcontent, -1)
+		if len(indexes) == 0 {
+			return nil
+		}
+
 		matches := annotationRgx.FindAllStringSubmatch(strcontent, -1)
 		is.Equal(len(indexes), len(matches))
 

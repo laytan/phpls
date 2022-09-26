@@ -3,12 +3,11 @@ package expr
 import (
 	"log"
 
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/context"
-	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/internal/project/definition/providers"
+	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/pkg/phpdoxer"
-	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 )
@@ -17,6 +16,7 @@ var starters = map[ExprType]StartResolver{
 	ExprTypeVariable: &variableResolver{},
 	ExprTypeName:     &nameResolver{},
 	ExprTypeFunction: &functionResolver{},
+	ExprTypeNew:      &newResolver{},
 }
 
 type variableResolver struct{}
@@ -35,54 +35,80 @@ func (p *variableResolver) Down(
 	}, nil, true
 }
 
-// TODO: this is so cursed.
-// TODO: should not be using the definition package.
-// TODO: definition.VarType should just be a recursive call to this expr flow.
 func (p *variableResolver) Up(
 	scopes Scopes,
 	toResolve *DownResolvement,
-) (*phpdoxer.TypeClassLike, bool) {
+) (*Resolved, *phpdoxer.TypeClassLike, phprivacy.Privacy, bool) {
 	if toResolve.ExprType != ExprTypeVariable {
-		return nil, false
+		return nil, nil, 0, false
 	}
 
 	t := traversers.NewVariable(toResolve.Identifier)
 	scopes.Block.Walk(t)
 	if t.Result == nil {
-		return nil, false
+		return nil, nil, 0, false
 	}
 
-	// TODO: don't create new context, make VariableType accept normal vars.
-	content, err := Wrkspc().ContentOf(scopes.Path)
-	if err != nil {
-		log.Println(err)
-		return nil, false
-	}
+	switch t.Result.Name {
+	case "this", "self", "static":
+		if node, ok := common.FindFullyQualified(
+			scopes.Root,
+			symbol.GetIdentifier(scopes.Class),
+			symbol.ClassLikeScopes...); ok {
+			if n, ok := defToNodeNoRoot(node); ok {
+				return &Resolved{Path: node.Path, Node: n},
+					&phpdoxer.TypeClassLike{Name: node.Fqn(), FullyQualified: true},
+					phprivacy.PrivacyPrivate,
+					true
+			}
+		}
 
-	row, col := position.PosToLoc(content, uint(t.Result.Position.StartPos))
-	pos := &position.Position{
-		Row:  row,
-		Col:  col,
-		Path: scopes.Path,
-	}
-	ctx, err := context.New(pos)
-	if err != nil {
-		log.Println(err)
-		return nil, false
-	}
+		log.Println("encountered $this, self::, or static:: but could not find the subject class")
+		return nil, nil, 0, false
 
-	// TODO: what does privacy do here.
-	def, _, err := definition.VariableType(ctx, t.Result)
-	if err != nil {
-		log.Println(err)
-		return nil, false
-	}
+	case "parent":
+		node := parentOf(scopes)
+		if n, ok := defToNodeNoRoot(node); ok {
+			fqn := node.Namespace + `\` + node.Symbol.Identifier()
+			return &Resolved{Path: node.Path, Node: n},
+				&phpdoxer.TypeClassLike{Name: fqn, FullyQualified: true},
+				phprivacy.PrivacyProtected,
+				true
+		}
 
-	fqn := definition.FullyQualify(ctx.Root(), def.Node.Identifier())
-	return &phpdoxer.TypeClassLike{
-		Name:           fqn.String(),
-		FullyQualified: true,
-	}, true
+		log.Println("encountered parent:: but could not find the subject class")
+		return nil, nil, 0, false
+
+	default:
+		ta := traversers.NewAssignment(t.Result)
+		scopes.Block.Walk(ta)
+		if ta.Assignment == nil || ta.Scope == nil {
+			return nil, nil, 0, false
+		}
+
+		// TODO: parameter, global, list types of ta.Scope.
+
+		if docType := Typer().Variable(scopes.Root, ta.Assignment, scopes.Block); docType != nil {
+			if clsDocType, ok := docType.(*phpdoxer.TypeClassLike); ok {
+				return &Resolved{Path: scopes.Path, Node: ta.Assignment},
+					clsDocType,
+					phprivacy.PrivacyPublic,
+					true
+			}
+
+			what.Happens("@var doc is not a class-like type")
+			return nil, nil, 0, false
+		}
+
+		if assign, ok := ta.Scope.(*ir.Assign); ok {
+			if res, lastClass, left := Resolve(assign.Expr, scopes); left == 0 {
+				return res, lastClass, phprivacy.PrivacyPublic, true
+			}
+		}
+
+		log.Printf("TODO: resolve variable out of type %T", ta.Scope)
+		return nil, nil, 0, false
+	}
 }
 
 type nameResolver struct{}
@@ -104,16 +130,36 @@ func (p *nameResolver) Down(
 func (p *nameResolver) Up(
 	scopes Scopes,
 	toResolve *DownResolvement,
-) (*phpdoxer.TypeClassLike, bool) {
+) (*Resolved, *phpdoxer.TypeClassLike, phprivacy.Privacy, bool) {
 	if toResolve.ExprType != ExprTypeName {
-		return nil, false
+		return nil, nil, 0, false
 	}
 
-	fqn := definition.FullyQualify(scopes.Root, toResolve.Identifier)
-	return &phpdoxer.TypeClassLike{
-		Name:           fqn.String(),
-		FullyQualified: true,
-	}, true
+	fqn := common.FullyQualify(scopes.Root, toResolve.Identifier)
+
+	privacy := phprivacy.PrivacyPublic
+	if symbol.IsClassLike(scopes.Class) {
+		scopeFqn := common.FullyQualify(scopes.Root, symbol.GetIdentifier(scopes.Class))
+
+		if fqn.String() == scopeFqn.String() {
+			privacy = phprivacy.PrivacyPrivate
+		}
+	}
+
+	res, err := Index().Find(fqn.String(), symbol.ClassLikeScopes...)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, 0, false
+	}
+
+	if n, ok := defToNodeNoRoot(res); ok {
+		return &Resolved{Path: res.Path, Node: n},
+			&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
+			privacy,
+			true
+	}
+
+	return nil, nil, 0, false
 }
 
 type functionResolver struct{}
@@ -135,44 +181,169 @@ func (p *functionResolver) Down(
 func (p *functionResolver) Up(
 	scopes Scopes,
 	toResolve *DownResolvement,
-) (*phpdoxer.TypeClassLike, bool) {
+) (*Resolved, *phpdoxer.TypeClassLike, phprivacy.Privacy, bool) {
 	if toResolve.ExprType != ExprTypeFunction {
-		return nil, false
+		return nil, nil, 0, false
 	}
 
 	t := traversers.NewFunctionCall(toResolve.Identifier)
 	scopes.Block.Walk(t)
 	if t.Result == nil {
 		log.Printf("could not find function matching function call %s", toResolve.Identifier)
+		return nil, nil, 0, false
+	}
+
+	typeOfFunc := func(n ir.Node) *phpdoxer.TypeClassLike {
+		ret := Typer().Returns(scopes.Root, n)
+		if clsRet, ok := ret.(*phpdoxer.TypeClassLike); ok {
+			return clsRet
+		}
+
+		return nil
+	}
+
+	// If have local scope, check it for the function.
+	if ir.GetNodeKind(scopes.Block) != ir.KindRoot {
+		ft := traversers.NewFunction(toResolve.Identifier)
+		scopes.Block.Walk(ft)
+
+		if ft.Function != nil {
+			return &Resolved{
+				Node: ft.Function,
+				Path: scopes.Path,
+			}, typeOfFunc(ft.Function), phprivacy.PrivacyPublic, true
+		}
+	}
+
+	// Check for functions defined in the used namespaces.
+	if def, ok := common.FindFullyQualified(scopes.Root, toResolve.Identifier, ir.KindFunctionStmt); ok {
+		if n, ok := defToNodeNoRoot(def); ok {
+			return &Resolved{
+				Node: n,
+				Path: def.Path,
+			}, typeOfFunc(n), phprivacy.PrivacyPublic, true
+		}
+	}
+
+	// Check for global functions.
+	def, err := Index().Find(`\`+toResolve.Identifier, ir.KindFunctionStmt)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, 0, false
+	}
+
+	if n, ok := defToNodeNoRoot(def); ok {
+		return &Resolved{
+			Node: n,
+			Path: def.Path,
+		}, typeOfFunc(n), phprivacy.PrivacyPublic, true
+	}
+
+	return nil, nil, 0, false
+}
+
+type newResolver struct{}
+
+func (newresolver *newResolver) Down(
+	node ir.Node,
+) (*DownResolvement, ir.Node, bool) {
+	newNode, ok := node.(*ir.NewExpr)
+	if !ok {
+		return nil, nil, false
+	}
+
+	// TODO: new expression using a non-name node
+	if name, ok := newNode.Class.(*ir.Name); ok {
+		return &DownResolvement{
+			ExprType:   ExprTypeNew,
+			Identifier: name.Value,
+		}, nil, true
+	}
+
+	log.Println("TODO: new expression using a non-name node")
+	return nil, nil, false
+}
+
+func (newresolver *newResolver) Up(
+	scopes Scopes,
+	toResolve *DownResolvement,
+) (resolved *Resolved, nextCtx *phpdoxer.TypeClassLike, privacy phprivacy.Privacy, done bool) {
+	if toResolve.ExprType != ExprTypeNew {
+		return nil, nil, 0, false
+	}
+
+	if fqn := common.FullyQualify(scopes.Root, toResolve.Identifier); fqn != nil {
+		def, err := Index().Find(fqn.String(), symbol.ClassLikeScopes...)
+		if err != nil {
+			log.Println(err)
+			return nil, nil, 0, false
+		}
+
+		if n, ok := defToNodeNoRoot(def); ok {
+			return &Resolved{Path: def.Path, Node: n},
+				&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
+				phprivacy.PrivacyPublic,
+				true
+		}
+	}
+
+	return nil, nil, 0, false
+}
+
+func parentOf(scopes Scopes) *traversers.TrieNode {
+	switch scopes.Class.(type) {
+	case *ir.ClassStmt:
+		break
+	case *ir.TraitStmt:
+		// TODO: get parent of trait
+		log.Println("TODO: get parent of trait")
+		return nil
+
+	default:
+		log.Println("encountered parent:: but could not find a class node")
+		return nil
+	}
+
+	class := scopes.Class.(*ir.ClassStmt)
+
+	if class.Extends == nil {
+		log.Println("encountered parent:: but current class does not extend anything")
+		return nil
+	}
+
+	if node, ok := common.FindFullyQualified(
+		scopes.Root,
+		class.Extends.ClassName.Value,
+		ir.KindClassStmt,
+	); ok {
+		return node
+	}
+
+	log.Printf(
+		"could not find fully qualified class for %s in index",
+		class.Extends.ClassName.Value,
+	)
+	return nil
+}
+
+func defToNode(root *ir.Root, def *traversers.TrieNode) (ir.Node, bool) {
+	t := traversers.NewSymbolToNode(def.Symbol)
+	root.Walk(t)
+
+	if t.Result == nil {
+		log.Printf("Symbol to node traverser returned nil for %v in %s", def.Symbol, def.Path)
 		return nil, false
 	}
 
-	def, err := providers.DefineFunction(scopes.Path, scopes.Root, scopes.Block, t.Result)
+	return t.Result, true
+}
+
+func defToNodeNoRoot(def *traversers.TrieNode) (ir.Node, bool) {
+	root, err := Wrkspc().IROf(def.Path)
 	if err != nil {
 		log.Println(err)
 		return nil, false
 	}
 
-	if n, ok := defToNode(scopes.Root, def); ok {
-		ret := Typer().Returns(scopes.Root, n)
-		if clsRet, ok := ret.(*phpdoxer.TypeClassLike); ok {
-			return clsRet, true
-		}
-
-		return nil, false
-	}
-
-	return nil, false
-}
-
-func defToNode(root *ir.Root, def *definition.Definition) (ir.Node, bool) {
-	t := traversers.NewSymbolToNode(def.Node)
-	root.Walk(t)
-
-	if t.Result == nil {
-		log.Printf("Symbol to node traverser returned nil for %v in %s", def.Node, def.Path)
-		return nil, false
-	}
-
-	return t.Result, true
+	return defToNode(root, def)
 }
