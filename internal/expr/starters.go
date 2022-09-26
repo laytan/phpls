@@ -100,15 +100,29 @@ func (p *variableResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		if assign, ok := ta.Scope.(*ir.Assign); ok {
-			if res, lastClass, left := Resolve(assign.Expr, scopes); left == 0 {
+		switch typedScope := ta.Scope.(type) {
+		case *ir.Assign:
+			if res, lastClass, left := Resolve(typedScope.Expr, scopes); left == 0 {
 				return res, lastClass, phprivacy.PrivacyPublic, true
 			}
-		}
 
-		log.Printf("TODO: resolve variable out of type %T", ta.Scope)
-		return nil, nil, 0, false
+		case *ir.Parameter:
+			if t := Typer().Param(scopes.Root, scopes.Block, typedScope); t != nil {
+				if tc, ok := t.(*phpdoxer.TypeClassLike); ok {
+					return &Resolved{Node: ta.Assignment, Path: scopes.Path},
+						tc,
+						phprivacy.PrivacyPublic,
+						true
+				}
+			}
+
+		default:
+			log.Printf("TODO: resolve variable out of type %T", ta.Scope)
+			return nil, nil, 0, false
+		}
 	}
+
+	return nil, nil, 0, false
 }
 
 type nameResolver struct{}
