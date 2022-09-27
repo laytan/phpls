@@ -41,13 +41,28 @@ func NewFQNTraverser() *FQNTraverser {
 	return &FQNTraverser{}
 }
 
+// A FQNTraverser that handles keywords like self or static.
+func NewFQNTraverserHandlingKeywords(block ir.Node) *FQNTraverser {
+	return &FQNTraverser{block: block}
+}
+
 // FQNTraverser implements ir.Visitor.
 type FQNTraverser struct {
 	fileUses      []*ir.UseStmt
 	fileNamespace string
+
+	block      ir.Node
+	blockClass *ir.ClassStmt
 }
 
 func (f *FQNTraverser) ResultFor(name *ir.Name) *FQN {
+	// Handle self and static by returning the class the block is in.
+	if f.block != nil && f.blockClass != nil {
+		if name.Value == "self" || name.Value == "static" {
+			name.Value = f.blockClass.ClassName.Value
+		}
+	}
+
 	if name.IsFullyQualified() {
 		return NewFQN(name.Value)
 	}
@@ -76,8 +91,20 @@ func (f *FQNTraverser) ResultFor(name *ir.Name) *FQN {
 
 func (f *FQNTraverser) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
-	case *ir.Root, *ir.UseListStmt:
-		return true
+	case *ir.ClassStmt:
+		if f.block == nil {
+			return false
+		}
+
+		bPos := ir.GetPosition(f.block)
+		nPos := typedNode.Position
+
+		// If the block is inside the class.
+		if bPos.StartLine >= nPos.StartLine && bPos.EndLine <= nPos.EndLine && bPos.StartPos >= nPos.StartPos && bPos.EndPos <= nPos.EndPos {
+			f.blockClass = typedNode
+		}
+
+		return false
 
 	case *ir.UseStmt:
 		f.fileUses = append(f.fileUses, typedNode)
@@ -92,7 +119,7 @@ func (f *FQNTraverser) EnterNode(node ir.Node) bool {
 		return false
 
 	default:
-		return false
+		return !symbol.IsScope(typedNode)
 	}
 }
 

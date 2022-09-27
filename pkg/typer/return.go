@@ -18,12 +18,12 @@ func (t *typer) Returns(root *ir.Root, funcOrMeth ir.Node) phpdoxer.Type {
 	}
 
 	if retDoc := findReturnComment(funcOrMeth); retDoc != nil {
-		resolveFQN(root, retDoc)
+		resolveFQN(root, funcOrMeth, retDoc)
 		return retDoc
 	}
 
 	if retHint := parseTypeHint(funcOrMeth); retHint != nil {
-		resolveFQN(root, retHint)
+		resolveFQN(root, funcOrMeth, retHint)
 		return retHint
 	}
 

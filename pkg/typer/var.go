@@ -13,7 +13,7 @@ func (t *typer) Variable(
 	scope ir.Node,
 ) phpdoxer.Type {
 	if cmntType := findVarComment(variable); cmntType != nil {
-		resolveFQN(root, cmntType)
+		resolveFQN(root, variable, cmntType)
 		return cmntType
 	}
 

@@ -87,7 +87,7 @@ func returnTypeNode(node ir.Node) ir.Node {
 	}
 }
 
-func resolveFQN(root *ir.Root, t phpdoxer.Type) {
+func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) {
 	cl, ok := t.(*phpdoxer.TypeClassLike)
 	if !ok {
 		return
@@ -97,7 +97,7 @@ func resolveFQN(root *ir.Root, t phpdoxer.Type) {
 		return
 	}
 
-	tr := NewFQNTraverser()
+	tr := NewFQNTraverserHandlingKeywords(block)
 	root.Walk(tr)
 	res := tr.ResultFor(&ir.Name{Value: cl.Name})
 
