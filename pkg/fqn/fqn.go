@@ -1,4 +1,4 @@
-package typer
+package fqn
 
 import (
 	"strings"
@@ -14,6 +14,7 @@ type FQN struct {
 	value string
 }
 
+// TODO: rename to New
 func NewFQN(value string) *FQN {
 	if value[0:1] != partSeperator {
 		panic("Trying to create FQN without a fully qualified input.")

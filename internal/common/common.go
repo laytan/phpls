@@ -7,19 +7,19 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
 	"github.com/samber/do"
 )
 
 var Index = func() index.Index { return do.MustInvoke[index.Index](nil) }
 
-func FullyQualify(root *ir.Root, name string) *typer.FQN {
+func FullyQualify(root *ir.Root, name string) *fqn.FQN {
 	if strings.HasPrefix(name, `\`) {
-		return typer.NewFQN(name)
+		return fqn.NewFQN(name)
 	}
 
-	t := typer.NewFQNTraverser()
+	t := fqn.NewFQNTraverser()
 	root.Walk(t)
 
 	return t.ResultFor(&ir.Name{Value: name})

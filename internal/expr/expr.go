@@ -7,6 +7,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/resolvequeue"
@@ -191,7 +192,7 @@ func newResolveQueue(c *phpdoxer.TypeClassLike) (*resolvequeue.ResolveQueue, err
 
 		return Wrkspc().IROf(res.Path)
 	}, &resolvequeue.Node{
-		FQN:  typer.NewFQN(c.Name),
+		FQN:  fqn.NewFQN(c.Name),
 		Kind: sym.Symbol.NodeKind(),
 	}), nil
 }
@@ -199,7 +200,7 @@ func newResolveQueue(c *phpdoxer.TypeClassLike) (*resolvequeue.ResolveQueue, err
 // walkContext is the context of a current iteration in the walk of the resolve queue.
 type walkContext struct {
 	// The FQN of the current class.
-	FQN *typer.FQN
+	FQN *fqn.FQN
 
 	// The definition of the current class.
 	Curr *traversers.TrieNode

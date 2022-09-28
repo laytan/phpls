@@ -10,11 +10,11 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/parsing"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
 	"golang.org/x/exp/slices"
 )
 
@@ -101,8 +101,8 @@ func (i *index) Index(path string, content string) error {
 	return nil
 }
 
-func (i *index) Find(fqn string, kind ...ir.NodeKind) (*traversers.TrieNode, error) {
-	FQNObj := typer.NewFQN(fqn)
+func (i *index) Find(fqnStr string, kind ...ir.NodeKind) (*traversers.TrieNode, error) {
+	FQNObj := fqn.NewFQN(fqnStr)
 
 	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
 
@@ -117,7 +117,7 @@ func (i *index) Find(fqn string, kind ...ir.NodeKind) (*traversers.TrieNode, err
 		}
 	}
 
-	return nil, fmt.Errorf(errNotFoundFmt, fqn, kind)
+	return nil, fmt.Errorf(errNotFoundFmt, fqnStr, kind)
 }
 
 func (i *index) FindPrefix(prefix string, max uint, kind ...ir.NodeKind) []*traversers.TrieNode {

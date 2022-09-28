@@ -1,10 +1,10 @@
-package typer_test
+package fqn_test
 
 import (
 	"strconv"
 	"testing"
 
-	"github.com/laytan/elephp/pkg/typer"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/matryer/is"
 )
 
@@ -44,7 +44,7 @@ func TestFQN(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
 
-			f := typer.NewFQN(test.FQN)
+			f := fqn.NewFQN(test.FQN)
 			is.Equal(f.String(), test.FQN)
 			is.Equal(f.Name(), test.Name)
 			is.Equal(f.Namespace(), test.Namespace)

@@ -5,12 +5,12 @@ import (
 	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/queue"
-	"github.com/laytan/elephp/pkg/typer"
 )
 
 type Node struct {
-	FQN  *typer.FQN
+	FQN  *fqn.FQN
 	Kind ir.NodeKind
 }
 
@@ -51,7 +51,7 @@ func (r *ResolveQueue) Resolve(
 	extends = make([]*Node, 0, len(traverser.Extends))
 	implements = make([]*Node, 0, len(traverser.Implements))
 
-	fqnTraverser := typer.NewFQNTraverser()
+	fqnTraverser := fqn.NewFQNTraverser()
 	root.Walk(fqnTraverser)
 
 	for _, use := range traverser.Uses {
