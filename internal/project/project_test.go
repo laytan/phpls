@@ -143,7 +143,7 @@ func TestStdlibDefinitions(t *testing.T) {
 				Path: stdlibPath,
 			},
 			out: &position.Position{
-				Row:  891,
+				Row:  896,
 				Col:  1,
 				Path: filepath.Join(stubsRoot, "standard", "standard_1.php"),
 			},
