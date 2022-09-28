@@ -86,8 +86,6 @@ func (p *variableResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		// TODO: parameter, global, list types of ta.Scope.
-
 		if docType := Typer().Variable(scopes.Root, ta.Assignment, scopes.Block); docType != nil {
 			if clsDocType, ok := docType.(*phpdoxer.TypeClassLike); ok {
 				return &Resolved{Path: scopes.Path, Node: ta.Assignment},
@@ -208,7 +206,7 @@ func (p *functionResolver) Up(
 	}
 
 	typeOfFunc := func(n ir.Node) *phpdoxer.TypeClassLike {
-		ret := Typer().Returns(scopes.Root, n)
+		ret := Typer().Returns(scopes.Root, n, rootRetriever)
 		if clsRet, ok := ret.(*phpdoxer.TypeClassLike); ok {
 			return clsRet
 		}

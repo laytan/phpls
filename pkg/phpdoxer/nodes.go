@@ -9,6 +9,7 @@ const (
 	KindReturn
 	KindVar
 	KindParam
+	KindInheritDoc
 )
 
 type Node interface {
@@ -70,4 +71,14 @@ func (n *NodeParam) String() string {
 
 func (n *NodeParam) Kind() NodeKind {
 	return KindParam
+}
+
+type NodeInheritDoc struct{}
+
+func (n *NodeInheritDoc) String() string {
+	return "{@inheritdoc}"
+}
+
+func (n *NodeInheritDoc) Kind() NodeKind {
+	return KindInheritDoc
 }

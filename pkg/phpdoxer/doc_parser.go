@@ -78,6 +78,9 @@ func parseGroup(at string, value string) (Node, error) {
 			Name: name,
 		}, nil
 
+	case "inheritdoc", "inheritDoc":
+		return &NodeInheritDoc{}, nil
+
 	default:
 		return &NodeUnknown{
 			At:    at,

@@ -141,7 +141,7 @@ func (p *methodResolver) Up(
 				Path: wc.Curr.Path,
 			}
 
-			res := Typer().Returns(wc.Root, t.Method)
+			res := Typer().Returns(wc.Root, t.Method, rootRetriever)
 			clsRes, ok := res.(*phpdoxer.TypeClassLike)
 			if !ok {
 				return resolved, nil
@@ -214,7 +214,7 @@ func (p *staticMethodResolver) Up(
 				Path: wc.Curr.Path,
 			}
 
-			res := Typer().Returns(wc.Root, t.Method)
+			res := Typer().Returns(wc.Root, t.Method, rootRetriever)
 			clsRes, ok := res.(*phpdoxer.TypeClassLike)
 			if !ok {
 				return resolved, nil

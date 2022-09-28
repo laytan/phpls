@@ -276,3 +276,12 @@ func createAndWalkResolveQueue(
 
 	return resultNode, resultClass, true
 }
+
+func rootRetriever(n *resolvequeue.Node) (*ir.Root, error) {
+	res, err := Index().Find(n.FQN.String(), n.Kind)
+	if err != nil {
+		return nil, err
+	}
+
+	return Wrkspc().IROf(res.Path)
+}

@@ -17,14 +17,12 @@ func (typer *typer) Property(root *ir.Root, propertyList *ir.PropertyListStmt) p
 	for _, node := range nodes {
 		varNode, ok := node.(*phpdoxer.NodeVar)
 		if ok {
-			resolveFQN(root, propertyList, varNode.Type)
-			return varNode.Type
+			return resolveFQN(root, propertyList, varNode.Type)
 		}
 	}
 
 	if hintType := parseTypeHint(propertyList); hintType != nil {
-		resolveFQN(root, propertyList, hintType)
-		return hintType
+		return resolveFQN(root, propertyList, hintType)
 	}
 
 	return nil

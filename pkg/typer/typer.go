@@ -10,12 +10,18 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/token"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/elephp/pkg/resolvequeue"
 )
 
 type Typer interface {
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Returns(root *ir.Root, funcOrMeth ir.Node) phpdoxer.Type
+	Returns(
+		root *ir.Root,
+		funcOrMeth ir.Node,
+		rootRetriever func(n *resolvequeue.Node) (*ir.Root, error),
+	) phpdoxer.Type
 
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
 	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) phpdoxer.Type
@@ -87,20 +93,37 @@ func returnTypeNode(node ir.Node) ir.Node {
 	}
 }
 
-func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) {
-	cl, ok := t.(*phpdoxer.TypeClassLike)
-	if !ok {
-		return
+func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {
+	var cl *phpdoxer.TypeClassLike
+	switch typed := t.(type) {
+	case *phpdoxer.TypeClassLike:
+		cl = typed
+
+	case *phpdoxer.TypeUnion:
+		// Basic check if it is a union between a type and null, ignore null then.
+		// NOTE: this is ideal for our use case, but other applications might want to know about the null.
+		// TODO: it might be better to move this one package up (thinking about other use cases).
+
+		if typed.Left.Kind() == phpdoxer.KindClassLike && typed.Right.Kind() == phpdoxer.KindNull {
+			cl = typed.Left.(*phpdoxer.TypeClassLike)
+		} else if typed.Left.Kind() == phpdoxer.KindNull && typed.Right.Kind() == phpdoxer.KindClassLike {
+			cl = typed.Right.(*phpdoxer.TypeClassLike)
+		}
+
+	default:
+		return t
 	}
 
 	if cl.FullyQualified {
-		return
+		return cl
 	}
 
-	tr := NewFQNTraverserHandlingKeywords(block)
+	tr := fqn.NewFQNTraverserHandlingKeywords(block)
 	root.Walk(tr)
 	res := tr.ResultFor(&ir.Name{Value: cl.Name})
 
 	cl.FullyQualified = true
 	cl.Name = res.String()
+
+	return cl
 }

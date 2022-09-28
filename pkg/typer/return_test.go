@@ -1,16 +1,18 @@
 package typer_test
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/conf"
-	"github.com/VKCOM/php-parser/pkg/errors"
+	pErrors "github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/typer"
 )
 
@@ -156,6 +158,26 @@ func Test_typer_Returns(t *testing.T) {
 			},
 			want: &phpdoxer.TypeClassLike{FullyQualified: true, Name: `\Bar`},
 		},
+		{
+			name: "Returned union null is removed",
+			args: args{
+				source: `
+                <?php
+                namespace Testing;
+
+                class Test {
+                    /**
+                     * @return \Bar|null
+                     */
+                    public function test() {}
+                }
+                `,
+				funcOrMethodGetter: func(r *ir.Root) ir.Node {
+					return r.Stmts[2].(*ir.ClassStmt).Stmts[0].(*ir.ClassMethodStmt)
+				},
+			},
+			want: &phpdoxer.TypeClassLike{FullyQualified: true, Name: `\Bar`},
+		},
 	}
 
 	tr := typer.New()
@@ -164,7 +186,7 @@ func Test_typer_Returns(t *testing.T) {
 			Major: 8,
 			Minor: 0,
 		},
-		ErrorHandlerFunc: func(e *errors.Error) {
+		ErrorHandlerFunc: func(e *pErrors.Error) {
 			t.Error(e)
 		},
 	}
@@ -183,7 +205,12 @@ func Test_typer_Returns(t *testing.T) {
 
 			root := irconv.ConvertNode(ast).(*ir.Root)
 
-			got := tr.Returns(root, tt.args.funcOrMethodGetter(root))
+			// TODO: create test cases that will use this.
+			rootRetriever := func(n *resolvequeue.Node) (*ir.Root, error) {
+				return nil, errors.New("current tests don't need this")
+			}
+
+			got := tr.Returns(root, tt.args.funcOrMethodGetter(root), rootRetriever)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("typer.Returns() = %v, want %v", got, tt.want)
 			}

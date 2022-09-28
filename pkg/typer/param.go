@@ -19,13 +19,11 @@ func (t *typer) Param(
 	}
 
 	if cmntType := findParamComment(funcOrMeth, param.Variable.Name); cmntType != nil {
-		resolveFQN(root, funcOrMeth, cmntType)
-		return cmntType
+		return resolveFQN(root, funcOrMeth, cmntType)
 	}
 
 	if hintType := parseTypeHint(param); hintType != nil {
-		resolveFQN(root, funcOrMeth, hintType)
-		return hintType
+		return resolveFQN(root, funcOrMeth, hintType)
 	}
 
 	return nil
