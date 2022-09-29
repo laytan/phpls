@@ -5,12 +5,14 @@ import (
 	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/queue"
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/traversers"
+	"golang.org/x/exp/slices"
 )
 
 // Returns the return type of the method or function, prioritizing phpdoc
@@ -64,8 +66,14 @@ func findReturnComment(
 				continue
 			}
 
-			isStatic, isFinal := parseMethodModifiers(method.Modifiers)
-			if isFinal {
+			modifiers := common.Map(
+				method.Modifiers,
+				func(modifier *ir.Identifier) string { return modifier.Value },
+			)
+
+			isStatic := slices.Contains(modifiers, "static")
+
+			if slices.Contains(modifiers, "final") {
 				log.Println("final method with inheritdoc PHPDoc is not allowed")
 				continue
 			}
@@ -120,18 +128,6 @@ func newMethodTraverser(className, methodName string, isStatic bool) *traversers
 	}
 
 	return traversers.NewMethod(methodName, className, phprivacy.PrivacyPrivate)
-}
-
-func parseMethodModifiers(identifiers []*ir.Identifier) (isStatic, isFinal bool) {
-	for _, ident := range identifiers {
-		if ident.Value == "static" {
-			isStatic = true
-		} else if ident.Value == "final" {
-			isFinal = true
-		}
-	}
-
-	return isStatic, isFinal
 }
 
 func getMethodClass(root *ir.Root, node ir.Node) *resolvequeue.Node {

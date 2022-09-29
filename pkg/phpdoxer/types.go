@@ -3,6 +3,8 @@ package phpdoxer
 import (
 	"fmt"
 	"strings"
+
+	"github.com/laytan/elephp/internal/common"
 )
 
 // TODO: support phpstan's generics: https://phpstan.org/writing-php-code/phpdoc-types#generics.
@@ -514,11 +516,7 @@ type TypeArrayShape struct {
 }
 
 func (t *TypeArrayShape) String() string {
-	values := make([]string, 0, len(t.Values))
-	for _, v := range t.Values {
-		values = append(values, v.String())
-	}
-
+	values := common.Map(t.Values, func(v *TypeArrayShapeValue) string { return v.String() })
 	return fmt.Sprintf("array{%s}", strings.Join(values, typeSeperator+" "))
 }
 
@@ -585,11 +583,7 @@ type TypeIntMask struct {
 }
 
 func (t *TypeIntMask) String() string {
-	values := make([]string, 0, len(t.Values))
-	for _, v := range t.Values {
-		values = append(values, fmt.Sprintf("%d", v))
-	}
-
+	values := common.Map(t.Values, func(v int) string { return fmt.Sprintf("%d", v) })
 	return fmt.Sprintf("int-mask<%s>", strings.Join(values, typeSeperator+" "))
 }
 
