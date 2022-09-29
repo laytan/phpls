@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	stubsRoot     = filepath.Join(pathutils.Root(), "phpstorm-stubs")
+	stubsRoot     = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 	stdlibRoot    = filepath.Join(pathutils.Root(), "test", "testdata", "definitions", "stdlib")
 	annotatedRoot = filepath.Join(pathutils.Root(), "test", "testdata", "definitions", "annotated")
 	syntaxErrRoot = filepath.Join(pathutils.Root(), "test", "testdata", "syntaxerrors")

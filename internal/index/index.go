@@ -29,7 +29,7 @@ var (
 	ErrParse    = fmt.Errorf(errParseFmt, "", nil)
 )
 
-var stubsPath = filepath.Join(pathutils.Root(), "phpstorm-stubs")
+var stubsPath = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 type Index interface {
 	Index(path string, content string) error
