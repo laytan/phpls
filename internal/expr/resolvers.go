@@ -6,6 +6,7 @@ import (
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/elephp/pkg/typer"
 )
 
 var resolvers = map[ExprType]ClassResolver{
@@ -72,7 +73,7 @@ func (p *propertyResolver) Up(
 				Path: wc.Curr.Path,
 			}
 
-			res := Typer().Property(wc.Root, t.Property)
+			res := typer.FromContainer().Property(wc.Root, t.Property)
 			clsRes, ok := res.(*phpdoxer.TypeClassLike)
 			if !ok {
 				return resolved, nil
@@ -141,7 +142,7 @@ func (p *methodResolver) Up(
 				Path: wc.Curr.Path,
 			}
 
-			res := Typer().Returns(wc.Root, t.Method, rootRetriever)
+			res := typer.FromContainer().Returns(wc.Root, t.Method, rootRetriever)
 			clsRes, ok := res.(*phpdoxer.TypeClassLike)
 			if !ok {
 				return resolved, nil
@@ -214,7 +215,7 @@ func (p *staticMethodResolver) Up(
 				Path: wc.Curr.Path,
 			}
 
-			res := Typer().Returns(wc.Root, t.Method, rootRetriever)
+			res := typer.FromContainer().Returns(wc.Root, t.Method, rootRetriever)
 			clsRes, ok := res.(*phpdoxer.TypeClassLike)
 			if !ok {
 				return resolved, nil

@@ -98,6 +98,10 @@ func New(phpv *phpversion.PHPVersion, root string) Wrkspc {
 	}
 }
 
+func FromContainer() Wrkspc {
+	return do.MustInvoke[Wrkspc](nil)
+}
+
 type wrkspc struct {
 	normalParser   parsing.Parser
 	stubParser     parsing.Parser

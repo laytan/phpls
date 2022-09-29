@@ -6,10 +6,13 @@ import (
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/common"
+	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/elephp/pkg/typer"
 )
 
 var starters = map[ExprType]StartResolver{
@@ -39,6 +42,8 @@ func (p *variableResolver) Up(
 	scopes Scopes,
 	toResolve *DownResolvement,
 ) (*Resolved, *phpdoxer.TypeClassLike, phprivacy.Privacy, bool) {
+	typ := typer.FromContainer()
+
 	if toResolve.ExprType != ExprTypeVariable {
 		return nil, nil, 0, false
 	}
@@ -86,7 +91,7 @@ func (p *variableResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		if docType := Typer().Variable(scopes.Root, ta.Assignment, scopes.Block); docType != nil {
+		if docType := typ.Variable(scopes.Root, ta.Assignment, scopes.Block); docType != nil {
 			if clsDocType, ok := docType.(*phpdoxer.TypeClassLike); ok {
 				return &Resolved{Path: scopes.Path, Node: ta.Assignment},
 					clsDocType,
@@ -105,7 +110,7 @@ func (p *variableResolver) Up(
 			}
 
 		case *ir.Parameter:
-			if t := Typer().Param(scopes.Root, scopes.Block, typedScope); t != nil {
+			if t := typ.Param(scopes.Root, scopes.Block, typedScope); t != nil {
 				if tc, ok := t.(*phpdoxer.TypeClassLike); ok {
 					return &Resolved{Node: ta.Assignment, Path: scopes.Path},
 						tc,
@@ -158,7 +163,7 @@ func (p *nameResolver) Up(
 		}
 	}
 
-	res, err := Index().Find(fqn.String(), symbol.ClassLikeScopes...)
+	res, err := index.FromContainer().Find(fqn.String(), symbol.ClassLikeScopes...)
 	if err != nil {
 		log.Println(err)
 		return nil, nil, 0, false
@@ -206,7 +211,7 @@ func (p *functionResolver) Up(
 	}
 
 	typeOfFunc := func(n ir.Node) *phpdoxer.TypeClassLike {
-		ret := Typer().Returns(scopes.Root, n, rootRetriever)
+		ret := typer.FromContainer().Returns(scopes.Root, n, rootRetriever)
 		if clsRet, ok := ret.(*phpdoxer.TypeClassLike); ok {
 			return clsRet
 		}
@@ -238,7 +243,7 @@ func (p *functionResolver) Up(
 	}
 
 	// Check for global functions.
-	def, err := Index().Find(`\`+toResolve.Identifier, ir.KindFunctionStmt)
+	def, err := index.FromContainer().Find(`\`+toResolve.Identifier, ir.KindFunctionStmt)
 	if err != nil {
 		log.Println(err)
 		return nil, nil, 0, false
@@ -285,7 +290,7 @@ func (newresolver *newResolver) Up(
 	}
 
 	if fqn := common.FullyQualify(scopes.Root, toResolve.Identifier); fqn != nil {
-		def, err := Index().Find(fqn.String(), symbol.ClassLikeScopes...)
+		def, err := index.FromContainer().Find(fqn.String(), symbol.ClassLikeScopes...)
 		if err != nil {
 			log.Println(err)
 			return nil, nil, 0, false
@@ -351,7 +356,7 @@ func defToNode(root *ir.Root, def *traversers.TrieNode) (ir.Node, bool) {
 }
 
 func defToNodeNoRoot(def *traversers.TrieNode) (ir.Node, bool) {
-	root, err := Wrkspc().IROf(def.Path)
+	root, err := wrkspc.FromContainer().IROf(def.Path)
 	if err != nil {
 		log.Println(err)
 		return nil, false

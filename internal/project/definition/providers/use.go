@@ -5,6 +5,7 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
+	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/pkg/symbol"
 )
@@ -24,7 +25,7 @@ func (p *UseProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 
 func (p *UseProvider) Define(ctx context.Context) (*definition.Definition, error) {
 	fqn := `\` + ctx.Current().(*ir.Name).Value
-	res, err := Index().Find(fqn, symbol.ClassLikeScopes...)
+	res, err := index.FromContainer().Find(fqn, symbol.ClassLikeScopes...)
 	if err != nil {
 		log.Println(err)
 		return nil, definition.ErrNoDefinitionFound

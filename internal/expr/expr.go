@@ -14,8 +14,6 @@ import (
 	"github.com/laytan/elephp/pkg/stack"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
-	"github.com/samber/do"
 )
 
 type ExprType int
@@ -28,12 +26,6 @@ const (
 	ExprTypeStaticMethod
 	ExprTypeFunction
 	ExprTypeNew
-)
-
-var (
-	Wrkspc = func() wrkspc.Wrkspc { return do.MustInvoke[wrkspc.Wrkspc](nil) }
-	Index  = func() index.Index { return do.MustInvoke[index.Index](nil) }
-	Typer  = func() typer.Typer { return do.MustInvoke[typer.Typer](nil) }
 )
 
 type Scopes struct {
@@ -178,19 +170,22 @@ func Up(symbols *stack.Stack[*DownResolvement], startClassScope, startScope ir.N
 }
 
 func newResolveQueue(c *phpdoxer.TypeClassLike) (*resolvequeue.ResolveQueue, error) {
+	ind := index.FromContainer()
+	wrk := wrkspc.FromContainer()
+
 	// TODO: this does not work when you have a trait and class of the same name/namespace.
-	sym, err := Index().Find(c.Name, symbol.ClassLikeScopes...)
+	sym, err := ind.Find(c.Name, symbol.ClassLikeScopes...)
 	if err != nil {
 		return nil, err
 	}
 
 	return resolvequeue.New(func(n *resolvequeue.Node) (*ir.Root, error) {
-		res, err := Index().Find(n.FQN.String(), n.Kind)
+		res, err := ind.Find(n.FQN.String(), n.Kind)
 		if err != nil {
 			return nil, err
 		}
 
-		return Wrkspc().IROf(res.Path)
+		return wrk.IROf(res.Path)
 	}, &resolvequeue.Node{
 		FQN:  fqn.NewFQN(c.Name),
 		Kind: sym.Symbol.NodeKind(),
@@ -214,12 +209,12 @@ func walkResolveQueue(
 	walker func(*walkContext) (done bool, err error),
 ) error {
 	for res := queue.Queue.Dequeue(); res != nil; res = queue.Queue.Dequeue() {
-		def, err := Index().Find(res.FQN.String(), res.Kind)
+		def, err := index.FromContainer().Find(res.FQN.String(), res.Kind)
 		if err != nil {
 			return err
 		}
 
-		root, err := Wrkspc().IROf(def.Path)
+		root, err := wrkspc.FromContainer().IROf(def.Path)
 		if err != nil {
 			return err
 		}
@@ -278,10 +273,10 @@ func createAndWalkResolveQueue(
 }
 
 func rootRetriever(n *resolvequeue.Node) (*ir.Root, error) {
-	res, err := Index().Find(n.FQN.String(), n.Kind)
+	res, err := index.FromContainer().Find(n.FQN.String(), n.Kind)
 	if err != nil {
 		return nil, err
 	}
 
-	return Wrkspc().IROf(res.Path)
+	return wrkspc.FromContainer().IROf(res.Path)
 }

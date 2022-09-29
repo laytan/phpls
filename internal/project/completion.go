@@ -9,6 +9,8 @@ import (
 	"unicode"
 
 	"github.com/laytan/elephp/internal/common"
+	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/traversers"
 )
@@ -25,12 +27,12 @@ func (p *Project) Complete(
 		return nil
 	}
 
-	return Index().FindPrefix(query, maxCompletionResults)
+	return index.FromContainer().FindPrefix(query, maxCompletionResults)
 }
 
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.
 func (p *Project) getCompletionQuery(pos *position.Position) string {
-	content, err := Wrkspc().ContentOf(pos.Path)
+	content, err := wrkspc.FromContainer().ContentOf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf("Getting file content for completion query: %w", err).Error(),
@@ -93,7 +95,7 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 
 // Returns the position for the namespace statement that matches the given position.
 func (p *Project) Namespace(pos *position.Position) *position.Position {
-	content, root, err := Wrkspc().AllOf(pos.Path)
+	content, root, err := wrkspc.FromContainer().AllOf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf(
@@ -123,7 +125,7 @@ func (p *Project) Namespace(pos *position.Position) *position.Position {
 
 // Returns whether the file at given pos needs a use statement for the given fqn.
 func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
-	root, err := Wrkspc().IROf(pos.Path)
+	root, err := wrkspc.FromContainer().IROf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf(

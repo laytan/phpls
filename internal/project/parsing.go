@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"appliedgo.net/what"
+	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/strutil"
 )
@@ -41,7 +42,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 				defer done.Add(1)
 				defer wg.Done()
 
-				if err := Index().Index(file.Path, file.Content); err != nil {
+				if err := index.FromContainer().Index(file.Path, file.Content); err != nil {
 					log.Println(
 						fmt.Errorf("Could not index the symbols in %s: %w", file.Path, err),
 					)
@@ -51,11 +52,12 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 		}
 	}()
 
-	if err := Wrkspc().Index(files, total, totalDone); err != nil {
+	w := wrkspc.FromContainer()
+	if err := w.Index(files, total, totalDone); err != nil {
 		log.Println(
 			fmt.Errorf(
 				"Could not index the file content of root %s: %w",
-				Wrkspc().Root(),
+				w.Root(),
 				err,
 			),
 		)
@@ -83,7 +85,8 @@ func (p *Project) ParseWithoutProgress() error {
 }
 
 func (p *Project) ParseFileUpdate(path string, content string) error {
-	prevContent, err := Wrkspc().ContentOf(path)
+	w := wrkspc.FromContainer()
+	prevContent, err := w.ContentOf(path)
 	if err != nil && !errors.Is(err, wrkspc.ErrFileNotIndexed) {
 		return fmt.Errorf("Could not read content of %s while updating: %w", path, err)
 	}
@@ -96,11 +99,11 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 	}
 
 	// NOTE: order is important here.
-	if err := Wrkspc().RefreshFrom(path, content); err != nil {
+	if err := w.RefreshFrom(path, content); err != nil {
 		return fmt.Errorf("Could not refresh indexed content of %s: %w", path, err)
 	}
 
-	if err := Index().Refresh(path, content); err != nil {
+	if err := index.FromContainer().Refresh(path, content); err != nil {
 		return fmt.Errorf("Could not refresh indexed symbols of %s: %w", path, err)
 	}
 

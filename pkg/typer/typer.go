@@ -13,6 +13,7 @@ import (
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/resolvequeue"
+	"github.com/samber/do"
 )
 
 type Typer interface {
@@ -42,6 +43,10 @@ type typer struct{}
 
 func New() Typer {
 	return &typer{}
+}
+
+func FromContainer() Typer {
+	return do.MustInvoke[Typer](nil)
 }
 
 func NodeComments(node ir.Node) []string {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irfmt"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
@@ -20,7 +21,7 @@ func (p *Project) Hover(currpos *position.Position) string {
 		return ""
 	}
 
-	content, root, err := Wrkspc().AllOf(pos.Path)
+	content, root, err := wrkspc.FromContainer().AllOf(pos.Path)
 	if err != nil {
 		log.Println(
 			fmt.Errorf("Hover error getting content/parsing of %s: %w", pos.Path, err),

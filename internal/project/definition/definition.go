@@ -6,12 +6,8 @@ import (
 
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/expr"
-	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
-	"github.com/samber/do"
 )
 
 const (
@@ -23,12 +19,6 @@ var (
 	ErrNoDefinitionFound = errors.New(
 		"No definition found for symbol at given position",
 	)
-)
-
-var (
-	Index  = func() index.Index { return do.MustInvoke[index.Index](nil) }
-	Typer  = func() typer.Typer { return do.MustInvoke[typer.Typer](nil) }
-	Wrkspc = func() wrkspc.Wrkspc { return do.MustInvoke[wrkspc.Wrkspc](nil) }
 )
 
 type Definition struct {

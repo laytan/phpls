@@ -8,10 +8,7 @@ import (
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/samber/do"
 )
-
-var Wrkspc = func() wrkspc.Wrkspc { return do.MustInvoke[wrkspc.Wrkspc](nil) }
 
 type Context interface {
 	// Whether the current node is wrapped by the given kind.
@@ -110,7 +107,7 @@ func (c *context) Start() *position.Position {
 }
 
 func (c *context) init() error {
-	content, root, err := Wrkspc().AllOf(c.start.Path)
+	content, root, err := wrkspc.FromContainer().AllOf(c.start.Path)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to parse context of %s: %w",

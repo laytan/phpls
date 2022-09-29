@@ -15,6 +15,7 @@ import (
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/samber/do"
 	"golang.org/x/exp/slices"
 )
 
@@ -77,6 +78,10 @@ func New(phpv *phpversion.PHPVersion) Index {
 		symbolTrie:       trie,
 		symbolTraversers: p,
 	}
+}
+
+func FromContainer() Index {
+	return do.MustInvoke[Index](nil)
 }
 
 func (i *index) Index(path string, content string) error {

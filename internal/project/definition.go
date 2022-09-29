@@ -10,6 +10,7 @@ import (
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/project/definition/providers"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
 )
 
@@ -64,7 +65,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 }
 
 func (p *Project) defPosition(def *definition.Definition) (*position.Position, error) {
-	content, err := Wrkspc().ContentOf(def.Path)
+	content, err := wrkspc.FromContainer().ContentOf(def.Path)
 	if err != nil {
 		log.Println(err)
 		return nil, ErrNoDefinitionFound

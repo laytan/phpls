@@ -9,10 +9,7 @@ import (
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/samber/do"
 )
-
-var Index = func() index.Index { return do.MustInvoke[index.Index](nil) }
 
 func FullyQualify(root *ir.Root, name string) *fqn.FQN {
 	if strings.HasPrefix(name, `\`) {
@@ -31,7 +28,7 @@ func FindFullyQualified(
 	kinds ...ir.NodeKind,
 ) (*traversers.TrieNode, bool) {
 	FQN := FullyQualify(root, name)
-	node, err := Index().Find(FQN.String(), kinds...)
+	node, err := index.FromContainer().Find(FQN.String(), kinds...)
 	if err != nil {
 		if !errors.Is(err, index.ErrNotFound) {
 			log.Println(err)
