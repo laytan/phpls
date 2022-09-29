@@ -1,3 +1,6 @@
 [submodule "phpstorm-stubs"]
 	path = phpstorm-stubs
 	url = https://github.com/JetBrains/phpstorm-stubs.git
+[submodule "third_party/unsafenil"]
+	path = third_party/unsafenil
+	url = https://github.com/laytan/unsafenil

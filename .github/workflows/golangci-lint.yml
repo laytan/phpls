@@ -18,7 +18,15 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.19
+
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Build unsafenil
+        run: go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
+        working-directory: ./third_party/unsafenil
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
