@@ -50,17 +50,49 @@ func FromContainer() Typer {
 }
 
 func NodeComments(node ir.Node) []string {
-	docs := []string{}
-	node.IterateTokens(func(t *token.Token) bool {
-		if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
+	switch typedNode := node.(type) {
+	case *ir.FunctionStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ArrowFunctionExpr:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClosureExpr:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassConstListStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassMethodStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.InterfaceStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.PropertyListStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.TraitStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.FunctionCallExpr:
+		return NodeComments(typedNode.Function)
+
+	default:
+		docs := []string{}
+		node.IterateTokens(func(t *token.Token) bool {
+			if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
+				return true
+			}
+
+			docs = append(docs, string(t.Value))
 			return true
-		}
-
-		docs = append(docs, string(t.Value))
-		return true
-	})
-
-	return docs
+		})
+		return docs
+	}
 }
 
 func parseTypeHint(node ir.Node) phpdoxer.Type {

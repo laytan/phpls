@@ -57,8 +57,6 @@ func (p *Project) Definition(pos *position.Position) ([]*position.Position, erro
 					return nil, ErrNoDefinitionFound
 				}
 
-				what.Is(defs)
-
 				return common.Map(defs, func(def *definition.Definition) *position.Position {
 					pos, err := defPosition(def)
 					if err != nil {
