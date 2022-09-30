@@ -26,6 +26,11 @@ func (p *NameProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 		return false
 	}
 
+	// If a constant fetch, don't define it.
+	if ctx.DirectlyWrappedBy(ir.KindConstFetchExpr) {
+		return false
+	}
+
 	return true
 }
 

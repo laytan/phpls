@@ -3,6 +3,7 @@ package symbol
 import (
 	"log"
 
+	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/position"
 )
@@ -32,6 +33,14 @@ func New(node ir.Node) Symbol {
 		return NewAssignment(typedNode)
 	case *ir.PropertyListStmt:
 		return NewProperty(typedNode)
+	case *ir.FunctionCallExpr:
+		if fn, ok := typedNode.Function.(*ir.Name); ok && fn.Value == "define" {
+			return NewGlobalConstant(typedNode)
+		}
+
+		log.Printf("symbol.New called with unsupported type %T", node)
+		return nil
+
 	default:
 		log.Printf("symbol.New called with unsupported type %T", node)
 		return nil
@@ -140,4 +149,32 @@ func NewMethod(stmt *ir.ClassMethodStmt) *MethodSymbol {
 
 func (a *MethodSymbol) NodeKind() ir.NodeKind {
 	return ir.KindClassMethodStmt
+}
+
+type GlobalConstantSymbol struct {
+	baseSymbol
+}
+
+func NewGlobalConstant(defineCall *ir.FunctionCallExpr) *GlobalConstantSymbol {
+	c := &GlobalConstantSymbol{}
+	c.FromNode(defineCall)
+
+	if firstArg, ok := defineCall.Args[0].(*ir.Argument); ok {
+		if ident, ok := firstArg.Expr.(*ir.String); ok {
+			c.identifier = ident.Value
+			return c
+		}
+	}
+
+	log.Println(
+		"Invalid constant declaration, first argument of define() call is not a string (constant identifier)",
+	)
+	what.Is(defineCall)
+	c.identifier = "ELEPHP_INVALID_CONST"
+
+	return c
+}
+
+func (g *GlobalConstantSymbol) NodeKind() ir.NodeKind {
+	return ir.KindConstantStmt
 }

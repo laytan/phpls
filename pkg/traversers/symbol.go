@@ -44,6 +44,14 @@ func (s *Symbol) EnterNode(node ir.Node) bool {
 	case *ir.FunctionStmt, *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
 		node := s.newTrieNode(symbol.New(typedNode))
 		s.trie.Put(node.Symbol.Identifier(), node)
+		return true
+
+	case *ir.FunctionCallExpr:
+		if fn, ok := typedNode.Function.(*ir.Name); ok && fn.Value == "define" {
+			node := s.newGlobalTrieNode(symbol.New(typedNode))
+			s.trie.Put(node.Symbol.Identifier(), node)
+		}
+
 		return false
 
 	default:
@@ -57,6 +65,14 @@ func (s *Symbol) newTrieNode(node symbol.Symbol) *TrieNode {
 	return &TrieNode{
 		Path:      s.path,
 		Namespace: s.currentNamespace,
+		Symbol:    node,
+	}
+}
+
+func (s *Symbol) newGlobalTrieNode(node symbol.Symbol) *TrieNode {
+	return &TrieNode{
+		Path:      s.path,
+		Namespace: "",
 		Symbol:    node,
 	}
 }
