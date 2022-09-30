@@ -23,3 +23,5 @@ class TestMultipleNamespacesInOneFile extends Env
 }
 
 closures(trim(''));
+
+echo PHP_INT_MAX;

@@ -148,6 +148,18 @@ func TestStdlibDefinitions(t *testing.T) {
 				Path: filepath.Join(stubsRoot, "standard", "standard_1.php"),
 			},
 		},
+		"constant_fetch": {
+			in: &position.Position{
+				Row:  27,
+				Col:  6,
+				Path: stdlibPath,
+			},
+			out: &position.Position{
+				Row:  209,
+				Col:  1,
+				Path: filepath.Join(stubsRoot, "Core", "Core_d.php"),
+			},
+		},
 	}
 
 	project := setup(stdlibRoot, phpversion.EightOne())
@@ -162,6 +174,8 @@ func TestStdlibDefinitions(t *testing.T) {
 
 			out, err := project.Definition(scenario.in)
 			is.NoErr(err)
+
+			is.Equal(len(out), 1)
 
 			if !reflect.DeepEqual(out[0], scenario.out) {
 				what.Is(out)
