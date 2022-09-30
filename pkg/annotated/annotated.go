@@ -17,6 +17,7 @@ import (
 // out is nil when isNoDef is true.
 type AnnotedScenario struct {
 	IsNoDef    bool
+	IsDump     bool
 	ShouldSkip bool
 	In         position.Position
 	Out        *position.Position
@@ -118,6 +119,14 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 				}
 
 				s.IsNoDef = true
+				s.In = pos
+
+			case "dump":
+				if ok {
+					t.Fatalf("naming collision, there is already a test with the name: '%s'", name)
+				}
+
+				s.IsDump = true
 				s.In = pos
 
 			default:

@@ -215,6 +215,13 @@ func TestAnnotatedDefinitions(t *testing.T) {
 						t.Fatalf("invalid test scenario, no in called for '%s'", name)
 					}
 
+					if scenario.IsDump {
+						root, err := wrkspc.FromContainer().IROf(scenario.In.Path)
+						is.NoErr(err)
+						what.Is(root)
+						return
+					}
+
 					if !scenario.IsNoDef && scenario.Out == nil {
 						t.Fatalf("invalid test scenario, no out called for '%s'", name)
 					}
