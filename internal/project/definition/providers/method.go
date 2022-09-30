@@ -18,6 +18,6 @@ func (p *MethodProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 	return kind == ir.KindMethodCallExpr
 }
 
-func (p *MethodProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *MethodProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }

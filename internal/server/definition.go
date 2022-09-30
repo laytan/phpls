@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
@@ -20,7 +21,7 @@ func (s *Server) Definition(
 	defer func() { log.Printf("Retrieving definition took %s\n", time.Since(start)) }()
 
 	target := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
-	pos, err := s.project.Definition(target)
+	definitions, err := s.project.Definition(target)
 	if err != nil {
 		if errors.Is(err, project.ErrNoDefinitionFound) {
 			log.Println(err)
@@ -31,5 +32,7 @@ func (s *Server) Definition(
 		return nil, lsperrors.ErrRequestFailed(err.Error())
 	}
 
-	return pos.ToLSPLocation(), nil
+	return common.Map(definitions, func(def *position.Position) protocol.Location {
+		return def.ToLSPLocation()
+	}), nil
 }

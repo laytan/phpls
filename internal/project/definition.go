@@ -7,6 +7,7 @@ import (
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/project/definition/providers"
@@ -34,10 +35,10 @@ var (
 
 type DefinitionProvider interface {
 	CanDefine(ctx context.Context, kind ir.NodeKind) bool
-	Define(ctx context.Context) (*definition.Definition, error)
+	Define(ctx context.Context) ([]*definition.Definition, error)
 }
 
-func (p *Project) Definition(pos *position.Position) (*position.Position, error) {
+func (p *Project) Definition(pos *position.Position) ([]*position.Position, error) {
 	ctx, err := context.New(pos)
 	if err != nil {
 		return nil, fmt.Errorf("Could not create definition context: %w", err)
@@ -50,13 +51,23 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 			if provider.CanDefine(ctx, kind) {
 				what.Happens("Defining using provider %T", provider)
 
-				def, err := provider.Define(ctx)
+				defs, err := provider.Define(ctx)
 				if err != nil {
 					log.Println(err)
 					return nil, ErrNoDefinitionFound
 				}
 
-				return p.defPosition(def)
+				what.Is(defs)
+
+				return common.Map(defs, func(def *definition.Definition) *position.Position {
+					pos, err := defPosition(def)
+					if err != nil {
+						log.Println(err)
+						return nil
+					}
+
+					return pos
+				}), nil
 			}
 		}
 	}
@@ -65,7 +76,7 @@ func (p *Project) Definition(pos *position.Position) (*position.Position, error)
 	return nil, ErrNoDefinitionFound
 }
 
-func (p *Project) defPosition(def *definition.Definition) (*position.Position, error) {
+func defPosition(def *definition.Definition) (*position.Position, error) {
 	content, err := wrkspc.FromContainer().ContentOf(def.Path)
 	if err != nil {
 		log.Println(err)

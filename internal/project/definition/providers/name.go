@@ -35,7 +35,7 @@ func (p *NameProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 }
 
 // TODO: use DefineExpr.
-func (p *NameProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *NameProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	tdef, ok := common.FindFullyQualified(
 		ctx.Root(),
 		ctx.Current().(*ir.Name).Value,
@@ -44,5 +44,5 @@ func (p *NameProvider) Define(ctx context.Context) (*definition.Definition, erro
 		return nil, definition.ErrNoDefinitionFound
 	}
 
-	return definition.TrieNodeToDef(tdef), nil
+	return []*definition.Definition{definition.TrieNodeToDef(tdef)}, nil
 }

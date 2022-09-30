@@ -26,13 +26,13 @@ func (p *ThisProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 
 // TODO: use DefineExpr.
 // TODO: merge with variable provider.
-func (p *ThisProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *ThisProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	if ir.GetNodeKind(ctx.Current()) == ir.KindRoot {
 		return nil, definition.ErrNoDefinitionFound
 	}
 
-	return &definition.Definition{
+	return []*definition.Definition{{
 		Path: ctx.Start().Path,
 		Node: symbol.New(ctx.ClassScope()),
-	}, nil
+	}}, nil
 }

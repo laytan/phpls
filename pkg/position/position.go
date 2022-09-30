@@ -27,8 +27,8 @@ func FromTextDocumentPositionParams(
 	}
 }
 
-func (p *Position) ToLSPLocation() []protocol.Location {
-	return []protocol.Location{{
+func (p *Position) ToLSPLocation() protocol.Location {
+	return protocol.Location{
 		URI: protocol.DocumentURI("file://" + p.Path),
 		Range: protocol.Range{
 			Start: protocol.Position{
@@ -40,7 +40,7 @@ func (p *Position) ToLSPLocation() []protocol.Location {
 				Character: uint32(p.Col) - 1,
 			},
 		},
-	}}
+	}
 }
 
 func PosToLoc(content string, pos uint) (row uint, col uint) {

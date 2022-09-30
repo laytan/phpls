@@ -42,7 +42,15 @@ type Index interface {
 	// The given namespace must be fully qualified.
 	//
 	// Giving this no kinds or ir.KindRoot will return any kind.
+	//
+	// In the rare case of multiple matches (that you care about), use
+	// FindMultiple.
 	Find(fqn string, kind ...ir.NodeKind) (*traversers.TrieNode, error)
+
+	// FindMultiple does the same as Find, but returns a slice with all matches.
+	// Having multiple matches is rare (caring about it is rarer), so most of
+	// the time, use Find.
+	FindMultiple(fqn string, kind ...ir.NodeKind) ([]*traversers.TrieNode, error)
 
 	// Finds a prefix/completes a string.
 	// Do not call this with a namespaced symbol, only the class or function name.
@@ -106,10 +114,26 @@ func (i *index) Index(path string, content string) error {
 	return nil
 }
 
+// Find returns the first result matching the given query.
+// There are only a small amount of cases where multiple matches will be found,
+// If you want those, use FindMultiple instead.
 func (i *index) Find(fqnStr string, kind ...ir.NodeKind) (*traversers.TrieNode, error) {
+	results, err := i.FindMultiple(fqnStr, kind...)
+	if err != nil {
+		return nil, err
+	}
+
+	return results[0], nil
+}
+
+// FindMultiple does the same as Find, but in the rare case of multiple matches
+// returns all results.
+func (i *index) FindMultiple(fqnStr string, kind ...ir.NodeKind) ([]*traversers.TrieNode, error) {
 	FQNObj := fqn.NewFQN(fqnStr)
 
 	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
+
+	matches := []*traversers.TrieNode{}
 
 	results := i.symbolTrie.SearchExact(FQNObj.Name())
 	for _, result := range results {
@@ -118,8 +142,12 @@ func (i *index) Find(fqnStr string, kind ...ir.NodeKind) (*traversers.TrieNode, 
 		}
 
 		if retAll || slices.Contains(kind, result.Symbol.NodeKind()) {
-			return result, nil
+			matches = append(matches, result)
 		}
+	}
+
+	if len(matches) > 0 {
+		return matches, nil
 	}
 
 	return nil, fmt.Errorf(errNotFoundFmt, fqnStr, kind)

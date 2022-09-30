@@ -20,7 +20,7 @@ type AnnotedScenario struct {
 	IsDump     bool
 	ShouldSkip bool
 	In         position.Position
-	Out        *position.Position
+	Out        []*position.Position
 }
 
 var annotationRgx = regexp.MustCompile(`@t_(\w+)\(([\w\s]+), (\d+)\)`)
@@ -79,7 +79,7 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 				s = &AnnotedScenario{
 					IsNoDef: false,
 					In:      position.Position{},
-					Out:     nil,
+					Out:     []*position.Position{},
 				}
 				g[name] = s
 				scenarioLen++
@@ -106,12 +106,7 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 				s.In = pos
 
 			case "out":
-				// Already had an out for this, so it's a naming collision.
-				if s.Out != nil {
-					t.Fatalf("naming collision, t_out is already set for test with name '%s'", name)
-				}
-
-				s.Out = &pos
+				s.Out = append(s.Out, &pos)
 
 			case "nodef":
 				if ok {

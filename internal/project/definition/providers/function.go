@@ -24,6 +24,6 @@ func (p *FunctionProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 	return ok
 }
 
-func (p *FunctionProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *FunctionProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }

@@ -15,11 +15,13 @@ import (
 )
 
 func (p *Project) Hover(currpos *position.Position) string {
-	pos, err := p.Definition(currpos)
-	if err != nil {
+	poss, err := p.Definition(currpos)
+	if err != nil || len(poss) == 0 {
 		log.Println(fmt.Errorf("Hover error getting definition: %w", err))
 		return ""
 	}
+
+	pos := poss[0]
 
 	content, root, err := wrkspc.FromContainer().AllOf(pos.Path)
 	if err != nil {

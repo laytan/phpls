@@ -21,7 +21,7 @@ func (p *VariableProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 }
 
 // TODO: use DefineExpr.
-func (p *VariableProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *VariableProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	t := traversers.NewAssignment(ctx.Current().(*ir.SimpleVar))
 	ctx.Scope().Walk(t)
 
@@ -29,8 +29,8 @@ func (p *VariableProvider) Define(ctx context.Context) (*definition.Definition, 
 		return nil, definition.ErrNoDefinitionFound
 	}
 
-	return &definition.Definition{
+	return []*definition.Definition{{
 		Path: ctx.Start().Path,
 		Node: symbol.NewAssignment(t.Assignment),
-	}, nil
+	}}, nil
 }

@@ -17,6 +17,6 @@ func (p *StaticProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 	return kind == ir.KindStaticCallExpr
 }
 
-func (p *StaticProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *StaticProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }

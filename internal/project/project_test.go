@@ -163,7 +163,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out, err := project.Definition(scenario.in)
 			is.NoErr(err)
 
-			if !reflect.DeepEqual(out, scenario.out) {
+			if !reflect.DeepEqual(out[0], scenario.out) {
 				what.Is(out)
 				what.Is(scenario.out)
 				t.Errorf("definitions don't match, run with `-tags what` to debug")

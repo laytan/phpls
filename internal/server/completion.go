@@ -135,8 +135,8 @@ func (s *Server) additionalTextEdits(
 
 	return []protocol.TextEdit{{
 		Range: protocol.Range{
-			Start: protocol.Position{Line: retPos[0].Range.Start.Line + 2},
-			End:   protocol.Position{Line: retPos[0].Range.Start.Line + 2},
+			Start: protocol.Position{Line: retPos.Range.Start.Line + 2},
+			End:   protocol.Position{Line: retPos.Range.Start.Line + 2},
 		},
 		NewText: useStmt + "\n",
 	}}

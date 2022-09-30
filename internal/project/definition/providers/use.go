@@ -23,7 +23,7 @@ func (p *UseProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 	return kind == ir.KindName && ctx.DirectlyWrappedBy(ir.KindUseStmt)
 }
 
-func (p *UseProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *UseProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	fqn := `\` + ctx.Current().(*ir.Name).Value
 	res, err := index.FromContainer().Find(fqn, symbol.ClassLikeScopes...)
 	if err != nil {
@@ -31,8 +31,8 @@ func (p *UseProvider) Define(ctx context.Context) (*definition.Definition, error
 		return nil, definition.ErrNoDefinitionFound
 	}
 
-	return &definition.Definition{
+	return []*definition.Definition{{
 		Path: res.Path,
 		Node: res.Symbol,
-	}, nil
+	}}, nil
 }

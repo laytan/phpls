@@ -18,6 +18,6 @@ func (p *PropertyProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 	return kind == ir.KindPropertyFetchExpr
 }
 
-func (p *PropertyProvider) Define(ctx context.Context) (*definition.Definition, error) {
+func (p *PropertyProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }
