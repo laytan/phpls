@@ -9,3 +9,6 @@ gobuild:
 
 gotestbuild:
 	go build -o elephp -tags what cmd/main.go
+
+build-unsafenil:
+	cd third_party/unsafenil && go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
