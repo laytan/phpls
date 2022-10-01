@@ -109,48 +109,7 @@ func (p *methodResolver) Up(
 		return nil, nil, false
 	}
 
-	// Is this the first iteration/classlike we are checking?
-	isFirst := true
-
-	// Is this the first class or traits used by the first class?
-	isFirstClass := true
-
-	return createAndWalkResolveQueue(
-		ctx,
-		func(wc *walkContext) (*Resolved, *phpdoxer.TypeClassLike) {
-			defer func() { isFirst = false }()
-
-			currKind := wc.Curr.Symbol.NodeKind()
-
-			// if this is a class, but not the first one.
-			if !isFirst && currKind == ir.KindClassStmt {
-				isFirstClass = false
-			}
-
-			actPrivacy := determinePrivacy(privacy, currKind, isFirst, isFirstClass)
-
-			// TODO: move the property method to this package.
-			t := traversers.NewMethod(toResolve.Identifier, wc.FQN.Name(), actPrivacy)
-			wc.Root.Walk(t)
-
-			if t.Method == nil {
-				return nil, nil
-			}
-
-			resolved := &Resolved{
-				Node: t.Method,
-				Path: wc.Curr.Path,
-			}
-
-			res := typer.FromContainer().Returns(wc.Root, t.Method, rootRetriever)
-			clsRes, ok := res.(*phpdoxer.TypeClassLike)
-			if !ok {
-				return resolved, nil
-			}
-
-			return resolved, clsRes
-		},
-	)
+	return methodUp(ctx, privacy, toResolve, traversers.NewMethod)
 }
 
 type staticMethodResolver struct{}
@@ -178,51 +137,11 @@ func (p *staticMethodResolver) Up(
 		return nil, nil, false
 	}
 
-	// Is this the first iteration/classlike we are checking?
-	isFirst := true
-
-	// Is this the first class or traits used by the first class?
-	isFirstClass := true
-
-	return createAndWalkResolveQueue(
+	return methodUp(
 		ctx,
-		func(wc *walkContext) (*Resolved, *phpdoxer.TypeClassLike) {
-			defer func() { isFirst = false }()
-
-			currKind := wc.Curr.Symbol.NodeKind()
-
-			// if this is a class, but not the first one.
-			if !isFirst && currKind == ir.KindClassStmt {
-				isFirstClass = false
-			}
-
-			actPrivacy := determinePrivacy(privacy, currKind, isFirst, isFirstClass)
-
-			// TODO: move the property method to this package.
-			t := traversers.NewMethodStatic(
-				toResolve.Identifier,
-				wc.FQN.Name(),
-				actPrivacy,
-			)
-			wc.Root.Walk(t)
-
-			if t.Method == nil {
-				return nil, nil
-			}
-
-			resolved := &Resolved{
-				Node: t.Method,
-				Path: wc.Curr.Path,
-			}
-
-			res := typer.FromContainer().Returns(wc.Root, t.Method, rootRetriever)
-			clsRes, ok := res.(*phpdoxer.TypeClassLike)
-			if !ok {
-				return resolved, nil
-			}
-
-			return resolved, clsRes
-		},
+		privacy,
+		toResolve,
+		traversers.NewMethodStatic,
 	)
 }
 
@@ -249,4 +168,53 @@ func determinePrivacy(
 	}
 
 	return actPrivacy
+}
+
+func methodUp(
+	ctx *phpdoxer.TypeClassLike,
+	privacy phprivacy.Privacy,
+	toResolve *DownResolvement,
+	newTraverser func(name, classLikeName string, privacy phprivacy.Privacy) *traversers.Method,
+) (*Resolved, *phpdoxer.TypeClassLike, bool) {
+	// Is this the first iteration/classlike we are checking?
+	isFirst := true
+
+	// Is this the first class or traits used by the first class?
+	isFirstClass := true
+
+	return createAndWalkResolveQueue(
+		ctx,
+		func(wc *walkContext) (*Resolved, *phpdoxer.TypeClassLike) {
+			defer func() { isFirst = false }()
+
+			currKind := wc.Curr.Symbol.NodeKind()
+
+			// if this is a class, but not the first one.
+			if !isFirst && currKind == ir.KindClassStmt {
+				isFirstClass = false
+			}
+
+			actPrivacy := determinePrivacy(privacy, currKind, isFirst, isFirstClass)
+
+			t := newTraverser(toResolve.Identifier, wc.FQN.Name(), actPrivacy)
+			wc.Root.Walk(t)
+
+			if t.Method == nil {
+				return nil, nil
+			}
+
+			resolved := &Resolved{
+				Node: t.Method,
+				Path: wc.Curr.Path,
+			}
+
+			res := typer.FromContainer().Returns(wc.Root, t.Method, rootRetriever)
+			clsRes, ok := res.(*phpdoxer.TypeClassLike)
+			if !ok {
+				return resolved, nil
+			}
+
+			return resolved, clsRes
+		},
+	)
 }
