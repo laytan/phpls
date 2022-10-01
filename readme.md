@@ -7,114 +7,13 @@ Elephp is a language server for PHP.
 
 ## Features
 
-Below I have outlined all features that a LSP can theoretically do, and the progress/priority for it.
-
-### In progress/done
-
-Below list is what needs to be done before v1 (or at least the first release).
-
-- [x] Communication
-    - [x] Stdio
-    - [x] Websockets
-    - [x] TCP
-- [ ] Go to definition
-    - [x] Standard PHP symbols
-    - [x] Use statements
-    - [x] Namespace statements
-    - [x] ClassLike (classes, interfaces & traits)
-    - [x] Extends statements
-    - [x] Global variables
-    - [x] Local variables
-    - [x] Parameters
-    - [ ] Methods
-        - [x] On $this
-        - [x] On variables created using new X()
-        - [x] On variables with @var phpdoc
-        - [x] On typed property chains $foo->bar->foobar->test()
-        - [x] Static
-        - [ ] Final methods
-        - [ ] @method PhpDoc
-        - [ ] parent::__construct
-    - [ ] Properties
-        - [x] On $this
-        - [x] On variables created using new X()
-        - [x] On variables with a @var phpdoc
-        - [x] On typed property chains $foo->bar->foobar->test
-    - [ ] Constants (classLike & global)
-    - [ ] Anonymous functions
-    - [ ] Arrow functions
-    - [ ] Class names in PhpDoc
-- [ ] Completion
-    - [x] Class-like (interface, class & trait) names
-    - [x] Function names
-    - [ ] Variables names
-    - [ ] Local variables/functions
-    - [ ] Parameters
-    - [ ] Methods
-    - [ ] Properties
-    - [ ] Constants
-    - [ ] Namespaces
-    - [ ] PHP Keywords/language constructs
-    - [ ] Show details about completion items (use hover content?)
-    - [x] Automatic use statement on complete
-    - [ ] **Incomplete files** (with syntax errors), challenging because the parser disregards lines with syntax errors
-        - [x] Done in a hacky way, parsing out current word ourselves
-        - [ ] Context aware (if $this-> for example, add all members on the current class)
-    - [x] Autocomplete namespace usage
-- [ ] Hover
-    - [x] Basic, showing phpdoc and signature of symbols that definition supports
-    - [ ] Show property privacy
-    - [ ] To be continued...
-
-### Features for later
-
-- Check if we can publish the binary/ls via packagist
-- Go to declaration
-- Go to type definition
-- Go to implementation
-- Find references
-- Document symbols
-- Signature help
-    - Workspace symbols
-    - Watching for changes outside editor (Did change watched files)
-- Diagnostics (Publish & Pull)
-- Highlight references (Document highlight)
-- Code lens
-- Folding
-- Code action
-    - Rename
-    - Align associative array keys
-    - Create interface from class
-        - get all public functions in the class and create an interface with them
-        - interface name is the current class name + Interface
-    - Override (asks for method to override, can lsp ask for input?)
-        - can lsp ask for input
-        - maybe add the trigger to the current class name and populate it with 'override x, override y' etc.
-    - Update interface
-        - when on a method that is implementing an interface (incorrectly)
-        - update the interface signature to the current method signature
-
-### Features with even lower priority/that don't make sense to me
-
-**Look into what these are:**  
-- Inline value (is this a refactor?)
-- Inlay hints (Looks like a completion?)
-
-**Others:**  
-- Selection range
-- Document link
-- Semantic tokens
-- Moniker
-- Document Colors
-- Formatting (Use third party formatter?)
-    - Full formatting
-    - Range formatting
-    - On type formatting
-- Linked editing range
+- Go To Definition, mostly done, see [this milestone](https://github.com/laytan/elephp/milestone/1)
+- Hover, basic implementation, shows the PHPDoc and signature for the symbol under cursor that can be defined using Go To Definition
+- Completion, basic implementation, completes global functions, constants, classes, interfaces and traits, and auto-inserts a use-statement, see [this issue](https://github.com/laytan/elephp/issues/22)
 
 ## Installation
 
-### Prebuilt
+### Pre-built
 
 1. Download the zip file from the releases page
 2. Unzip this somewhere
