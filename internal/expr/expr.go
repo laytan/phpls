@@ -187,7 +187,7 @@ func newResolveQueue(c *phpdoxer.TypeClassLike) (*resolvequeue.ResolveQueue, err
 
 		return wrk.IROf(res.Path)
 	}, &resolvequeue.Node{
-		FQN:  fqn.NewFQN(c.Name),
+		FQN:  fqn.New(c.Name),
 		Kind: sym.Symbol.NodeKind(),
 	}), nil
 }

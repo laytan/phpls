@@ -13,10 +13,10 @@ import (
 
 func FullyQualify(root *ir.Root, name string) *fqn.FQN {
 	if strings.HasPrefix(name, `\`) {
-		return fqn.NewFQN(name)
+		return fqn.New(name)
 	}
 
-	t := fqn.NewFQNTraverser()
+	t := fqn.NewTraverser()
 	root.Walk(t)
 
 	return t.ResultFor(&ir.Name{Value: name})

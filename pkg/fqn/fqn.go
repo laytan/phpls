@@ -14,8 +14,7 @@ type FQN struct {
 	value string
 }
 
-// TODO: rename to New
-func NewFQN(value string) *FQN {
+func New(value string) *FQN {
 	if value[0:1] != partSeperator {
 		panic("Trying to create FQN without a fully qualified input.")
 	}
@@ -38,17 +37,17 @@ func (f *FQN) Name() string {
 	return parts[len(parts)-1]
 }
 
-func NewFQNTraverser() *FQNTraverser {
-	return &FQNTraverser{}
+func NewTraverser() *Traverser {
+	return &Traverser{}
 }
 
 // A FQNTraverser that handles keywords like self or static.
-func NewFQNTraverserHandlingKeywords(block ir.Node) *FQNTraverser {
-	return &FQNTraverser{block: block}
+func NewTraverserHandlingKeywords(block ir.Node) *Traverser {
+	return &Traverser{block: block}
 }
 
-// FQNTraverser implements ir.Visitor.
-type FQNTraverser struct {
+// Traverser implements ir.Visitor.
+type Traverser struct {
 	fileUses      []*ir.UseStmt
 	fileNamespace string
 
@@ -56,7 +55,7 @@ type FQNTraverser struct {
 	blockClass *ir.ClassStmt
 }
 
-func (f *FQNTraverser) ResultFor(name *ir.Name) *FQN {
+func (f *Traverser) ResultFor(name *ir.Name) *FQN {
 	// Handle self and static by returning the class the block is in.
 	if f.block != nil && f.blockClass != nil {
 		if name.Value == "self" || name.Value == "static" {
@@ -65,32 +64,32 @@ func (f *FQNTraverser) ResultFor(name *ir.Name) *FQN {
 	}
 
 	if name.IsFullyQualified() {
-		return NewFQN(name.Value)
+		return New(name.Value)
 	}
 
 	// If any use statement ends with the class name, use that.
 	for _, usage := range f.fileUses {
 		if usage.Alias != nil {
 			if usage.Alias.Value == name.LastPart() {
-				return NewFQN(partSeperator + usage.Use.Value)
+				return New(partSeperator + usage.Use.Value)
 			}
 		}
 
 		if usage.Use.LastPart() == name.LastPart() {
-			return NewFQN(partSeperator + usage.Use.Value)
+			return New(partSeperator + usage.Use.Value)
 		}
 	}
 
 	// Else use namespace+class name.
 	if f.fileNamespace != "" {
-		return NewFQN(partSeperator + f.fileNamespace + partSeperator + name.LastPart())
+		return New(partSeperator + f.fileNamespace + partSeperator + name.LastPart())
 	}
 
 	// Else use class name.
-	return NewFQN(partSeperator + name.LastPart())
+	return New(partSeperator + name.LastPart())
 }
 
-func (f *FQNTraverser) EnterNode(node ir.Node) bool {
+func (f *Traverser) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
 	case *ir.ClassStmt:
 		if f.block == nil {
@@ -124,4 +123,4 @@ func (f *FQNTraverser) EnterNode(node ir.Node) bool {
 	}
 }
 
-func (f *FQNTraverser) LeaveNode(ir.Node) {}
+func (f *Traverser) LeaveNode(ir.Node) {}

@@ -131,7 +131,7 @@ func newMethodTraverser(className, methodName string, isStatic bool) *traversers
 }
 
 func getMethodClass(root *ir.Root, node ir.Node) *resolvequeue.Node {
-	t := fqn.NewFQNTraverserHandlingKeywords(node)
+	t := fqn.NewTraverserHandlingKeywords(node)
 	root.Walk(t)
 	fqn := t.ResultFor(&ir.Name{Value: "self"})
 

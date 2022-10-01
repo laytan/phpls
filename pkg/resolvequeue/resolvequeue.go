@@ -51,7 +51,7 @@ func (r *ResolveQueue) Resolve(
 	extends = make([]*Node, 0, len(traverser.Extends))
 	implements = make([]*Node, 0, len(traverser.Implements))
 
-	fqnTraverser := fqn.NewFQNTraverser()
+	fqnTraverser := fqn.NewTraverser()
 	root.Walk(fqnTraverser)
 
 	for _, use := range traverser.Uses {

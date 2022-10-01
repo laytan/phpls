@@ -44,7 +44,7 @@ func TestFQN(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
 
-			f := fqn.NewFQN(test.FQN)
+			f := fqn.New(test.FQN)
 			is.Equal(f.String(), test.FQN)
 			is.Equal(f.Name(), test.Name)
 			is.Equal(f.Namespace(), test.Namespace)

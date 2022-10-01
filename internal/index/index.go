@@ -129,7 +129,7 @@ func (i *index) Find(fqnStr string, kind ...ir.NodeKind) (*traversers.TrieNode, 
 // FindMultiple does the same as Find, but in the rare case of multiple matches
 // returns all results.
 func (i *index) FindMultiple(fqnStr string, kind ...ir.NodeKind) ([]*traversers.TrieNode, error) {
-	FQNObj := fqn.NewFQN(fqnStr)
+	FQNObj := fqn.New(fqnStr)
 
 	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
 

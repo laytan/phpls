@@ -155,7 +155,7 @@ func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {
 		return cl
 	}
 
-	tr := fqn.NewFQNTraverserHandlingKeywords(block)
+	tr := fqn.NewTraverserHandlingKeywords(block)
 	root.Walk(tr)
 	res := tr.ResultFor(&ir.Name{Value: cl.Name})
 
