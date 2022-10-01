@@ -1,3 +1,4 @@
+//nolint:unsafenil // The first arg being false means nil will be returned here.
 package phpdoxer
 
 import (
