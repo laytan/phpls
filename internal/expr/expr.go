@@ -16,7 +16,7 @@ import (
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
-type ExprType int
+type ExprType int //nolint:revive // Type is not really descriptive and a reserved word in lowercase.
 
 const (
 	ExprTypeProperty ExprType = iota
@@ -129,7 +129,6 @@ func Resolve(
 		resolver := resolvers[curr.ExprType]
 		res, n, ok := resolver.Up(next, privacy, curr)
 		if !ok {
-
 			// Run out the stack, to see how many were left to do.
 			left = 1
 			for curr = symbols.Pop(); curr != nil; curr = symbols.Pop() {

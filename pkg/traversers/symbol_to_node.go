@@ -40,4 +40,4 @@ func (stn *SymbolToNode) EnterNode(node ir.Node) bool {
 	return false
 }
 
-func (v *SymbolToNode) LeaveNode(ir.Node) {}
+func (stn *SymbolToNode) LeaveNode(ir.Node) {}
