@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"fmt"
 	"log"
 
 	"appliedgo.net/what"
@@ -169,23 +170,12 @@ func Up(symbols *stack.Stack[*DownResolvement], startClassScope, startScope ir.N
 }
 
 func newResolveQueue(c *phpdoxer.TypeClassLike) (*resolvequeue.ResolveQueue, error) {
-	ind := index.FromContainer()
-	wrk := wrkspc.FromContainer()
-
-	// TODO: this does not work when you have a trait and class of the same name/namespace.
-	sym, err := ind.Find(c.Name, symbol.ClassLikeScopes...)
+	sym, err := index.FromContainer().Find(c.Name, symbol.ClassLikeScopes...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("newResolveQueue(%s): %w", c, err)
 	}
 
-	return resolvequeue.New(func(n *resolvequeue.Node) (*ir.Root, error) {
-		res, err := ind.Find(n.FQN.String(), n.Kind)
-		if err != nil {
-			return nil, err
-		}
-
-		return wrk.IROf(res.Path)
-	}, &resolvequeue.Node{
+	return resolvequeue.New(rootRetriever, &resolvequeue.Node{
 		FQN:  fqn.New(c.Name),
 		Kind: sym.Symbol.NodeKind(),
 	}), nil
@@ -210,12 +200,12 @@ func walkResolveQueue(
 	for res := queue.Queue.Dequeue(); res != nil; res = queue.Queue.Dequeue() {
 		def, err := index.FromContainer().Find(res.FQN.String(), res.Kind)
 		if err != nil {
-			return err
+			return fmt.Errorf("walkResolveQueue: index.Find(%s, %d): %w", res.FQN, res.Kind, err)
 		}
 
 		root, err := wrkspc.FromContainer().IROf(def.Path)
 		if err != nil {
-			return err
+			return fmt.Errorf("walkResolveQueue: wrkspc.IROf(%s): %w", def.Path, err)
 		}
 
 		done, err := walker(
@@ -274,8 +264,13 @@ func createAndWalkResolveQueue(
 func rootRetriever(n *resolvequeue.Node) (*ir.Root, error) {
 	res, err := index.FromContainer().Find(n.FQN.String(), n.Kind)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rootRetriever: index.Find(%s, %d): %w", n.FQN, n.Kind, err)
 	}
 
-	return wrkspc.FromContainer().IROf(res.Path)
+	root, err := wrkspc.FromContainer().IROf(res.Path)
+	if err != nil {
+		return nil, fmt.Errorf("rootRetriever: wrkspc.IROf(%s): %w", res.Path, err)
+	}
+
+	return root, nil
 }
