@@ -10,6 +10,7 @@ Elephp is a language server for PHP.
 - Go To Definition, mostly done, see [this milestone](https://github.com/laytan/elephp/milestone/1)
 - Hover, basic implementation, shows the PHPDoc and signature for the symbol under cursor that can be defined using Go To Definition
 - Completion, basic implementation, completes global functions, constants, classes, interfaces and traits, and auto-inserts a use-statement, see [this issue](https://github.com/laytan/elephp/issues/22)
+- Diagnostics, basic diagnostics for syntax/parse errors, use PHPStan, PHPCS etc. if more diagnostics are wanted
 
 ## Installation
 

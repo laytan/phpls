@@ -40,3 +40,4 @@ jobs:
       run: richgo test -cover -race -shuffle=on -timeout=60s -v -tags what ./...
       env:
         RICHGO_FORCE_COLOR: 1
+        CI: true

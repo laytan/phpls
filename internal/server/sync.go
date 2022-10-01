@@ -6,11 +6,33 @@ import (
 	"strings"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	"github.com/laytan/elephp/pkg/phplint"
 )
 
 func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
-	return s.isMethodAllowed("DidOpen")
+	if err := s.isMethodAllowed("DidOpen"); err != nil {
+		return err
+	}
+
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+	issues, isUpdated, err := s.project.DiagnoseFile(path)
+	if err != nil {
+		log.Println(err)
+	} else if isUpdated {
+		log.Printf("Opened file %s, found %d diagnostics", path, len(issues))
+
+		err := s.client.PublishDiagnostics(
+			ctx,
+			s.convertIssuesToDiagnostics(issues, params.TextDocument.URI, params.TextDocument.Version),
+		)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	return nil
 }
 
 func (s *Server) DidChange(
@@ -38,10 +60,73 @@ func (s *Server) DidChange(
 		return lsperrors.ErrRequestFailed(err.Error())
 	}
 
+	issues, isUpdated, err := s.project.Diagnose(path, newContent.Text)
+	if err != nil {
+		log.Println(err)
+	} else if isUpdated {
+		log.Printf("File change of %s resulted in %d updated diagnostics, pushing", path, len(issues))
+
+		err := s.client.PublishDiagnostics(
+			ctx,
+			s.convertIssuesToDiagnostics(issues, params.TextDocument.URI, params.TextDocument.Version),
+		)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 	log.Printf("Parsed changes for file %s\n", path)
 	return nil
 }
 
 func (s *Server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
-	return s.isMethodAllowed("DidClose")
+	if err := s.isMethodAllowed("DidClose"); err != nil {
+		return err
+	}
+
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+	if s.project.HasDiagnostics(path) {
+		log.Printf("File %s closed, clearing diagnostics", path)
+
+		s.project.ClearDiagnostics(path)
+
+		err := s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
+			URI:         params.TextDocument.URI,
+			Diagnostics: []protocol.Diagnostic{},
+		})
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) convertIssuesToDiagnostics(
+	issues []*phplint.Issue,
+	documentURI protocol.DocumentURI,
+	documentVersion int32,
+) *protocol.PublishDiagnosticsParams {
+	return &protocol.PublishDiagnosticsParams{
+		URI:     documentURI,
+		Version: documentVersion,
+		Diagnostics: common.Map(issues, func(issue *phplint.Issue) protocol.Diagnostic {
+			return protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{
+						Line:      uint32(issue.Line) - 1,
+						Character: 0,
+					},
+					End: protocol.Position{
+						Line:      uint32(issue.Line),
+						Character: 0,
+					},
+				},
+				Severity: protocol.SeverityError,
+				Code:     issue.Code,
+				Source:   "PHP",
+				Message:  issue.Message,
+			}
+		}),
+	}
 }
