@@ -4,11 +4,13 @@ import (
 	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/pkg/symbol"
 )
 
 func NewAssignment(variable *ir.SimpleVar) *Assignment {
 	return &Assignment{
 		variable: variable,
+		isFirst:  true,
 	}
 }
 
@@ -17,11 +19,22 @@ type Assignment struct {
 	variable   *ir.SimpleVar
 	Assignment *ir.SimpleVar
 	Scope      ir.Node
+	isFirst    bool
 }
 
 func (a *Assignment) EnterNode(node ir.Node) bool {
-	if a.Assignment != nil {
+	defer func() { a.isFirst = false }()
+
+	// Only check the current scope.
+	if !a.isFirst && symbol.IsScope(node) {
 		return false
+	}
+
+	// Only check assignments before our variable.
+	if pos := ir.GetPosition(node); pos != nil {
+		if pos.StartPos > a.variable.Position.StartPos {
+			return false
+		}
 	}
 
 	switch typedNode := node.(type) {

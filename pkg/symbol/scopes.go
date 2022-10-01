@@ -8,8 +8,9 @@ import (
 // where for example variables are scoped to.
 var (
 	Scopes = map[ir.NodeKind]any{
-		ir.KindFunctionStmt: true,
-		ir.KindClosureExpr:  true,
+		ir.KindFunctionStmt:      true,
+		ir.KindClosureExpr:       true,
+		ir.KindArrowFunctionExpr: true,
 
 		ir.KindClassStmt:       true,
 		ir.KindClassMethodStmt: true,
