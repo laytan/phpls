@@ -5,15 +5,25 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
-var root string
+var (
+	root      string
+	rootMutex sync.RWMutex
+)
 
 // Tries to find the root of the project independently of the running conditions.
 func Root() string {
+	rootMutex.RLock()
 	if root != "" {
+		rootMutex.RUnlock()
 		return root
 	}
+
+	rootMutex.RUnlock()
+	rootMutex.Lock()
+	defer rootMutex.Unlock()
 
 	wd, err := os.Getwd()
 	if err != nil {
