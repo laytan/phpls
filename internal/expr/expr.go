@@ -127,20 +127,18 @@ func Resolve(
 	}
 
 	for curr := symbols.Pop(); curr != nil; curr = symbols.Pop() {
-		resolver := resolvers[curr.ExprType]
-		res, n, ok := resolver.Up(next, privacy, curr)
-		if !ok && n != nil {
-			// Run out the stack, to see how many were left to do.
-			left = 1
-			for curr = symbols.Pop(); curr != nil; curr = symbols.Pop() {
-				left++
-			}
-
-			return res, n, left
+		if next == nil {
+			return res, nil, symbols.Length() + 1
 		}
 
-		next = n
+		resolver := resolvers[curr.ExprType]
+		res, n, ok := resolver.Up(next, privacy, curr)
+		if !ok {
+			return res, n, symbols.Length() + 1
+		}
+
 		result = res
+		next = n
 	}
 
 	return result, next, 0

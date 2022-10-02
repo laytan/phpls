@@ -59,6 +59,15 @@ func (s *Stack[V]) Peek() V {
 	return s.tail.value
 }
 
+func (s *Stack[V]) Length() int {
+	left := 0
+	for curr := s.tail; curr != nil; curr = curr.prev {
+		left++
+	}
+
+	return left
+}
+
 func (s *Stack[V]) String() string {
 	out := []string{}
 	for curr := s.tail; curr != nil; curr = curr.prev {

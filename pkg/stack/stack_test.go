@@ -17,6 +17,8 @@ func TestQueue(t *testing.T) {
 	is.Equal(v, 0)
 
 	q.Push(1)
+	is.Equal(q.Length(), 1)
+
 	v = q.Pop()
 	is.Equal(v, 1)
 
@@ -30,8 +32,9 @@ func TestQueue(t *testing.T) {
 		10,
 		83,
 	}
-	for _, item := range items {
+	for i, item := range items {
 		q.Push(item)
+		is.Equal(q.Length(), i+1)
 	}
 
 	for i := len(items) - 1; i >= 0; i-- {
