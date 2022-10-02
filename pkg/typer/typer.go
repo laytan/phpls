@@ -101,13 +101,27 @@ func parseTypeHint(node ir.Node) phpdoxer.Type {
 		return nil
 	}
 
+	var isNullable bool
+	if nullable, ok := retNode.(*ir.Nullable); ok {
+		retNode = nullable.Expr
+		isNullable = true
+	}
+
 	name, ok := retNode.(*ir.Name)
 	if !ok {
-		log.Printf("%T is unsupported for a return type hint, expecting *ir.Name\n", retNode)
+		log.Printf(
+			"%T is unsupported for a return type hint, expecting *ir.Name or *ir.Nullable\n",
+			retNode,
+		)
 		return nil
 	}
 
-	t, err := phpdoxer.ParseType(name.Value)
+	toParse := name.Value
+	if isNullable {
+		toParse = "null|" + toParse
+	}
+
+	t, err := phpdoxer.ParseType(toParse)
 	if err != nil {
 		log.Println(fmt.Errorf(`Error parsing return type hint "%s": %w`, name.Value, err))
 	}
@@ -143,9 +157,15 @@ func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {
 
 		if typed.Left.Kind() == phpdoxer.KindClassLike && typed.Right.Kind() == phpdoxer.KindNull {
 			cl = typed.Left.(*phpdoxer.TypeClassLike)
-		} else if typed.Left.Kind() == phpdoxer.KindNull && typed.Right.Kind() == phpdoxer.KindClassLike {
-			cl = typed.Right.(*phpdoxer.TypeClassLike)
+			break
 		}
+
+		if typed.Left.Kind() == phpdoxer.KindNull && typed.Right.Kind() == phpdoxer.KindClassLike {
+			cl = typed.Right.(*phpdoxer.TypeClassLike)
+			break
+		}
+
+		return t
 
 	default:
 		return t
