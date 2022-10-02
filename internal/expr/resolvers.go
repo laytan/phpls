@@ -208,13 +208,13 @@ func methodUp(
 				Path: wc.Curr.Path,
 			}
 
-			res := typer.FromContainer().Returns(wc.Root, t.Method, rootRetriever)
-			clsRes, ok := res.(*phpdoxer.TypeClassLike)
-			if !ok {
-				return resolved, nil
+			if res := typer.FromContainer().Returns(wc.Root, t.Method, rootRetriever); res != nil {
+				if clsRes, ok := res.(*phpdoxer.TypeClassLike); ok {
+					return resolved, clsRes
+				}
 			}
 
-			return resolved, clsRes
+			return resolved, nil
 		},
 	)
 }

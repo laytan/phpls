@@ -129,7 +129,7 @@ func Resolve(
 	for curr := symbols.Pop(); curr != nil; curr = symbols.Pop() {
 		resolver := resolvers[curr.ExprType]
 		res, n, ok := resolver.Up(next, privacy, curr)
-		if !ok {
+		if !ok && n != nil {
 			// Run out the stack, to see how many were left to do.
 			left = 1
 			for curr = symbols.Pop(); curr != nil; curr = symbols.Pop() {
@@ -241,13 +241,15 @@ func createAndWalkResolveQueue(
 	var resultClass *phpdoxer.TypeClassLike
 	err = walkResolveQueue(queue, func(wc *walkContext) (done bool, err error) {
 		rn, rc := walker(wc)
-		if rn != nil || rc != nil {
+		if rn != nil {
 			resultNode = rn
-			resultClass = rc
-			return true, nil
 		}
 
-		return false, nil
+		if rc != nil {
+			resultClass = rc
+		}
+
+		return rn != nil || rc != nil, nil
 	})
 	if err != nil {
 		log.Println(err)
