@@ -4,8 +4,8 @@ github.com/DmitriyVTitov/size v1.5.0 h1:/PzqxYrOyOUX1BXj6J9OuVRVGe+66VL4D9FlUaW5
 github.com/DmitriyVTitov/size v1.5.0/go.mod h1:le6rNI4CoLQV1b9gzp1+3d7hMAD/uu2QcJ+aYbNgiU0=
 github.com/VKCOM/noverify v0.5.3 h1:M+X8QzPcb5X8bYTlpQc3IdXV0quzmTSO6jr/Nfkv00I=
 github.com/VKCOM/noverify v0.5.3/go.mod h1:4YqmJFxSi6Hw7kBiUZ7GzeQgqHLyxEopsSVhIf9/htA=
-github.com/arl/statsviz v0.5.0 h1:IoIMlg0x8+6GcRmCSbDxXkymTvOQzpBMpBO5czxmhlY=
-github.com/arl/statsviz v0.5.0/go.mod h1:zDnjgRblGm1Dyd7J5YlbH7gM1/+HRC+SfkhZhQb5AnM=
+github.com/arl/statsviz v0.5.1 h1:3HY0ZEB738JtguWsD1Tf1pFJZiCcWUmYRq/3OTYKaSI=
+github.com/arl/statsviz v0.5.1/go.mod h1:zDnjgRblGm1Dyd7J5YlbH7gM1/+HRC+SfkhZhQb5AnM=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
