@@ -70,6 +70,17 @@ Nodes:
 			}
 
 			break Nodes
+
+		case *ir.ClassConstListStmt:
+			if cmnts := cleanedNodeComments(typedNode); len(cmnts) > 0 {
+				out = append(out, cmnts)
+			}
+
+			if signature := NodeSignature(typedNode); len(signature) > 0 {
+				out = append(out, signature)
+			}
+
+			break Nodes
 		}
 	}
 
