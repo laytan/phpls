@@ -33,6 +33,8 @@ func New(node ir.Node) Symbol {
 		return NewAssignment(typedNode)
 	case *ir.PropertyListStmt:
 		return NewProperty(typedNode)
+	case *ir.ClassConstListStmt:
+		return NewClassConstant(typedNode)
 	case *ir.FunctionCallExpr:
 		if fn, ok := typedNode.Function.(*ir.Name); ok && fn.Value == "define" {
 			return NewGlobalConstant(typedNode)
@@ -177,4 +179,18 @@ func NewGlobalConstant(defineCall *ir.FunctionCallExpr) *GlobalConstantSymbol {
 
 func (g *GlobalConstantSymbol) NodeKind() ir.NodeKind {
 	return ir.KindConstantStmt
+}
+
+type ClassConstant struct {
+	baseSymbol
+}
+
+func NewClassConstant(constant *ir.ClassConstListStmt) *ClassConstant {
+	c := &ClassConstant{}
+	c.FromNode(constant)
+	return c
+}
+
+func (c *ClassConstant) NodeKind() ir.NodeKind {
+	return ir.KindClassConstListStmt
 }

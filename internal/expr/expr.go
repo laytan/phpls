@@ -27,6 +27,7 @@ const (
 	ExprTypeStaticMethod
 	ExprTypeFunction
 	ExprTypeNew
+	ExprTypeClassConstant
 )
 
 type Scopes struct {

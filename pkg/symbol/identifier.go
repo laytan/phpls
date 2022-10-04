@@ -1,6 +1,10 @@
 package symbol
 
-import "github.com/VKCOM/noverify/src/ir"
+import (
+	"log"
+
+	"github.com/VKCOM/noverify/src/ir"
+)
 
 // Returns the identifier/value of a node.
 //
@@ -63,6 +67,18 @@ func GetIdentifier(n ir.Node) string {
 
 	case *ir.PropertyStmt:
 		return n.Variable.Name
+
+	case *ir.ClassConstListStmt:
+		if len(n.Consts) > 1 || len(n.Consts) == 0 {
+			log.Printf("Trying to get identifier of *ir.ClassConstListStmt but there are %d possibilities", len(n.Consts))
+		}
+
+		if c, ok := n.Consts[0].(*ir.ConstantStmt); ok {
+			return c.ConstantName.Value
+		}
+
+		log.Printf("Expected constant to be of type *ir.ConstantStmt but got %T", n.Consts[0])
+		return ""
 
 	case *ir.SimpleVar:
 		return n.Name

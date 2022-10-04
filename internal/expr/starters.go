@@ -8,6 +8,7 @@ import (
 	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -48,13 +49,7 @@ func (p *variableResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	t := traversers.NewVariable(toResolve.Identifier)
-	scopes.Block.Walk(t)
-	if t.Result == nil {
-		return nil, nil, 0, false
-	}
-
-	switch t.Result.Name {
+	switch toResolve.Identifier {
 	case "this", "self", "static":
 		if node, ok := common.FindFullyQualified(
 			scopes.Root,
@@ -74,7 +69,7 @@ func (p *variableResolver) Up(
 	case "parent":
 		node := parentOf(scopes)
 		if n, ok := defToNodeNoRoot(node); ok {
-			fqn := node.Namespace + `\` + node.Symbol.Identifier()
+			fqn := `\` + node.Namespace + `\` + node.Symbol.Identifier()
 			return &Resolved{Path: node.Path, Node: n},
 				&phpdoxer.TypeClassLike{Name: fqn, FullyQualified: true},
 				phprivacy.PrivacyProtected,
@@ -85,6 +80,12 @@ func (p *variableResolver) Up(
 		return nil, nil, 0, false
 
 	default:
+		t := traversers.NewVariable(toResolve.Identifier)
+		scopes.Block.Walk(t)
+		if t.Result == nil {
+			return nil, nil, 0, false
+		}
+
 		ta := traversers.NewAssignment(t.Result)
 		scopes.Block.Walk(ta)
 		if ta.Assignment == nil || ta.Scope == nil {
@@ -154,13 +155,10 @@ func (p *nameResolver) Up(
 
 	fqn := common.FullyQualify(scopes.Root, toResolve.Identifier)
 
-	privacy := phprivacy.PrivacyPublic
-	if symbol.IsClassLike(scopes.Class) {
-		scopeFqn := common.FullyQualify(scopes.Root, symbol.GetIdentifier(scopes.Class))
-
-		if fqn.String() == scopeFqn.String() {
-			privacy = phprivacy.PrivacyPrivate
-		}
+	privacy, err := p.DeterminePrivacy(scopes, fqn)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, 0, false
 	}
 
 	res, err := index.FromContainer().Find(fqn.String(), symbol.ClassLikeScopes...)
@@ -177,6 +175,42 @@ func (p *nameResolver) Up(
 	}
 
 	return nil, nil, 0, false
+}
+
+func (p *nameResolver) DeterminePrivacy(scopes Scopes, fqn *fqn.FQN) (phprivacy.Privacy, error) {
+	// If we are not in a class, it is automatically public access.
+	if !symbol.IsClassLike(scopes.Class) {
+		return phprivacy.PrivacyPublic, nil
+	}
+
+	// If we are in the same class, private access.
+	scopeFqn := common.FullyQualify(scopes.Root, symbol.GetIdentifier(scopes.Class))
+	if fqn.String() == scopeFqn.String() {
+		return phprivacy.PrivacyPrivate, nil
+	}
+
+	queue, err := newResolveQueue(
+		&phpdoxer.TypeClassLike{Name: scopeFqn.String(), FullyQualified: true},
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	// Check if the class is in the scope's resolve queue, that means protected access.
+	result := phprivacy.PrivacyPublic
+	err = walkResolveQueue(queue, func(wc *walkContext) (done bool, err error) {
+		if wc.FQN.String() == fqn.String() {
+			result = phprivacy.PrivacyProtected
+			return true, nil
+		}
+
+		return false, nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
 }
 
 type functionResolver struct{}

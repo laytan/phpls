@@ -41,17 +41,3 @@ func ContextToScopes(ctx context.Context) expr.Scopes {
 		Block: ctx.Scope(),
 	}
 }
-
-// func ResolveExprToScopeOfDefinition(ctx context.Context) (*expr.UpResolvement, bool) {
-// 	path, left := expr.Resolve(ctx.Current(), ContextToScopes(ctx))
-// 	if left > 1 {
-// 		what.Happens("could not resolve the expression enough")
-// 		return nil, false
-// 	}
-//
-// 	what.Func()
-// 	what.Is(path)
-// 	what.Is(left)
-//
-// 	return path[len(path)-1], true
-// }

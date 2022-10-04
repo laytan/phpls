@@ -17,15 +17,16 @@ import (
 
 var (
 	definitionProviders = []DefinitionProvider{
-		providers.NewThis(),     // $this
-		providers.NewFunction(), // explode()
-		providers.NewVariable(), // $a
-		providers.NewUse(),      // use Foo, use Foo\Bar\FooBar as Foo
-		providers.NewConstant(), // FOO, BAR, FOOBAR
-		providers.NewName(),     // new Class, Class::
-		providers.NewProperty(), // $this->foo, $foo->foo->bar
-		providers.NewMethod(),   // $this->test(), $foo->foo->test()
-		providers.NewStatic(),   // Foo::bar(), Foo::bar()->baz() // TODO: add tests.
+		providers.NewThis(),          // $this
+		providers.NewFunction(),      // explode()
+		providers.NewVariable(),      // $a
+		providers.NewUse(),           // use Foo, use Foo\Bar\FooBar as Foo
+		providers.NewConstant(),      // FOO, BAR, FOOBAR
+		providers.NewName(),          // new Class, Class::
+		providers.NewProperty(),      // $this->foo, $foo->foo->bar
+		providers.NewMethod(),        // $this->test(), $foo->foo->test()
+		providers.NewClassConstant(), // Foo::BAR, self::BAR, $this::FOO
+		providers.NewStatic(),        // Foo::bar(), Foo::bar()->baz() // TODO: add tests.
 	}
 
 	ErrNoDefinitionFound = errors.New(

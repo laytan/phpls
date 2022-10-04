@@ -10,9 +10,10 @@ import (
 )
 
 var resolvers = map[ExprType]ClassResolver{
-	ExprTypeProperty:     &propertyResolver{},
-	ExprTypeMethod:       &methodResolver{},
-	ExprTypeStaticMethod: &staticMethodResolver{},
+	ExprTypeProperty:      &propertyResolver{},
+	ExprTypeMethod:        &methodResolver{},
+	ExprTypeStaticMethod:  &staticMethodResolver{},
+	ExprTypeClassConstant: &classConstResolver{},
 }
 
 type propertyResolver struct{}
@@ -142,6 +143,78 @@ func (p *staticMethodResolver) Up(
 		privacy,
 		toResolve,
 		traversers.NewMethodStatic,
+	)
+}
+
+type classConstResolver struct{}
+
+func (c *classConstResolver) Down(
+	node ir.Node,
+) (resolvement *DownResolvement, next ir.Node, done bool) {
+	constFetch, ok := node.(*ir.ClassConstFetchExpr)
+	if !ok {
+		return nil, nil, false
+	}
+
+	next = constFetch.Class
+
+	ident := symbol.GetIdentifier(constFetch.Class)
+	if ident == "self" || ident == "parent" || ident == "this" || ident == "static" {
+		next = &ir.SimpleVar{
+			Position: ir.GetPosition(next),
+			Name:     ident,
+		}
+	}
+
+	return &DownResolvement{
+		ExprType:   ExprTypeClassConstant,
+		Identifier: constFetch.ConstantName.Value,
+	}, next, true
+}
+
+func (c *classConstResolver) Up(
+	ctx *phpdoxer.TypeClassLike,
+	privacy phprivacy.Privacy,
+	toResolve *DownResolvement,
+) (result *Resolved, nextCtx *phpdoxer.TypeClassLike, done bool) {
+	if toResolve.ExprType != ExprTypeClassConstant {
+		return nil, nil, false
+	}
+
+	// Is this the first iteration/classlike we are checking?
+	isFirst := true
+
+	// Is this the first class or traits used by the first class?
+	isFirstClass := true
+
+	return createAndWalkResolveQueue(
+		ctx,
+		func(wc *walkContext) (*Resolved, *phpdoxer.TypeClassLike) {
+			defer func() { isFirst = false }()
+
+			currKind := wc.Curr.Symbol.NodeKind()
+
+			// if this is a class, but not the first one.
+			if !isFirst && currKind == ir.KindClassStmt {
+				isFirstClass = false
+			}
+
+			actPrivacy := determinePrivacy(privacy, currKind, isFirst, isFirstClass)
+
+			t := traversers.NewClassLikeConstant(toResolve.Identifier, wc.FQN.Name(), actPrivacy)
+			wc.Root.Walk(t)
+
+			if t.ClassLikeConstant == nil {
+				return nil, nil
+			}
+
+			resolved := &Resolved{
+				Node: t.ClassLikeConstant,
+				Path: wc.Curr.Path,
+			}
+
+			return resolved, nil
+		},
 	)
 }
 
