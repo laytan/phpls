@@ -236,7 +236,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 						return
 					}
 
-					if !scenario.IsNoDef && scenario.Out == nil {
+					if !scenario.IsNoDef && len(scenario.Out) == 0 {
 						t.Fatalf("invalid test scenario, no out called for '%s'", name)
 					}
 
