@@ -1,4 +1,4 @@
-elephp
-unsafenil.so
-logs/*
-!logs/.gitkeep
+/elephp
+/unsafenil.so
+/logs/*
+!/logs/.gitkeep
