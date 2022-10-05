@@ -3,7 +3,7 @@ package phpdoxer
 import (
 	"fmt"
 
-	"github.com/laytan/phpstorm-stubs-versioner/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/phpversion"
 )
 
 type NodeKind uint

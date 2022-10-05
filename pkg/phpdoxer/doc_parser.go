@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/laytan/elephp/pkg/phpversion"
 )
 
 var (

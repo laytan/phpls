@@ -60,7 +60,7 @@ func MapFilter[V comparable, R comparable](slice []V, mapper func(entry V) R) []
 
 // Map applies the mapper function to each entry in the slice and returns a new
 // slice with the results.
-func Map[V comparable, R any](slice []V, mapper func(entry V) R) []R {
+func Map[V any, R any](slice []V, mapper func(entry V) R) []R {
 	res := make([]R, 0, len(slice))
 	for _, v := range slice {
 		res = append(res, mapper(v))

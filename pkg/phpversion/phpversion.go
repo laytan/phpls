@@ -29,7 +29,6 @@ func (v *PHPVersion) String() string {
 }
 
 func (v *PHPVersion) IsHigherThan(other *PHPVersion) bool {
-	fmt.Printf("comparing %s with %s\n", v.String(), other.String())
 	if v.Major > other.Major {
 		return true
 	}
