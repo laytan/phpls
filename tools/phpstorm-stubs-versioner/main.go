@@ -14,7 +14,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/VKCOM/php-parser/pkg/visitor/printer"
-	"github.com/laytan/elephp/internal/transformer"
+	"github.com/laytan/elephp/tools/phpstorm-stubs-versioner/pkg/transformer"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,7 +22,7 @@ var (
 	in  = "/Users/laytan/projects/elephp/third_party/phpstorm-stubs"
 	out = "/Users/laytan/projects/elephp/versioned-phpstorm-stubs"
 	// versions = []string{"5.4", "5.6", "7.0", "7.1", "7.4", "8.0", "8.1"}
-	versions     = []string{"7.4.30"}
+	versions     = []string{"5.4"}
 	limit        = runtime.NumCPU()
 	transformers = []Transformer{
 		&transformer.AtSinceAtRemoved{}, // Remove nodes based on @since and @removed.
