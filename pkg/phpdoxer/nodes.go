@@ -1,6 +1,10 @@
 package phpdoxer
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/laytan/phpstorm-stubs-versioner/pkg/phpversion"
+)
 
 type NodeKind uint
 
@@ -10,6 +14,7 @@ const (
 	KindVar
 	KindParam
 	KindInheritDoc
+	KindSince
 )
 
 type Node interface {
@@ -81,4 +86,17 @@ func (n *NodeInheritDoc) String() string {
 
 func (n *NodeInheritDoc) Kind() NodeKind {
 	return KindInheritDoc
+}
+
+type NodeSince struct {
+	Version     *phpversion.PHPVersion
+	Description string
+}
+
+func (n *NodeSince) String() string {
+	return "@since " + n.Version.String() + " " + n.Description
+}
+
+func (n *NodeSince) Kind() NodeKind {
+	return KindSince
 }

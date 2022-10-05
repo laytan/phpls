@@ -34,10 +34,7 @@ func parseGroup(at string, value string) (Node, error) {
 	case "return":
 		typeStr, description := splitTypeAndRest(value)
 
-		typeNode, err := ParseType(typeStr)
-		if err != nil {
-			return nil, err
-		}
+		typeNode, _ := ParseType(typeStr)
 
 		return &NodeReturn{
 			Type:        typeNode,
@@ -58,19 +55,24 @@ func parseGroup(at string, value string) (Node, error) {
 
 	case "param":
 		split := strings.Fields(value)
-		if len(split) < 2 {
+		if len(split) == 0 {
 			return nil, fmt.Errorf(
-				"PHPDoc error: found @param %s with %d arguments, must be at least 2 (type and name)",
+				"PHPDoc error: found @param %s with 0 arguments, must be at least 1",
 				value,
-				len(split),
 			)
 		}
 
-		typeStr, name := split[0], split[1]
+		var name string
+		var typeNode Type
 
-		typeNode, err := ParseType(typeStr)
-		if err != nil {
-			return nil, err
+		if len(split) == 1 {
+			name = split[0]
+		}
+
+		if len(split) == 2 {
+			name = split[1]
+
+			typeNode, _ = ParseType(split[0])
 		}
 
 		return &NodeParam{
@@ -80,6 +82,20 @@ func parseGroup(at string, value string) (Node, error) {
 
 	case "inheritdoc", "inheritDoc":
 		return &NodeInheritDoc{}, nil
+
+	case "since":
+		version, description := splitTypeAndRest(value)
+		if phpv, ok := phpversion.FromString(version); ok {
+			return &NodeSince{
+				Version:     phpv,
+				Description: description,
+			}, nil
+		}
+
+		return &NodeUnknown{
+			At:    at,
+			Value: value,
+		}, nil
 
 	default:
 		return &NodeUnknown{
