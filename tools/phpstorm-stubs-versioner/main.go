@@ -1,12 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
+	"time"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
@@ -19,21 +21,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	goroutines = 4
+
+	latestParserMajor = 8
+	latestParserMinor = 1
+)
+
 var (
-	in           = "/Users/laytan/projects/elephp/third_party/phpstorm-stubs"
-	out          = "/Users/laytan/projects/elephp/versioned-phpstorm-stubs"
-	limit        = runtime.NumCPU()
-	genVersion   = &phpversion.PHPVersion{Major: 7, Minor: 0}
-	transformers = []Transformer{
-		transformer.NewAtSinceAtRemoved(genVersion),
-		transformer.NewElementAvailableAttribute(genVersion),
-	}
+	in, out      string
+	genVersion   *phpversion.PHPVersion
+	transformers []Transformer
 
 	// Parsing is done with the latest version of the parser, because this parses the stubs.
 	parserConfig = conf.Config{
-		Version: &version.Version{Major: 8, Minor: 1},
+		Version: &version.Version{Major: latestParserMajor, Minor: latestParserMinor},
 		ErrorHandlerFunc: func(e *errors.Error) {
-			panic(e)
+			log.Println(e)
 		},
 	}
 )
@@ -43,14 +47,85 @@ type Transformer interface {
 }
 
 func main() {
-	g := errgroup.Group{}
-	g.SetLimit(limit)
+	var versionStr string
 
-	if err := os.RemoveAll(filepath.Join(out, genVersion.String())); err != nil {
-		panic(err)
+	flag.StringVar(
+		&in,
+		"in",
+		"./third_party/phpstorm-stubs",
+		"Path to the original phpstorm-stubs",
+	)
+	flag.StringVar(
+		&out,
+		"out",
+		"./versioned-phpstorm-stubs",
+		"Path to use as output",
+	)
+	flag.StringVar(
+		&versionStr,
+		"version",
+		fmt.Sprintf("%d.%d.0", latestParserMajor, latestParserMinor),
+		"The PHP version to parse the stubs for",
+	)
+
+	flag.Parse()
+
+	phpv, ok := phpversion.FromString(versionStr)
+	if !ok {
+		_, _ = fmt.Printf("Invalid PHP version: %s\n", versionStr)
+		os.Exit(1)
 	}
 
+	absIn, err := filepath.Abs(in)
+	if err != nil {
+		_, _ = fmt.Println(err)
+		os.Exit(1)
+	}
+
+	absOut, err := filepath.Abs(out)
+	if err != nil {
+		_, _ = fmt.Println(err)
+		os.Exit(1)
+	}
+
+	in = absIn
+	out = absOut
+
+	genVersion = phpv
+	transformers = []Transformer{
+		transformer.NewAtSinceAtRemoved(genVersion),
+		transformer.NewElementAvailableAttribute(genVersion),
+	}
+
+	_, _ = fmt.Printf(
+		"\nUsing PHP version \"%s\"\nUsing input path \"%s\"\nUsing output path \"%s\"\n\n",
+		genVersion.String(),
+		in,
+		out,
+	)
+
+	_, _ = fmt.Print("Continue? (y/n) ")
+	var confirmation string
+	_, err = fmt.Scanln(&confirmation)
+	if err != nil || confirmation != "y" {
+		_, _ = fmt.Println("Cancelled")
+		os.Exit(0)
+	}
+
+	_, _ = fmt.Printf("\n\n")
+
+	start := time.Now()
+	defer func() {
+		_, _ = fmt.Printf("\nDone in %s\n", time.Since(start))
+	}()
+
+	g := errgroup.Group{}
+	g.SetLimit(goroutines)
+
+	touched := make(map[string]bool, 1500)
 	if err := filepath.WalkDir(in, func(path string, d fs.DirEntry, err error) error {
+		touched[strings.TrimPrefix(path, in)] = true
+
 		// Directories need to be created before transformed files are written,
 		// So we can't do this in the g.Go call because of race conditions.
 		if d.IsDir() {
@@ -77,11 +152,33 @@ func main() {
 
 		return nil
 	}); err != nil {
-		panic(err)
+		_, _ = fmt.Println(err)
+		os.Exit(1) //nolint:gocritic // Not running the defered function is fine.
 	}
 
 	if err := g.Wait(); err != nil {
-		panic(err)
+		_, _ = fmt.Println(err)
+		os.Exit(1) //nolint:gocritic // Not running the defered function is fine.
+	}
+
+	_, _ = fmt.Printf("\n\n")
+
+	// Clean up any files that haven't been touched just now.
+	prefix := filepath.Join(out, genVersion.String())
+	if err := filepath.WalkDir(prefix, func(path string, d fs.DirEntry, err error) error {
+		relPath := strings.TrimPrefix(path, prefix)
+		_, ok := touched[relPath]
+		if relPath != "" && !ok {
+			_, _ = fmt.Printf("Cleaned up %s\n", path)
+			if err := os.RemoveAll(path); err != nil {
+				return fmt.Errorf("os.RemoveAll(%s): %w", path, err)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		_, _ = fmt.Println(err)
+		os.Exit(1) //nolint:gocritic // Not running the defered function is fine.
 	}
 }
 
