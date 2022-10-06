@@ -2,6 +2,7 @@ package phpdoxer
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/laytan/elephp/pkg/phpversion"
 )
@@ -15,6 +16,7 @@ const (
 	KindParam
 	KindInheritDoc
 	KindSince
+    KindRemoved
 )
 
 type Node interface {
@@ -94,9 +96,22 @@ type NodeSince struct {
 }
 
 func (n *NodeSince) String() string {
-	return "@since " + n.Version.String() + " " + n.Description
+	return strings.TrimSpace("@since " + n.Version.String() + " " + n.Description)
 }
 
 func (n *NodeSince) Kind() NodeKind {
 	return KindSince
+}
+
+type NodeRemoved struct {
+	Version     *phpversion.PHPVersion
+	Description string
+}
+
+func (n *NodeRemoved) String() string {
+	return strings.TrimSpace("@removed " + n.Version.String() + " " + n.Description)
+}
+
+func (n *NodeRemoved) Kind() NodeKind {
+	return KindRemoved
 }

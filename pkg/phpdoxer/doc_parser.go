@@ -99,6 +99,20 @@ func parseGroup(at string, value string) (Node, error) {
 			Value: value,
 		}, nil
 
+	case "removed":
+		version, description := splitTypeAndRest(value)
+		if phpv, ok := phpversion.FromString(version); ok {
+			return &NodeRemoved{
+				Version:     phpv,
+				Description: description,
+			}, nil
+		}
+
+		return &NodeUnknown{
+			At:    at,
+			Value: value,
+		}, nil
+
 	default:
 		return &NodeUnknown{
 			At:    at,

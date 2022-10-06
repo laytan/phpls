@@ -57,6 +57,10 @@ func (v *PHPVersion) IsHigherThan(other *PHPVersion) bool {
 	return false
 }
 
+func (v *PHPVersion) Equals(other *PHPVersion) bool {
+	return v.Major == other.Major && v.Minor == other.Minor && v.Patch == other.Patch
+}
+
 func Get() (*PHPVersion, error) {
 	cmd := exec.Command("php", "-v")
 	output, err := cmd.Output()
