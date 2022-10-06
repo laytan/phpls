@@ -16,7 +16,7 @@ const (
 	KindParam
 	KindInheritDoc
 	KindSince
-    KindRemoved
+	KindRemoved
 )
 
 type Node interface {

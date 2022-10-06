@@ -54,7 +54,7 @@ func main() {
 		// Directories need to be created before transformed files are written,
 		// So we can't do this in the g.Go call because of race conditions.
 		if d.IsDir() {
-			if err := os.MkdirAll(outPath(path, genVersion.String()), 0755); err != nil {
+			if err := os.MkdirAll(outPath(path, genVersion.String()), 0o755); err != nil {
 				return fmt.Errorf("os.MkDirAll(%s, nil, %d): %w", path, fs.ModeDir, err)
 			}
 		}
