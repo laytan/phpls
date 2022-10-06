@@ -14,47 +14,47 @@ import (
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/VKCOM/php-parser/pkg/visitor/printer"
+	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/tools/phpstorm-stubs-versioner/pkg/transformer"
 	"golang.org/x/sync/errgroup"
 )
 
 var (
-	in  = "/Users/laytan/projects/elephp/third_party/phpstorm-stubs"
-	out = "/Users/laytan/projects/elephp/versioned-phpstorm-stubs"
-	// versions = []string{"5.4", "5.6", "7.0", "7.1", "7.4", "8.0", "8.1"}
-	versions     = []string{"5.4"}
+	in           = "/Users/laytan/projects/elephp/third_party/phpstorm-stubs"
+	out          = "/Users/laytan/projects/elephp/versioned-phpstorm-stubs"
 	limit        = runtime.NumCPU()
+	genVersion   = &phpversion.PHPVersion{Major: 7, Minor: 0}
 	transformers = []Transformer{
-		&transformer.AtSinceAtRemoved{}, // Remove nodes based on @since and @removed.
+		transformer.NewAtSinceAtRemoved(genVersion),
+		transformer.NewElementAvailableAttribute(genVersion),
+	}
+
+	// Parsing is done with the latest version of the parser, because this parses the stubs.
+	parserConfig = conf.Config{
+		Version: &version.Version{Major: 8, Minor: 1},
+		ErrorHandlerFunc: func(e *errors.Error) {
+			panic(e)
+		},
 	}
 )
 
 type Transformer interface {
-	Transform(ast ast.Vertex, version string) ast.Vertex
+	Transform(ast ast.Vertex)
 }
 
 func main() {
 	g := errgroup.Group{}
 	g.SetLimit(limit)
 
-	pc := conf.Config{
-		Version: &version.Version{Major: 8, Minor: 1},
-		ErrorHandlerFunc: func(e *errors.Error) {
-			panic(e)
-		},
-	}
-
-	for _, version := range versions {
-		if err := os.RemoveAll(filepath.Join(out, version)); err != nil {
-			panic(err)
-		}
+	if err := os.RemoveAll(filepath.Join(out, genVersion.String())); err != nil {
+		panic(err)
 	}
 
 	if err := filepath.WalkDir(in, func(path string, d fs.DirEntry, err error) error {
 		// Directories need to be created before transformed files are written,
 		// So we can't do this in the g.Go call because of race conditions.
 		if d.IsDir() {
-			if err := os.MkdirAll(outPath(path, versions[0]), 0755); err != nil {
+			if err := os.MkdirAll(outPath(path, genVersion.String()), 0755); err != nil {
 				return fmt.Errorf("os.MkDirAll(%s, nil, %d): %w", path, fs.ModeDir, err)
 			}
 		}
@@ -68,8 +68,8 @@ func main() {
 				return nil
 			}
 
-			if err := transform(path, versions[0], pc); err != nil {
-				return fmt.Errorf("transform(%s, %s): %w", path, versions[0], err)
+			if err := transform(path); err != nil {
+				return fmt.Errorf("transform(%s): %w", path, err)
 			}
 
 			return nil
@@ -85,7 +85,7 @@ func main() {
 	}
 }
 
-func transform(path string, version string, parserConfig conf.Config) error {
+func transform(path string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("os.ReadFile(%s): %w", path, err)
@@ -97,12 +97,12 @@ func transform(path string, version string, parserConfig conf.Config) error {
 	}
 
 	for _, transformer := range transformers {
-		ast = transformer.Transform(ast, version)
+		transformer.Transform(ast)
 	}
 
-	file, err := os.Create(outPath(path, version))
+	file, err := os.Create(outPath(path, genVersion.String()))
 	if err != nil {
-		return fmt.Errorf("os.Create(%s): %w", outPath(path, version), err)
+		return fmt.Errorf("os.Create(%s): %w", outPath(path, genVersion.String()), err)
 	}
 
 	defer file.Close()
