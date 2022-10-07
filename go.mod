@@ -11,6 +11,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.1
+	github.com/hexops/gotextdiff v1.0.3
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/matryer/is v1.4.0
