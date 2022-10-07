@@ -71,7 +71,7 @@ func parseGroup(at string, value string) (Node, error) {
 			name = split[0]
 		}
 
-		if len(split) == 2 {
+		if len(split) > 1 {
 			name = split[1]
 
 			typeNode, _ = ParseType(split[0])
