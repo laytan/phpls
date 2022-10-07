@@ -73,7 +73,11 @@ type NodeParam struct {
 }
 
 func (n *NodeParam) String() string {
-	return fmt.Sprintf("@param %s %s", n.Type.String(), n.Name)
+	if n.Type != nil {
+		return fmt.Sprintf("@param %s %s", n.Type.String(), n.Name)
+	}
+
+	return fmt.Sprintf("@param %s", n.Name)
 }
 
 func (n *NodeParam) Kind() NodeKind {
