@@ -105,11 +105,11 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 	return newStmts
 }
 
-func (e *ElementAvailableAttribute) filterParams(params []ast.Vertex) ([]ast.Vertex, []string) {
+func (e *ElementAvailableAttribute) filterParams(
+	params []ast.Vertex,
+) (newParams []ast.Vertex, removedParams []string) {
 	// PERF: should only create a new slice if we actually are removing a parameter.
-	newParams := make([]ast.Vertex, 0, len(params))
-	removedParams := []string{}
-
+	newParams = make([]ast.Vertex, 0, len(params))
 	for _, param := range params {
 		if typedParam, ok := param.(*ast.Parameter); ok {
 			if !e.shouldRemove(typedParam.AttrGroups) {
