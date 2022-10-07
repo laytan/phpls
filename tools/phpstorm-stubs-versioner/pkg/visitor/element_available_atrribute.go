@@ -3,11 +3,16 @@ package visitor
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/laytan/elephp/internal/common"
+	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"golang.org/x/exp/slices"
 )
 
 // The original name is `PhpStormStubsElementAvailable` but this is sometimes aliassed.
@@ -66,13 +71,23 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 		case *ast.StmtFunction:
 			ok = !e.shouldRemove(typedStmt.AttrGroups)
 			if ok {
-				typedStmt.Params = e.filterParams(typedStmt.Params)
+				params, removedParams := e.filterParams(typedStmt.Params)
+				typedStmt.Params = params
+
+				if len(removedParams) > 0 {
+					e.removeParamsDocFromFunction(typedStmt, removedParams)
+				}
 			}
 
 		case *ast.StmtClassMethod:
 			ok = !e.shouldRemove(typedStmt.AttrGroups)
 			if ok {
-				typedStmt.Params = e.filterParams(typedStmt.Params)
+				params, removedParams := e.filterParams(typedStmt.Params)
+				typedStmt.Params = params
+
+				if len(removedParams) > 0 {
+					e.removeParamsDocFromMethod(typedStmt, removedParams)
+				}
 			}
 
 		case *ast.StmtPropertyList:
@@ -90,8 +105,10 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 	return newStmts
 }
 
-func (e *ElementAvailableAttribute) filterParams(params []ast.Vertex) []ast.Vertex {
+func (e *ElementAvailableAttribute) filterParams(params []ast.Vertex) ([]ast.Vertex, []string) {
+	// PERF: should only create a new slice if we actually are removing a parameter.
 	newParams := make([]ast.Vertex, 0, len(params))
+	removedParams := []string{}
 
 	for _, param := range params {
 		if typedParam, ok := param.(*ast.Parameter); ok {
@@ -100,78 +117,79 @@ func (e *ElementAvailableAttribute) filterParams(params []ast.Vertex) []ast.Vert
 				continue
 			}
 
+			paramName := string(typedParam.Var.(*ast.ExprVariable).Name.(*ast.Identifier).Value)
+			// TODO: don't know what is going on here.
+			// if typedParam.VariadicTkn != nil {
+			// 	paramName = "..." + paramName
+			// }
+
+			removedParams = append(removedParams, paramName)
+
 			e.logRemoval(param)
 		}
 	}
 
-	return newParams
+	return newParams, removedParams
 }
 
 func (e *ElementAvailableAttribute) shouldRemove(attrGroups []ast.Vertex) bool {
 	for _, attrGroup := range attrGroups {
-		if typedAttrGroup, ok := attrGroup.(*ast.AttributeGroup); ok {
-		Attributes:
-			for _, attr := range typedAttrGroup.Attrs {
-				if typedAttr, ok := attr.(*ast.Attribute); ok {
-					if len(typedAttr.Args) == 0 {
-						continue
+	Attributes:
+		for _, attr := range attrGroup.(*ast.AttributeGroup).Attrs {
+			if len(attr.(*ast.Attribute).Args) == 0 {
+				continue
+			}
+
+			attrName := attr.(*ast.Attribute).Name.(*ast.Name)
+			if len(attrName.Parts) != 1 {
+				continue
+			}
+
+			if attrNamePart, ok := attrName.Parts[0].(*ast.NamePart); ok {
+				var match bool
+				for _, name := range names {
+					if bytes.Equal(attrNamePart.Value, name) {
+						match = true
+						break
 					}
+				}
 
-					if attrName, ok := typedAttr.Name.(*ast.Name); ok {
-						if len(attrName.Parts) != 1 {
-							continue
-						}
+				if !match {
+					continue
+				}
+			}
 
-						if attrNamePart, ok := attrName.Parts[0].(*ast.NamePart); ok {
-							var match bool
-							for _, name := range names {
-								if bytes.Equal(attrNamePart.Value, name) {
-									match = true
-									break
-								}
-							}
+			for i, arg := range attr.(*ast.Attribute).Args {
+				if i > 1 {
+					break
+				}
 
-							if !match {
-								continue
-							}
-						}
+				var n []byte
+				var v *phpversion.PHPVersion
+				if argName, ok := arg.(*ast.Argument).Name.(*ast.Identifier); ok {
+					n = argName.Value
+				}
+
+				if exprStr, ok := arg.(*ast.Argument).Expr.(*ast.ScalarString); ok {
+					versionStr := strings.Trim(string(exprStr.Value), `'"`)
+					if version, ok := phpversion.FromString(versionStr); ok {
+						v = version
 					}
+				}
 
-					for i, arg := range typedAttr.Args {
-						if i > 1 {
-							break
-						}
+				if v == nil {
+					continue Attributes
+				}
 
-						var n []byte
-						var v *phpversion.PHPVersion
-						if typedArg, ok := arg.(*ast.Argument); ok {
-							if argName, ok := typedArg.Name.(*ast.Identifier); ok {
-								n = argName.Value
-							}
+				if bytes.Equal(n, []byte("from")) || i == 0 {
+					if v.IsHigherThan(e.version) {
+						return true
+					}
+				}
 
-							if exprStr, ok := typedArg.Expr.(*ast.ScalarString); ok {
-								versionStr := strings.Trim(string(exprStr.Value), `'"`)
-								if version, ok := phpversion.FromString(versionStr); ok {
-									v = version
-								}
-							}
-						}
-
-						if v == nil {
-							continue Attributes
-						}
-
-						if bytes.Equal(n, []byte("from")) || i == 0 {
-							if v.IsHigherThan(e.version) {
-								return true
-							}
-						}
-
-						if bytes.Equal(n, []byte("to")) || i == 1 {
-							if e.version.IsHigherThan(v) {
-								return true
-							}
-						}
+				if bytes.Equal(n, []byte("to")) || i == 1 {
+					if e.version.IsHigherThan(v) {
+						return true
 					}
 				}
 			}
@@ -181,6 +199,73 @@ func (e *ElementAvailableAttribute) shouldRemove(attrGroups []ast.Vertex) bool {
 	return false
 }
 
+func (e *ElementAvailableAttribute) removeParamsDocFromFunction(
+	function *ast.StmtFunction,
+	params []string,
+) {
+	function.FunctionTkn.FreeFloating = e.removeParamsDoc(function.FunctionTkn.FreeFloating, params)
+
+	for _, attrGroup := range function.AttrGroups {
+		attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating = e.removeParamsDoc(
+			attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating, params,
+		)
+	}
+}
+
+func (e *ElementAvailableAttribute) removeParamsDocFromMethod(
+	function *ast.StmtClassMethod,
+	params []string,
+) {
+	function.FunctionTkn.FreeFloating = e.removeParamsDoc(function.FunctionTkn.FreeFloating, params)
+
+	for _, attrGroup := range function.AttrGroups {
+		attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating = e.removeParamsDoc(
+			attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating, params,
+		)
+	}
+}
+
+func (e *ElementAvailableAttribute) removeParamsDoc(
+	freefloatings []*token.Token,
+	params []string,
+) []*token.Token {
+	for _, t := range freefloatings {
+		if t.ID != token.T_DOC_COMMENT && t.ID != token.T_COMMENT {
+			continue
+		}
+
+		nodes, err := phpdoxer.ParseDoc(string(t.Value))
+		if err != nil {
+			log.Println(err)
+		}
+
+		newNodes := make([]phpdoxer.Node, 0, len(nodes))
+		for _, node := range nodes {
+			if paramNode, ok := node.(*phpdoxer.NodeParam); ok {
+				if slices.Contains(params, paramNode.Name) {
+					e.logRemoval(nil)
+					continue
+				}
+			}
+
+			newNodes = append(newNodes, node)
+		}
+
+		// TODO: also have non-nodes/raw comments reconstructed.
+		inner := strings.Join(
+			common.Map(newNodes, func(node phpdoxer.Node) string {
+				// TODO: make node.String() return the raw value that was initially parsed.
+				return " * " + node.String()
+			}),
+			"\n",
+		)
+		t.Value = []byte("/**\n" + inner + "\n */")
+	}
+
+	return freefloatings
+}
+
+// TODO: don't require arg.
 func (e *ElementAvailableAttribute) logRemoval(n ast.Vertex) {
 	if e.logging {
 		_, _ = fmt.Printf("x") //nolint:forbidigo // For visualization.
