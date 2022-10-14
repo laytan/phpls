@@ -185,6 +185,22 @@ func TestParseDoc(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "param variadic",
+			args: `
+            /**
+             * @param mixed ...$test
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeMixed{},
+					Name:        "...$test",
+					Description: "",
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

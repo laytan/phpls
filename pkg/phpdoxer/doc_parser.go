@@ -152,10 +152,10 @@ func parseGroup(g *group) (Node, error) {
 		typeOrName, rest := splitTypeAndRest(value)
 		typeOrNameRest, desc, _ := strings.Cut(rest, " ")
 
-		if strings.HasPrefix(typeOrName, "$") {
+		if strings.HasPrefix(typeOrName, "$") || strings.HasPrefix(typeOrName, "...$") {
 			nameStr = typeOrName
 			descStr = rest
-		} else if strings.HasPrefix(typeOrNameRest, "$") {
+		} else if strings.HasPrefix(typeOrNameRest, "$") || strings.HasPrefix(typeOrNameRest, "...$") {
 			nameStr = typeOrNameRest
 			typeNode, _ = ParseType(typeOrName)
 			descStr = desc

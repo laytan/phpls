@@ -126,11 +126,6 @@ func (e *ElementAvailableAttribute) filterParams(
 				continue
 			}
 
-			// TODO: don't know what is going on here.
-			// if typedParam.VariadicTkn != nil {
-			// 	paramName = "..." + paramName
-			// }
-
 			e.logRemoval(param)
 			removedParams = true
 		}
@@ -159,7 +154,12 @@ func (e *ElementAvailableAttribute) getRemovedParamNames(
 		}
 
 		if !inNewParams {
-			removedParamNames = append(removedParamNames, string(paramName))
+			name := string(paramName)
+			if param.(*ast.Parameter).VariadicTkn != nil {
+				name = "..." + name
+			}
+
+			removedParamNames = append(removedParamNames, name)
 		}
 	}
 
@@ -277,6 +277,7 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 		doc, err := phpdoxer.ParseFullDoc(string(t.Value))
 		if err != nil {
 			log.Println(err)
+			return freefloatings
 		}
 
 		newNodes := make([]phpdoxer.Node, 0, len(doc.Nodes))

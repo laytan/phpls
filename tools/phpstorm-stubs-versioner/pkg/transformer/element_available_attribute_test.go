@@ -225,6 +225,25 @@ func TestElementAvailableAttribute(t *testing.T) {
                 ) {}
             `,
 		},
+		{
+			name:    "variadic arguments",
+			version: "7.0",
+			input: `
+                <?php
+                /**
+                 * @param mixed ...$args
+                 */
+                function test(
+                    #[PhpStormStubsElementAvailable(from: '8.0')] ...$args
+                ) {}
+            `,
+			expected: `
+                <?php
+                
+                function test(
+                ) {}
+            `,
+		},
 	}
 
 	parserConfig := conf.Config{
