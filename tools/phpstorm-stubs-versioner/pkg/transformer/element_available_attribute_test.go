@@ -70,6 +70,26 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 		},
 		{
+			name:    "more than 2 parameters should remove the trailing comma",
+			version: "7.0",
+			input: `
+                <?php
+                function test(
+                    $test,
+                    #[PhpStormStubsElementAvailable(from: '8.0')] $test2,
+                    #[PhpStormStubsElementAvailable(from: '8.0')] $test3,
+                    $test4,
+                ) {}
+            `,
+			expected: `
+                <?php
+                function test(
+                    $test,
+                    $test4
+                ) {}
+            `,
+		},
+		{
 			name:    "multiple parameters with the same name should keep the PHPDoc",
 			version: "7.0",
 			input: `

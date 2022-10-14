@@ -76,6 +76,10 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 
 				if len(removedParams) > 0 {
 					e.removeParamsDocFromFunction(typedStmt, removedParams)
+
+					// Setting this to be empty seems to make the printer
+					// add/recalculate where separators go.
+					typedStmt.SeparatorTkns = []*token.Token{}
 				}
 			}
 
@@ -87,6 +91,10 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 
 				if len(removedParams) > 0 {
 					e.removeParamsDocFromMethod(typedStmt, removedParams)
+
+					// Setting this to be empty seems to make the printer
+					// add/recalculate where separators go.
+					typedStmt.SeparatorTkns = []*token.Token{}
 				}
 			}
 
