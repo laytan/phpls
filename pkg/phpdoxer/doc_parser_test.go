@@ -201,6 +201,24 @@ func TestParseDoc(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "param doc multi line with html tags",
+			args: `
+            /**
+             * @param string $string <p>
+             * The packed data.
+             * </p>
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeString{},
+					Name:        "$string",
+					Description: "<p>\nThe packed data.\n</p>",
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -331,6 +349,21 @@ func TestDoc_String(t *testing.T) {
 				Nodes:       []phpdoxer.Node{},
 			},
 			want: "/**\n * Hello\n * World!\n */",
+		},
+		{
+			name: "with html",
+			fields: fields{
+				Top:         "",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type:        &phpdoxer.TypeString{},
+						Name:        "$string",
+						Description: "<p>\nThe packed data.\n</p>",
+					},
+				},
+			},
+			want: "/**\n * @param string $string <p>\n * The packed data.\n * </p>\n */",
 		},
 	}
 

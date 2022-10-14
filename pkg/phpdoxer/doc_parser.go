@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/strutil"
 )
 
 var (
@@ -89,8 +90,7 @@ func (d *Doc) String() string {
 
 	ret := "/**\n"
 
-	lines := strings.Split(strings.ReplaceAll(d.Top, "\r\n", "\n"), "\n")
-	for _, line := range lines {
+	for _, line := range strutil.Lines(d.Top) {
 		if line != "" {
 			ret += d.Indentation + "* " + line + "\n"
 		}
@@ -101,7 +101,9 @@ func (d *Doc) String() string {
 	}
 
 	for _, node := range d.Nodes {
-		ret += d.Indentation + "* " + node.String() + "\n"
+		for _, line := range strutil.Lines(node.String()) {
+			ret += d.Indentation + "* " + line + "\n"
+		}
 	}
 
 	ret += d.Indentation + "*/"
@@ -227,8 +229,8 @@ func parseGroup(g *group) (Node, error) {
 }
 
 func cleanGroupValue(value string) string {
-	lines := strings.Split(strings.ReplaceAll(value, "\r\n", "\n"), "\n")
-	outLines := []string{}
+	lines := strutil.Lines(value)
+	outLines := make([]string, 0, len(lines))
 
 	// Removes any leading or ending /'s, *'s or whitespace.
 	// Removes any empty lines.

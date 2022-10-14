@@ -17,3 +17,7 @@ func RemoveWhitespace(text string) string {
 
 	return b.String()
 }
+
+func Lines(text string) []string {
+	return strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+}
