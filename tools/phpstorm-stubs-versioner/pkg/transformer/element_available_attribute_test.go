@@ -242,6 +242,85 @@ func TestElementAvailableAttribute(t *testing.T) {
                 ) {}
             `,
 		},
+		{
+			name:    "variadic and normal arguments mixed",
+			version: "7.0",
+			input: `
+                <?php
+                /**
+                 * Find lowest value
+                 * @link https://php.net/manual/en/function.min.php
+                 * @param array|mixed $value Array to look through or first value to compare
+                 * @param mixed ...$values any comparable value
+                 * @return mixed min returns the numerically lowest of the
+                 * parameter values.
+                 */
+                #[Pure]
+                function min(
+                    #[PhpStormStubsElementAvailable(from: '8.0')] mixed $value,
+                    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')] mixed $values,
+                    mixed ...$values
+                ): mixed {}
+            `,
+			expected: `
+                <?php
+                /**
+                 * Find lowest value
+                 *
+                 * @link https://php.net/manual/en/function.min.php
+                 * @param mixed ...$values any comparable value
+                 * @return mixed min returns the numerically lowest of the
+                 * parameter values.
+                 */
+                #[Pure]
+                function min( mixed $values,
+                    mixed ...$values
+                ): mixed {}
+            `,
+		},
+		{
+			name:    "variable references and variadic",
+			version: "7.0",
+			input: `
+                <?php
+                /**
+                 * Sort multiple or multi-dimensional arrays
+                 * @link https://php.net/manual/en/function.array-multisort.php
+                 * @param array &$array <p>
+                 * An array being sorted.
+                 * </p>
+                 * @param  &...$rest [optional] <p>
+                 * More arrays, optionally followed by sort order and flags.
+                 * Only elements corresponding to equivalent elements in previous arrays are compared.
+                 * In other words, the sort is lexicographical.
+                 * </p>
+                 * @return bool true on success or false on failure.
+                 */
+                function array_multisort(
+                    #[PhpStormStubsElementAvailable(from: '8.0')] &$array,
+                    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')] $sort_order = SORT_ASC,
+                    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.4')] $sort_flags = SORT_REGULAR,
+                    &...$rest
+                ): bool {}
+            `,
+			expected: `
+                <?php
+                /**
+                 * Sort multiple or multi-dimensional arrays
+                 *
+                 * @link https://php.net/manual/en/function.array-multisort.php
+                 * @param &...$rest [optional] <p>
+                 * More arrays, optionally followed by sort order and flags.
+                 * Only elements corresponding to equivalent elements in previous arrays are compared.
+                 * In other words, the sort is lexicographical.
+                 * </p>
+                 * @return bool true on success or false on failure.
+                 */
+                function array_multisort( $sort_order = SORT_ASC, $sort_flags = SORT_REGULAR,
+                    &...$rest
+                ): bool {}
+            `,
+		},
 	}
 
 	parserConfig := conf.Config{

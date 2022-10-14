@@ -155,10 +155,10 @@ func parseGroup(g *group) (Node, error) {
 		typeOrNameRest, desc, _ := strings.Cut(rest, " ")
 
 		//nolint:gocritic // Does not make sense to change to switch.
-		if strings.HasPrefix(typeOrName, "$") || strings.HasPrefix(typeOrName, "...$") {
+		if isStrVariable(typeOrName) {
 			nameStr = typeOrName
 			descStr = rest
-		} else if strings.HasPrefix(typeOrNameRest, "$") || strings.HasPrefix(typeOrNameRest, "...$") {
+		} else if isStrVariable(typeOrNameRest) {
 			nameStr = typeOrNameRest
 			typeNode, _ = ParseType(typeOrName)
 			descStr = desc
@@ -253,4 +253,10 @@ func splitTypeAndRest(value string) (docType string, rest string) {
 	split := strings.Fields(value)
 	rest = strings.TrimSpace(strings.TrimPrefix(value, split[0]))
 	return split[0], rest
+}
+
+func isStrVariable(value string) bool {
+	return strings.HasPrefix(value, "$") ||
+		strings.HasPrefix(value, "...") ||
+		strings.HasPrefix(value, "&")
 }

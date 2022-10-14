@@ -169,8 +169,13 @@ func (e *ElementAvailableAttribute) getRemovedParamNames(
 
 		if !inNewParams {
 			name := string(paramName)
+
 			if param.(*ast.Parameter).VariadicTkn != nil {
 				name = "..." + name
+			}
+
+			if param.(*ast.Parameter).AmpersandTkn != nil {
+				name = "&" + name
 			}
 
 			removedParamNames = append(removedParamNames, name)
