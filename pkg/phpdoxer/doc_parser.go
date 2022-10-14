@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	groupRgx     = regexp.MustCompile(`@(\w+)\s*([^@]*)`)
-	emptyLineRgx = regexp.MustCompile(`[^*/\s]`)
+	groupRgx      = regexp.MustCompile(`@(\w+)\s*([^@]*)`)
+	emptyLineRgx  = regexp.MustCompile(`[^*/\s]`)
+	whitespaceRgx = regexp.MustCompile(`\n(\s+)`)
 )
 
 type group struct {
@@ -44,6 +45,67 @@ func ParseDoc(doc string) ([]Node, error) {
 	}
 
 	return parsed, nil
+}
+
+type Doc struct {
+	Top         string
+	Indentation string
+	Nodes       []Node
+}
+
+// Parse the doc string, keeping the leading documentation.
+func ParseFullDoc(doc string) (*Doc, error) {
+	top, _, _ := strings.Cut(doc, "@")
+	nodes, err := ParseDoc(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	indentation := " "
+	wsMatches := whitespaceRgx.FindStringSubmatch(doc)
+	if len(wsMatches) > 1 {
+		indentation = wsMatches[1]
+	}
+
+	return &Doc{
+		Top:         cleanGroupValue(top),
+		Nodes:       nodes,
+		Indentation: indentation,
+	}, nil
+}
+
+// Turns the doc back into a valid PHPDoc string.
+//
+// NOTE: this is not intended to closely represent the input, but to produce
+// NOTE: an output that has all the information the source had,
+// NOTE: formatting might be slightly different.
+//
+// It does try to roughly return the doc with the same indentation level as the
+// source.
+func (d *Doc) String() string {
+	if d.Top == "" && len(d.Nodes) == 0 {
+		return ""
+	}
+
+	ret := "/**\n"
+
+	lines := strings.Split(strings.ReplaceAll(d.Top, "\r\n", "\n"), "\n")
+	for _, line := range lines {
+		if line != "" {
+			ret += d.Indentation + "* " + line + "\n"
+		}
+	}
+
+	if d.Top != "" && len(d.Nodes) > 0 {
+		ret += d.Indentation + "*" + "\n"
+	}
+
+	for _, node := range d.Nodes {
+		ret += d.Indentation + "* " + node.String() + "\n"
+	}
+
+	ret += d.Indentation + "*/"
+	return ret
 }
 
 func parseGroup(g *group) (Node, error) {

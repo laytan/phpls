@@ -9,7 +9,6 @@ import (
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/VKCOM/php-parser/pkg/visitor"
-	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"golang.org/x/exp/slices"
@@ -248,13 +247,13 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 			continue
 		}
 
-		nodes, err := phpdoxer.ParseDoc(string(t.Value))
+		doc, err := phpdoxer.ParseFullDoc(string(t.Value))
 		if err != nil {
 			log.Println(err)
 		}
 
-		newNodes := make([]phpdoxer.Node, 0, len(nodes))
-		for _, node := range nodes {
+		newNodes := make([]phpdoxer.Node, 0, len(doc.Nodes))
+		for _, node := range doc.Nodes {
 			if paramNode, ok := node.(*phpdoxer.NodeParam); ok {
 				if slices.Contains(params, paramNode.Name) {
 					e.logRemoval(nil)
@@ -265,15 +264,8 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 			newNodes = append(newNodes, node)
 		}
 
-		// TODO: also have non-nodes/raw comments reconstructed.
-		inner := strings.Join(
-			functional.Map(newNodes, func(node phpdoxer.Node) string {
-				// TODO: make node.String() return the raw value that was initially parsed.
-				return " * " + node.String()
-			}),
-			"\n",
-		)
-		t.Value = []byte("/**\n" + inner + "\n */")
+		doc.Nodes = newNodes
+		t.Value = []byte(doc.String())
 	}
 
 	return freefloatings

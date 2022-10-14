@@ -214,3 +214,127 @@ func TestParseDoc(t *testing.T) {
 		})
 	}
 }
+
+func TestDoc_String(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		Top         string
+		Indentation string
+		Nodes       []phpdoxer.Node
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "empty",
+			fields: fields{
+				Top:         "",
+				Indentation: "",
+				Nodes:       []phpdoxer.Node{},
+			},
+			want: "",
+		},
+		{
+			name: "no top 1 param",
+			fields: fields{
+				Top:         "",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+				},
+			},
+			want: "/**\n * @param string $test\n */",
+		},
+		{
+			name: "1 line top 1 param",
+			fields: fields{
+				Top:         "Hello world",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+				},
+			},
+			want: "/**\n * Hello world\n *\n * @param string $test\n */",
+		},
+		{
+			name: "2 line top, 1 param",
+			fields: fields{
+				Top:         "Hello\nWorld!",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+				},
+			},
+			want: "/**\n * Hello\n * World!\n *\n * @param string $test\n */",
+		},
+		{
+			name: "1 top 2 param",
+			fields: fields{
+				Top:         "Hello World!",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test2",
+					},
+				},
+			},
+			want: "/**\n * Hello World!\n *\n * @param string $test\n * @param string $test2\n */",
+		},
+		{
+			name: "top, no param",
+			fields: fields{
+				Top:         "Hello World!",
+				Indentation: " ",
+				Nodes:       []phpdoxer.Node{},
+			},
+			want: "/**\n * Hello World!\n */",
+		},
+		{
+			name: "2 top, no param",
+			fields: fields{
+				Top:         "Hello\nWorld!",
+				Indentation: " ",
+				Nodes:       []phpdoxer.Node{},
+			},
+			want: "/**\n * Hello\n * World!\n */",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			d := &phpdoxer.Doc{
+				Top:         tt.fields.Top,
+				Indentation: tt.fields.Indentation,
+				Nodes:       tt.fields.Nodes,
+			}
+			if got := d.String(); got != tt.want {
+				edits := myers.ComputeEdits(span.URIFromPath("expected.txt"), tt.want, got)
+				t.Errorf(
+					"Expected output and actual output don't match:\n%v",
+					gotextdiff.ToUnified("expected.txt", "out.txt", tt.want, edits),
+				)
+			}
+		})
+	}
+}

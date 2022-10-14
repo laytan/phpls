@@ -127,8 +127,65 @@ func TestElementAvailableAttribute(t *testing.T) {
 			expected: `
                 <?php
                 class Test {
+                    
                     public function test() {}
                 }
+            `,
+		},
+		{
+			name:    "keep top of documentation function",
+			version: "7.0",
+			input: `
+                <?php
+                /**
+                 * Hello World!
+                 *
+                 * @param string $test
+                 * @param string $no
+                 */
+                function test(
+                    string $test,
+                    #[PhpStormStubsElementAvailable(from: '8.0')] string $no,
+                ) {}
+            `,
+			expected: `
+                <?php
+                /**
+                 * Hello World!
+                 *
+                 * @param string $test
+                 */
+                function test(
+                    string $test
+                ) {}
+            `,
+		},
+		{
+			name:    "keep param descriptions of function",
+			version: "7.0",
+			input: `
+                <?php
+                /**
+                 * Hello World!
+                 *
+                 * @param string $test The test description.
+                 * @param string $no The no description.
+                 */
+                function test(
+                    string $test,
+                    #[PhpStormStubsElementAvailable(from: '8.0')] string $no,
+                ) {}
+            `,
+			expected: `
+                <?php
+                /**
+                 * Hello World!
+                 *
+                 * @param string $test The test description.
+                 */
+                function test(
+                    string $test
+                ) {}
             `,
 		},
 	}
