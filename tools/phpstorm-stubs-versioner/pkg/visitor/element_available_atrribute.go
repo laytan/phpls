@@ -226,6 +226,12 @@ func (e *ElementAvailableAttribute) removeParamsDocFromMethod(
 ) {
 	function.FunctionTkn.FreeFloating = e.removeParamsDoc(function.FunctionTkn.FreeFloating, params)
 
+	for _, modifier := range function.Modifiers {
+		modifier.(*ast.Identifier).IdentifierTkn.FreeFloating = e.removeParamsDoc(
+			modifier.(*ast.Identifier).IdentifierTkn.FreeFloating, params,
+		)
+	}
+
 	for _, attrGroup := range function.AttrGroups {
 		attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating = e.removeParamsDoc(
 			attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating, params,
