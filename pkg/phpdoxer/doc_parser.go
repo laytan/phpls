@@ -152,6 +152,7 @@ func parseGroup(g *group) (Node, error) {
 		typeOrName, rest := splitTypeAndRest(value)
 		typeOrNameRest, desc, _ := strings.Cut(rest, " ")
 
+		//nolint:gocritic // Does not make sense to change to switch.
 		if strings.HasPrefix(typeOrName, "$") || strings.HasPrefix(typeOrName, "...$") {
 			nameStr = typeOrName
 			descStr = rest
