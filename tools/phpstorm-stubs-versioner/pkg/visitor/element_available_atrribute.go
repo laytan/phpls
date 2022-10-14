@@ -71,10 +71,11 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 			ok = !e.shouldRemove(typedStmt.AttrGroups)
 			if ok {
 				params, removedParams := e.filterParams(typedStmt.Params)
+				removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
 				typedStmt.Params = params
 
-				if len(removedParams) > 0 {
-					e.removeParamsDocFromFunction(typedStmt, removedParams)
+				if removedParams {
+					e.removeParamsDocFromFunction(typedStmt, removedParamNames)
 
 					// Setting this to be empty seems to make the printer
 					// add/recalculate where separators go.
@@ -86,10 +87,11 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 			ok = !e.shouldRemove(typedStmt.AttrGroups)
 			if ok {
 				params, removedParams := e.filterParams(typedStmt.Params)
+				removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
 				typedStmt.Params = params
 
-				if len(removedParams) > 0 {
-					e.removeParamsDocFromMethod(typedStmt, removedParams)
+				if removedParams {
+					e.removeParamsDocFromMethod(typedStmt, removedParamNames)
 
 					// Setting this to be empty seems to make the printer
 					// add/recalculate where separators go.
@@ -114,7 +116,7 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 
 func (e *ElementAvailableAttribute) filterParams(
 	params []ast.Vertex,
-) (newParams []ast.Vertex, removedParams []string) {
+) (newParams []ast.Vertex, removedParams bool) {
 	// PERF: should only create a new slice if we actually are removing a parameter.
 	newParams = make([]ast.Vertex, 0, len(params))
 	for _, param := range params {
@@ -124,19 +126,44 @@ func (e *ElementAvailableAttribute) filterParams(
 				continue
 			}
 
-			paramName := string(typedParam.Var.(*ast.ExprVariable).Name.(*ast.Identifier).Value)
 			// TODO: don't know what is going on here.
 			// if typedParam.VariadicTkn != nil {
 			// 	paramName = "..." + paramName
 			// }
 
-			removedParams = append(removedParams, paramName)
-
 			e.logRemoval(param)
+			removedParams = true
 		}
 	}
 
 	return newParams, removedParams
+}
+
+// Returns all the parameters that were in 'params' but are not in 'newParams'
+// to the 'removedParams' slice.
+func (e *ElementAvailableAttribute) getRemovedParamNames(
+	params []ast.Vertex,
+	newParams []ast.Vertex,
+) []string {
+	removedParamNames := []string{}
+	for _, param := range params {
+		paramName := param.(*ast.Parameter).Var.(*ast.ExprVariable).Name.(*ast.Identifier).Value
+
+		var inNewParams bool
+		for _, newParam := range newParams {
+			newParamName := newParam.(*ast.Parameter).Var.(*ast.ExprVariable).Name.(*ast.Identifier).Value
+			if bytes.Equal(paramName, newParamName) {
+				inNewParams = true
+				break
+			}
+		}
+
+		if !inNewParams {
+			removedParamNames = append(removedParamNames, string(paramName))
+		}
+	}
+
+	return removedParamNames
 }
 
 func (e *ElementAvailableAttribute) shouldRemove(attrGroups []ast.Vertex) bool {

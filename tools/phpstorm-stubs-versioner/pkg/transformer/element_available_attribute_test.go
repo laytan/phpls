@@ -59,7 +59,7 @@ func TestElementAvailableAttribute(t *testing.T) {
                 <?php
                 function test(
                     $test,
-                    #[PhpStormStubsElementAvailable(from: '8.0')] $query,
+                    #[PhpStormStubsElementAvailable(from: '8.0')] $query
                 ) {}
             `,
 			expected: `
@@ -78,7 +78,7 @@ func TestElementAvailableAttribute(t *testing.T) {
                     $test,
                     #[PhpStormStubsElementAvailable(from: '8.0')] $test2,
                     #[PhpStormStubsElementAvailable(from: '8.0')] $test3,
-                    $test4,
+                    $test4
                 ) {}
             `,
 			expected: `
@@ -109,6 +109,26 @@ func TestElementAvailableAttribute(t *testing.T) {
                  */
                 function mysqli_multi_query(
                     #[PhpStormStubsElementAvailable(from: '5.3', to: '7.0')] string $query
+                ) {}
+            `,
+		},
+		{
+			name:    "multiple parameters with the same name that are all removed should still remove the PHPDoc",
+			version: "7.0",
+			input: `
+                <?php
+                /**
+                 * @param string $query A string containing the queries to be executed. Multiple queries must be separated by a semicolon.
+                 */
+                function mysqli_multi_query(
+                    #[PhpStormStubsElementAvailable(from: '7.1')] string $query,
+                    #[PhpStormStubsElementAvailable(from: '7.1')] string $query = null
+                ) {}
+            `,
+			expected: `
+                <?php
+                
+                function mysqli_multi_query(
                 ) {}
             `,
 		},
@@ -145,7 +165,7 @@ func TestElementAvailableAttribute(t *testing.T) {
                  */
                 function test(
                     string $test,
-                    #[PhpStormStubsElementAvailable(from: '8.0')] string $no,
+                    #[PhpStormStubsElementAvailable(from: '8.0')] string $no
                 ) {}
             `,
 			expected: `
@@ -173,7 +193,7 @@ func TestElementAvailableAttribute(t *testing.T) {
                  */
                 function test(
                     string $test,
-                    #[PhpStormStubsElementAvailable(from: '8.0')] string $no,
+                    #[PhpStormStubsElementAvailable(from: '8.0')] string $no
                 ) {}
             `,
 			expected: `
@@ -185,6 +205,23 @@ func TestElementAvailableAttribute(t *testing.T) {
                  */
                 function test(
                     string $test
+                ) {}
+            `,
+		},
+		{
+			name:    "should have right amount of commas",
+			version: "7.0",
+			input: `
+                <?php
+                function test(
+                    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.0')] $query,
+                    #[PhpStormStubsElementAvailable(from: '7.1', to: '7.4')] $query
+                ) {}
+            `,
+			expected: `
+                <?php
+                function test(
+                    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.0')] $query
                 ) {}
             `,
 		},
