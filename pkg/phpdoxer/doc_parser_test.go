@@ -152,6 +152,39 @@ func TestParseDoc(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "param with description",
+			args: `
+            /**
+             * @param string $test The test description.
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeString{},
+					Name:        "$test",
+					Description: "The test description.",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "param with multi line description",
+			args: `
+            /**
+             * @param string $test The test description.
+             *   Use at own risk.
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeString{},
+					Name:        "$test",
+					Description: "The test description.\nUse at own risk.",
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

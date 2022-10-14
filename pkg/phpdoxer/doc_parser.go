@@ -1,7 +1,6 @@
 package phpdoxer
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -85,32 +84,28 @@ func parseGroup(g *group) (Node, error) {
 		return result, nil
 
 	case "param":
-		split := strings.Fields(value)
-		if len(split) == 0 {
-			return nil, fmt.Errorf(
-				"PHPDoc error: found @param %s with 0 arguments, must be at least 1",
-				value,
-			)
-		}
-
-		var name string
+		var nameStr, descStr string
 		var typeNode Type
 
-		if len(split) == 1 {
-			name = split[0]
+		typeOrName, rest := splitTypeAndRest(value)
+		typeOrNameRest, desc, _ := strings.Cut(rest, " ")
+
+		if strings.HasPrefix(typeOrName, "$") {
+			nameStr = typeOrName
+			descStr = rest
+		} else if strings.HasPrefix(typeOrNameRest, "$") {
+			nameStr = typeOrNameRest
+			typeNode, _ = ParseType(typeOrName)
+			descStr = desc
+		} else {
+			descStr = value
 		}
 
-		if len(split) > 1 {
-			name = split[1]
-
-			typeNode, _ = ParseType(split[0])
-		}
-
-		result = &NodeParam{
-			Type: typeNode,
-			Name: name,
-		}
-		return result, nil
+		return &NodeParam{
+			Type:        typeNode,
+			Name:        nameStr,
+			Description: descStr,
+		}, nil
 
 	case "inheritdoc", "inheritDoc":
 		result = &NodeInheritDoc{}
