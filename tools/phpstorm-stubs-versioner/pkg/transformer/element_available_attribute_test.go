@@ -107,8 +107,7 @@ func TestElementAvailableAttribute(t *testing.T) {
                 /**
                  * @param string $query A string containing the queries to be executed. Multiple queries must be separated by a semicolon.
                  */
-                function mysqli_multi_query(
-                    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.0')] string $query
+                function mysqli_multi_query( string $query
                 ) {}
             `,
 		},
@@ -220,8 +219,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
-                function test(
-                    #[PhpStormStubsElementAvailable(from: '5.3', to: '7.0')] $query
+                function test( $query
                 ) {}
             `,
 		},

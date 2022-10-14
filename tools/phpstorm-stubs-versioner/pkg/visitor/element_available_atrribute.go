@@ -68,8 +68,11 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 			stmt.Accept(e)
 
 		case *ast.StmtFunction:
-			ok = !e.shouldRemove(typedStmt.AttrGroups)
+			rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
+			ok = !rm
+
 			if ok {
+				typedStmt.AttrGroups = newAttrGroups
 				params, removedParams := e.filterParams(typedStmt.Params)
 				removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
 				typedStmt.Params = params
@@ -84,8 +87,11 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 			}
 
 		case *ast.StmtClassMethod:
-			ok = !e.shouldRemove(typedStmt.AttrGroups)
+			rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
+			ok = !rm
+
 			if ok {
+				typedStmt.AttrGroups = newAttrGroups
 				params, removedParams := e.filterParams(typedStmt.Params)
 				removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
 				typedStmt.Params = params
@@ -100,7 +106,12 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 			}
 
 		case *ast.StmtPropertyList:
-			ok = !e.shouldRemove(typedStmt.AttrGroups)
+			rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
+			ok = !rm
+
+			if ok {
+				typedStmt.AttrGroups = newAttrGroups
+			}
 		}
 
 		if ok {
@@ -117,12 +128,15 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 func (e *ElementAvailableAttribute) filterParams(
 	params []ast.Vertex,
 ) (newParams []ast.Vertex, removedParams bool) {
-	// PERF: should only create a new slice if we actually are removing a parameter.
 	newParams = make([]ast.Vertex, 0, len(params))
 	for _, param := range params {
 		if typedParam, ok := param.(*ast.Parameter); ok {
-			if !e.shouldRemove(typedParam.AttrGroups) {
-				newParams = append(newParams, param)
+			rm, newAttrGroups := e.shouldRemove(typedParam.AttrGroups)
+
+			if !rm {
+				typedParam.AttrGroups = newAttrGroups
+
+				newParams = append(newParams, typedParam)
 				continue
 			}
 
@@ -166,8 +180,10 @@ func (e *ElementAvailableAttribute) getRemovedParamNames(
 	return removedParamNames
 }
 
-func (e *ElementAvailableAttribute) shouldRemove(attrGroups []ast.Vertex) bool {
-	for _, attrGroup := range attrGroups {
+func (e *ElementAvailableAttribute) shouldRemove(
+	attrGroups []ast.Vertex,
+) (bool, []ast.Vertex) {
+	for attrI, attrGroup := range attrGroups {
 	Attributes:
 		for _, attr := range attrGroup.(*ast.AttributeGroup).Attrs {
 			if len(attr.(*ast.Attribute).Args) == 0 {
@@ -217,20 +233,23 @@ func (e *ElementAvailableAttribute) shouldRemove(attrGroups []ast.Vertex) bool {
 
 				if bytes.Equal(n, []byte("from")) || i == 0 {
 					if v.IsHigherThan(e.version) {
-						return true
+						return true, attrGroups
 					}
 				}
 
 				if bytes.Equal(n, []byte("to")) || i == 1 {
 					if e.version.IsHigherThan(v) {
-						return true
+						return true, attrGroups
 					}
 				}
 			}
+
+			attrGroups = slices.Delete(attrGroups, attrI, attrI+1)
+			return false, attrGroups
 		}
 	}
 
-	return false
+	return false, attrGroups
 }
 
 func (e *ElementAvailableAttribute) removeParamsDocFromFunction(
