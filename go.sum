@@ -32,8 +32,8 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pkg/profile v1.4.0/go.mod h1:NWz/XGvpEW1FyYQ7fCx4dqYBLlfTcE+A9FLAkNKqjFE=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/quasilyte/regex/syntax v0.0.0-20200419152657-af9db7f4a3ab/go.mod h1:rlzQ04UMyJXu/aOvhd8qT+hvDrFpiwqp8MRXDY9szc0=
-github.com/samber/do v1.4.1 h1:4Yz8hFm1xVCjBK7fQIeEROg9XiYKkuHt8fL6mXdVWPk=
-github.com/samber/do v1.4.1/go.mod h1:xwCO5lXRivdZzNXuCegYgF0IlRioumVq8mnF5JNNKOU=
+github.com/samber/do v1.5.1 h1:32/S8RgoKYa2wpf8TrakzyOFj0C/QQV4df09x1nza7I=
+github.com/samber/do v1.5.1/go.mod h1:DWqBvumy8dyb2vEnYZE7D7zaVEB64J45B0NjTlY/M4k=
 github.com/shivamMg/ppds v0.0.1 h1:idK2dpaen652zOO+OmcwmyoPNncBNqfHjF/14eS5JIk=
 github.com/shivamMg/ppds v0.0.1/go.mod h1:hb39VqUO6qfkb9zBBQPTIV1vWBtI7yQsG0wr3pN78fM=
 github.com/shivamMg/trie v0.0.0 h1:pu4TPsiNd416+idctROJML3kvhDXyr1nch9ofcoU9PQ=
