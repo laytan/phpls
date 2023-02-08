@@ -6,21 +6,21 @@ import (
 
 	"github.com/DmitriyVTitov/size"
 	"github.com/davecgh/go-spew/spew"
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/laytan/elephp/pkg/datasize"
 )
 
-// Wrapper of the arc cache, adding generics and a size in bytes (approx).
+// Wrapper of the lru cache, adding generics and a size in bytes (approx).
 type Cache[K comparable, V any] struct {
 	capacity int
-	c        *lru.Cache
+	c        *lru.Cache[K, V]
 }
 
 // Creates a new cache with some sane defaults.
 func New[K comparable, V any](capacity int) *Cache[K, V] {
 	log.Printf("Creating cache of capacity %d\n", capacity)
 
-	c, err := lru.New(capacity)
+	c, err := lru.New[K, V](capacity)
 	if err != nil {
 		panic(err)
 	}
@@ -38,9 +38,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 
 // Gets the given key from the cache.
 func (c *Cache[K, V]) Get(key K) (V, bool) {
-	value, ok := c.c.Get(key)
-
-	return value.(V), ok
+	return c.c.Get(key)
 }
 
 func (c *Cache[K, V]) Delete(key K) {
@@ -53,7 +51,7 @@ func (c *Cache[K, V]) Delete(key K) {
 func (c *Cache[K, V]) Cached(key K, valueCreator func() V) V {
 	value, ok := c.c.Get(key)
 	if ok {
-		return value.(V)
+		return value
 	}
 
 	created := valueCreator()
