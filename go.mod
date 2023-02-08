@@ -21,6 +21,7 @@ require (
 )
 
 require (
+	github.com/Workiva/go-datastructures v1.0.53 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect

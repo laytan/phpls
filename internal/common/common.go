@@ -1,13 +1,14 @@
 package common
 
 import (
-	"errors"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
@@ -26,18 +27,9 @@ func FindFullyQualified(
 	root *ir.Root,
 	name string,
 	kinds ...ir.NodeKind,
-) (*traversers.TrieNode, bool) {
+) (*index.IndexNode, bool) {
 	FQN := FullyQualify(root, name)
-	node, err := index.FromContainer().Find(FQN.String(), kinds...)
-	if err != nil {
-		if !errors.Is(err, index.ErrNotFound) {
-			log.Println(err)
-		}
-
-		return nil, false
-	}
-
-	return node, true
+	return index.FromContainer().Find(FQN)
 }
 
 // MapFilter applies the mapper function to each entry in the slice and returns a new
@@ -67,4 +59,24 @@ func Map[V any, R any](slice []V, mapper func(entry V) R) []R {
 	}
 
 	return res
+}
+
+func SymbolToNode(path string, sym symbol.Symbol) (*ir.Root, ir.Node, error) {
+	root, err := wrkspc.FromContainer().IROf(path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("[common.SymbolToNode]: %w", err)
+	}
+
+	symToNode := traversers.NewSymbolToNode(sym)
+	root.Walk(symToNode)
+
+	if symToNode.Result == nil {
+		return nil, nil, fmt.Errorf(
+			"[common.SymbolToNode]: Unable to find node matching symbol %v in path %s",
+			sym,
+			path,
+		)
+	}
+
+	return root, symToNode.Result, nil
 }

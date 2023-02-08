@@ -1,13 +1,13 @@
 package expr
 
 import (
+	"fmt"
 	"log"
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
@@ -55,12 +55,16 @@ func (p *variableResolver) Up(
 			scopes.Root,
 			symbol.GetIdentifier(scopes.Class),
 			symbol.ClassLikeScopes...); ok {
-			if n, ok := defToNodeNoRoot(node); ok {
-				return &Resolved{Path: node.Path, Node: n},
-					&phpdoxer.TypeClassLike{Name: node.Fqn(), FullyQualified: true},
-					phprivacy.PrivacyPrivate,
-					true
+			_, n, err := common.SymbolToNode(node.Path, node.Symbol)
+			if err != nil {
+				log.Println(fmt.Errorf("[expr.variableResolver.Up]: %w", err))
+				return nil, nil, 0, false
 			}
+
+			return &Resolved{Path: node.Path, Node: n},
+				&phpdoxer.TypeClassLike{Name: node.FQN.String(), FullyQualified: true},
+				phprivacy.PrivacyPrivate,
+				true
 		}
 
 		log.Println("encountered $this, self::, or static:: but could not find the subject class")
@@ -68,13 +72,16 @@ func (p *variableResolver) Up(
 
 	case "parent":
 		node := parentOf(scopes)
-		if n, ok := defToNodeNoRoot(node); ok {
-			fqn := `\` + node.Namespace + `\` + node.Symbol.Identifier()
-			return &Resolved{Path: node.Path, Node: n},
-				&phpdoxer.TypeClassLike{Name: fqn, FullyQualified: true},
-				phprivacy.PrivacyProtected,
-				true
+		_, n, err := common.SymbolToNode(node.Path, node.Symbol)
+		if err != nil {
+			log.Println(fmt.Errorf("[expr.variableResolver.Up]: %w", err))
+			return nil, nil, 0, false
 		}
+
+		return &Resolved{Path: node.Path, Node: n},
+			&phpdoxer.TypeClassLike{Name: node.FQN.String(), FullyQualified: true},
+			phprivacy.PrivacyProtected,
+			true
 
 		log.Println("encountered parent:: but could not find the subject class")
 		return nil, nil, 0, false
@@ -157,29 +164,31 @@ func (p *nameResolver) Up(
 
 	privacy, err := p.DeterminePrivacy(scopes, fqn)
 	if err != nil {
-		log.Println(err)
+		log.Println(fmt.Errorf("[expr.nameResolver.Up]: err determining privacy: %w", err))
 		return nil, nil, 0, false
 	}
 
-	res, err := index.FromContainer().Find(fqn.String(), symbol.ClassLikeScopes...)
+	res, ok := index.FromContainer().Find(fqn)
+	if !ok {
+		log.Printf("[expr.nameResolver.Up]: unable to find %s in index", fqn)
+		return nil, nil, 0, false
+	}
+
+	_, n, err := common.SymbolToNode(res.Path, res.Symbol)
 	if err != nil {
-		log.Println(err)
+		log.Println(fmt.Errorf("[expr.nameResolver.Up]: %w", err))
 		return nil, nil, 0, false
 	}
 
-	if n, ok := defToNodeNoRoot(res); ok {
-		return &Resolved{Path: res.Path, Node: n},
-			&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
-			privacy,
-			true
-	}
-
-	return nil, nil, 0, false
+	return &Resolved{Path: res.Path, Node: n},
+		&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
+		privacy,
+		true
 }
 
 func (p *nameResolver) DeterminePrivacy(scopes Scopes, fqn *fqn.FQN) (phprivacy.Privacy, error) {
 	// If we are not in a class, it is automatically public access.
-	if !symbol.IsClassLike(scopes.Class) {
+	if !symbol.IsClassLike(ir.GetNodeKind(scopes.Class)) {
 		return phprivacy.PrivacyPublic, nil
 	}
 
@@ -268,29 +277,35 @@ func (p *functionResolver) Up(
 
 	// Check for functions defined in the used namespaces.
 	if def, ok := common.FindFullyQualified(scopes.Root, toResolve.Identifier, ir.KindFunctionStmt); ok {
-		if n, ok := defToNodeNoRoot(def); ok {
-			return &Resolved{
-				Node: n,
-				Path: def.Path,
-			}, typeOfFunc(n), phprivacy.PrivacyPublic, true
+		_, n, err := common.SymbolToNode(def.Path, def.Symbol)
+		if err != nil {
+			log.Println(fmt.Errorf("[expr.functionResolver.Up]: namespace check: %w", err))
 		}
-	}
 
-	// Check for global functions.
-	def, err := index.FromContainer().Find(`\`+toResolve.Identifier, ir.KindFunctionStmt)
-	if err != nil {
-		log.Println(err)
-		return nil, nil, 0, false
-	}
-
-	if n, ok := defToNodeNoRoot(def); ok {
 		return &Resolved{
 			Node: n,
 			Path: def.Path,
 		}, typeOfFunc(n), phprivacy.PrivacyPublic, true
 	}
 
-	return nil, nil, 0, false
+	// Check for global functions.
+	key := fqn.New(fqn.PartSeperator + toResolve.Identifier)
+	def, ok := index.FromContainer().Find(key)
+	if !ok {
+		log.Println(fmt.Errorf("[expr.functionResolver.Up]: unable to find %s in index", key))
+		return nil, nil, 0, false
+	}
+
+	_, n, err := common.SymbolToNode(def.Path, def.Symbol)
+	if err != nil {
+		log.Println(fmt.Errorf("[expr.functionResolver.Up]: global check: %w", err))
+		return nil, nil, 0, false
+	}
+
+	return &Resolved{
+		Node: n,
+		Path: def.Path,
+	}, typeOfFunc(n), phprivacy.PrivacyPublic, true
 }
 
 type newResolver struct{}
@@ -324,24 +339,28 @@ func (newresolver *newResolver) Up(
 	}
 
 	if fqn := common.FullyQualify(scopes.Root, toResolve.Identifier); fqn != nil {
-		def, err := index.FromContainer().Find(fqn.String(), symbol.ClassLikeScopes...)
-		if err != nil {
-			log.Println(err)
+		def, ok := index.FromContainer().Find(fqn)
+		if !ok {
+			log.Println(fmt.Errorf("[expr.newResolver.Up]: unable to find %s in index", fqn))
 			return nil, nil, 0, false
 		}
 
-		if n, ok := defToNodeNoRoot(def); ok {
-			return &Resolved{Path: def.Path, Node: n},
-				&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
-				phprivacy.PrivacyPublic,
-				true
+		_, n, err := common.SymbolToNode(def.Path, def.Symbol)
+		if err != nil {
+			log.Println(fmt.Errorf("[expr.newResolver.Up]: %w", err))
+			return nil, nil, 0, false
 		}
+
+		return &Resolved{Path: def.Path, Node: n},
+			&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
+			phprivacy.PrivacyPublic,
+			true
 	}
 
 	return nil, nil, 0, false
 }
 
-func parentOf(scopes Scopes) *traversers.TrieNode {
+func parentOf(scopes Scopes) *index.IndexNode {
 	switch scopes.Class.(type) {
 	case *ir.ClassStmt:
 		break
@@ -375,26 +394,4 @@ func parentOf(scopes Scopes) *traversers.TrieNode {
 		class.Extends.ClassName.Value,
 	)
 	return nil
-}
-
-func defToNode(root *ir.Root, def *traversers.TrieNode) (ir.Node, bool) {
-	t := traversers.NewSymbolToNode(def.Symbol)
-	root.Walk(t)
-
-	if t.Result == nil {
-		log.Printf("Symbol to node traverser returned nil for %v in %s", def.Symbol, def.Path)
-		return nil, false
-	}
-
-	return t.Result, true
-}
-
-func defToNodeNoRoot(def *traversers.TrieNode) (ir.Node, bool) {
-	root, err := wrkspc.FromContainer().IROf(def.Path)
-	if err != nil {
-		log.Println(err)
-		return nil, false
-	}
-
-	return defToNode(root, def)
 }

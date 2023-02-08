@@ -23,6 +23,8 @@ type ResolveQueue struct {
 	Implements []*Node
 }
 
+// TODO: perf: make this a generator queue, only parse next classes/interfaces
+// when asked/needed.
 func New(rootRetriever func(*Node) (*ir.Root, error), node *Node) *ResolveQueue {
 	r := &ResolveQueue{
 		rootRetriever: rootRetriever,
@@ -35,7 +37,7 @@ func New(rootRetriever func(*Node) (*ir.Root, error), node *Node) *ResolveQueue 
 	return r
 }
 
-func (r *ResolveQueue) Resolve(
+func (r *ResolveQueue) resolve(
 	node *Node,
 ) (uses []*Node, extends []*Node, implements []*Node) {
 	root, err := r.rootRetriever(node)
@@ -78,7 +80,7 @@ func (r *ResolveQueue) Resolve(
 func (r *ResolveQueue) parse(node *Node) {
 	r.insert(node)
 
-	uses, extends, implements := r.Resolve(node)
+	uses, extends, implements := r.resolve(node)
 
 	for _, use := range uses {
 		r.parse(use)

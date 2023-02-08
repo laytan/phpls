@@ -38,12 +38,12 @@ func (r *Resolver) EnterNode(node ir.Node) bool {
 
 	default:
 		// Don't go into scopes that are not necessary.
-		if symbol.IsNonClassLikeScope(node) {
+		if symbol.IsNonClassLikeScope(ir.GetNodeKind(node)) {
 			return false
 		}
 
 		// Don't go into classes that don't match target.
-		if symbol.IsClassLike(node) {
+		if symbol.IsClassLike(ir.GetNodeKind(node)) {
 			if ir.GetNodeKind(node) != r.target.Kind {
 				return false
 			}

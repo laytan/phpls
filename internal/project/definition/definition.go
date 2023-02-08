@@ -6,8 +6,8 @@ import (
 
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/expr"
+	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/pkg/symbol"
-	"github.com/laytan/elephp/pkg/traversers"
 )
 
 const (
@@ -26,7 +26,7 @@ type Definition struct {
 	Node symbol.Symbol
 }
 
-func TrieNodeToDef(node *traversers.TrieNode) *Definition {
+func IndexNodeToDef(node *index.IndexNode) *Definition {
 	return &Definition{
 		Path: node.Path,
 		Node: node.Symbol,

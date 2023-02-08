@@ -26,20 +26,18 @@ var (
 	}
 )
 
-func IsScope(node ir.Node) bool {
-	_, ok := Scopes[ir.GetNodeKind(node)]
+func IsScope(kind ir.NodeKind) bool {
+	_, ok := Scopes[kind]
 	return ok
 }
 
-func IsClassLike(node ir.Node) bool {
-	kind := ir.GetNodeKind(node)
+func IsClassLike(kind ir.NodeKind) bool {
 	return kind == ir.KindClassStmt ||
 		kind == ir.KindInterfaceStmt ||
 		kind == ir.KindTraitStmt
 }
 
-func IsNonClassLikeScope(node ir.Node) bool {
-	kind := ir.GetNodeKind(node)
+func IsNonClassLikeScope(kind ir.NodeKind) bool {
 	return kind == ir.KindFunctionStmt || kind == ir.KindClassMethodStmt ||
 		kind == ir.KindClosureExpr
 }

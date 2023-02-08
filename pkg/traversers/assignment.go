@@ -26,7 +26,7 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 	defer func() { a.isFirst = false }()
 
 	// Only check the current scope.
-	if !a.isFirst && symbol.IsScope(node) {
+	if !a.isFirst && symbol.IsScope(ir.GetNodeKind(node)) {
 		return false
 	}
 

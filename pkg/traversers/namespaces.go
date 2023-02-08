@@ -37,7 +37,7 @@ func (u *Uses) EnterNode(node ir.Node) bool {
 		}
 	}
 
-	return !symbol.IsScope(node)
+	return !symbol.IsScope(ir.GetNodeKind(node))
 }
 
 func (u *Uses) LeaveNode(ir.Node) {}

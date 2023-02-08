@@ -38,7 +38,7 @@ func (s *Server) Completion(
 			Data:  string(pathData),
 		}
 
-		if res.Namespace == "" {
+		if res.FQN.Namespace() == "" {
 			items = append(items, item)
 			continue
 		}
@@ -56,7 +56,7 @@ func (s *Server) Completion(
 		default:
 		}
 
-		item.Detail = fmt.Sprintf(`%s\%s`, res.Namespace, res.Symbol.Identifier())
+		item.Detail = fmt.Sprintf(`%s\%s`, res.FQN.Namespace(), res.Symbol.Identifier())
 
 		// NOTE: adding an additional text edit, so the client shows it in the UI.
 		// NOTE: the actual text edit is added in the Resolve method.

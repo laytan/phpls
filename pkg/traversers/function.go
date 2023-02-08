@@ -39,7 +39,7 @@ func (f *Function) EnterNode(node ir.Node) bool {
 		}
 	}
 
-	if symbol.IsScope(node) {
+	if symbol.IsScope(ir.GetNodeKind(node)) {
 		return false
 	}
 

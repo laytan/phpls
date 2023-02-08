@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"sync"
 
@@ -13,10 +12,9 @@ import (
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/symboltrie"
-	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/samber/do"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -42,50 +40,57 @@ type Index interface {
 	// The given namespace must be fully qualified.
 	//
 	// Giving this no kinds or ir.KindRoot will return any kind.
-	//
-	// In the rare case of multiple matches (that you care about), use
-	// FindMultiple.
-	Find(fqn string, kind ...ir.NodeKind) (*traversers.TrieNode, error)
-
-	// FindMultiple does the same as Find, but returns a slice with all matches.
-	// Having multiple matches is rare (caring about it is rarer), so most of
-	// the time, use Find.
-	FindMultiple(fqn string, kind ...ir.NodeKind) ([]*traversers.TrieNode, error)
+	Find(key *fqn.FQN) (*IndexNode, bool)
 
 	// Finds a prefix/completes a string.
 	// Do not call this with a namespaced symbol, only the class or function name.
 	//
 	// Giving this no kinds will return any kind.
 	// A max of 0 or passing ir.KindRoot will return everything.
-	FindPrefix(prefix string, max uint, kind ...ir.NodeKind) []*traversers.TrieNode
+	FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*IndexNode
+}
+
+type IndexNode struct {
+	FQN    *fqn.FQN
+	Path   string
+	Symbol symbol.Symbol
+}
+
+func NewIndexNode(FQN *fqn.FQN, path string, symbol symbol.Symbol) *IndexNode {
+	return &IndexNode{
+		FQN:    FQN,
+		Path:   path,
+		Symbol: symbol,
+	}
 }
 
 type index struct {
-	normalParser     parsing.Parser
-	stubParser       parsing.Parser
-	symbolTrie       *symboltrie.Trie[*traversers.TrieNode]
+	normalParser parsing.Parser
+	stubParser   parsing.Parser
+
+	symbolTrie       *symboltrie.Trie[*IndexNode]
 	symbolTraversers *sync.Pool
 }
 
 func New(phpv *phpversion.PHPVersion) Index {
-	trie := symboltrie.New[*traversers.TrieNode]()
-
-	p := &sync.Pool{
-		New: func() any {
-			return traversers.NewSymbol(trie)
-		},
-	}
-
 	// TODO: 2 parsers are not ideal
 	normalParser := parsing.New(phpv)
 	stubsParser := parsing.New(phpversion.EightOne())
 
-	return &index{
-		normalParser:     normalParser,
-		stubParser:       stubsParser,
-		symbolTrie:       trie,
-		symbolTraversers: p,
+	ind := &index{
+		normalParser: normalParser,
+		stubParser:   stubsParser,
+
+		symbolTrie: symboltrie.New[*IndexNode](),
 	}
+
+	ind.symbolTraversers = &sync.Pool{
+		New: func() any {
+			return NewIndexTraverser()
+		},
+	}
+
+	return ind
 }
 
 func FromContainer() Index {
@@ -93,75 +98,53 @@ func FromContainer() Index {
 }
 
 func (i *index) Index(path string, content string) error {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("Could not index %s, parse/syntax error: %v", path, r)
-		}
-	}()
+    defer func() {
+        if r := recover(); r != nil {
+            log.Printf("Could not parse %s into an AST: %v", path, r)
+        }
+    }()
 
 	root, err := i.parser(path).Parse(content)
 	if err != nil {
 		return fmt.Errorf(errParseFmt, path, err)
 	}
 
-	traverser := i.symbolTraversers.Get()
-	t := traverser.(*traversers.Symbol)
-	t.SetPath(path)
-	root.Walk(t)
+	t := i.symbolTraversers.Get().(*IndexTraverser)
+	nodes := make(chan *IndexNode, 10)
+	t.Reset(path, nodes)
 
-	i.symbolTraversers.Put(traverser)
+	go func () {
+        defer func() {
+            if r := recover(); r != nil {
+                log.Printf("Could not index %s: %v", path, r)
+                close(nodes)
+            }
+        }()
+
+        root.Walk(t)
+    }()
+
+	for node := range nodes {
+		i.symbolTrie.Put(node.FQN, node)
+	}
+
+	i.symbolTraversers.Put(t)
 
 	return nil
 }
 
 // Find returns the first result matching the given query.
-// There are only a small amount of cases where multiple matches will be found,
-// If you want those, use FindMultiple instead.
-func (i *index) Find(fqnStr string, kind ...ir.NodeKind) (*traversers.TrieNode, error) {
-	results, err := i.FindMultiple(fqnStr, kind...)
-	if err != nil {
-		return nil, err
-	}
-
-	return results[0], nil
+func (i *index) Find(key *fqn.FQN) (*IndexNode, bool) {
+	return i.symbolTrie.SearchExact(key)
 }
 
-// FindMultiple does the same as Find, but in the rare case of multiple matches
-// returns all results.
-func (i *index) FindMultiple(fqnStr string, kind ...ir.NodeKind) ([]*traversers.TrieNode, error) {
-	FQNObj := fqn.New(fqnStr)
+func (i *index) FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*IndexNode {
+	results := i.symbolTrie.SearchNames(prefix, max)
 
-	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
-
-	matches := []*traversers.TrieNode{}
-
-	results := i.symbolTrie.SearchExact(FQNObj.Name())
+	values := make([]*IndexNode, 0, len(results))
 	for _, result := range results {
-		if result.Namespace != FQNObj.Namespace() {
-			continue
-		}
-
-		if retAll || slices.Contains(kind, result.Symbol.NodeKind()) {
-			matches = append(matches, result)
-		}
-	}
-
-	if len(matches) > 0 {
-		return matches, nil
-	}
-
-	return nil, fmt.Errorf(errNotFoundFmt, fqnStr, kind)
-}
-
-func (i *index) FindPrefix(prefix string, max uint, kind ...ir.NodeKind) []*traversers.TrieNode {
-	results := i.symbolTrie.SearchPrefix(prefix, max)
-
-	retAll := len(kind) == 0 || slices.Contains(kind, ir.KindRoot)
-
-	values := make([]*traversers.TrieNode, 0, len(results))
-	for _, result := range results {
-		if retAll || slices.Contains(kind, result.Value.Symbol.NodeKind()) {
-			values = append(values, result.Value)
+		if result.Symbol.MatchesKind(kind) {
+			values = append(values, result)
 		}
 	}
 
@@ -177,6 +160,10 @@ func (i *index) Refresh(path string, content string) error {
 }
 
 // PERF: this is bad.
+// TODO: this reads the file content and treats it as "last", but the LSP does
+// not care about if something is saved or not.
+// We have to see if the LSP comes with the previous content, or explicitly keep
+// track of some map from the path to the nodes and delete those.
 func (i *index) Delete(path string) error {
 	parser := i.parser(path)
 	content, err := parser.Read(path)
@@ -189,20 +176,19 @@ func (i *index) Delete(path string) error {
 		return fmt.Errorf(errParseFmt, path, err)
 	}
 
-	removeTrie := symboltrie.New[*traversers.TrieNode]()
-	removeTraverser := traversers.NewSymbol(removeTrie)
-	removeTraverser.SetPath(path)
-
+	nodes := make(chan *IndexNode, 25)
+	removeTraverser := i.symbolTraversers.Get().(*IndexTraverser)
+	removeTraverser.Reset(path, nodes)
 	prevRoot.Walk(removeTraverser)
-	toRemove := removeTrie.SearchPrefix("", 0)
+	i.symbolTraversers.Put(removeTraverser)
 
-	for _, node := range toRemove {
-		i.symbolTrie.Delete(node.Key, func(tn *traversers.TrieNode) bool {
-			return reflect.DeepEqual(node.Value, tn)
-		})
+	j := 0
+	for node := range nodes {
+		i.symbolTrie.Delete(node.FQN)
+		j++
 	}
 
-	log.Printf("Removed %d symbols from %s out of the symboltrie", len(toRemove), path)
+	log.Printf("Removed %d symbols from %s out of the symboltrie", j, path)
 
 	return nil
 }

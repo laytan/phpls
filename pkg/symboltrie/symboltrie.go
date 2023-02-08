@@ -4,150 +4,172 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Workiva/go-datastructures/trie/ctrie"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/shivamMg/trie"
 )
 
-// A wrapper around a lower level trie, adding generics and allows duplicate keys.
+type nameNode[T any] struct {
+	fullKey string
+	value   T
+}
+
 type Trie[T any] struct {
-	trie             *trie.Trie
-	mu               sync.Mutex
-	Size             uint
-	MaxDuplicates    uint
-	MaxDuplicatesKey string
+	ctrie     *ctrie.Ctrie
+
+    // TODO: having 2 tries here is a bit of a waste of memory,
+    // also this shivaMg/trie uses a lot of memory, even compared to the larger
+    // ctrie.
+	names     *trie.Trie
+	namesLock sync.Mutex
 }
 
 func New[T any]() *Trie[T] {
 	return &Trie[T]{
-		trie: trie.New(),
+		ctrie: ctrie.New(nil),
+		names: trie.New(),
 	}
 }
 
-// Searches the trie for exact matches of the given key.
-// This can return multiple results if there are duplicates.
-func (s *Trie[T]) SearchExact(key string) []T {
-	opts := []func(*trie.SearchOptions){trie.WithExactKey()}
-	result := s.trie.Search(strings.Split(key, ""), opts...)
+func (t *Trie[T]) Put(key *fqn.FQN, value T) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
 
-	if len(result.Results) == 0 {
-		return nil
+	go func() {
+		t.namesLock.Lock()
+		defer t.namesLock.Unlock()
+
+		name := strings.Split(key.Name(), "")
+
+		opts := []func(*trie.SearchOptions){trie.WithExactKey()}
+		result := t.names.Search(name, opts...)
+
+		// The leaf trie can have duplicates, so we store slices.
+		// If there already is a slice, put it in there, otherwise create a new.
+		if len(result.Results) == 0 {
+			newNode := make(map[string]T)
+			newNode[key.String()] = value
+			t.names.Put(name, newNode)
+		} else {
+			m := result.Results[0].Value.(map[string]T)
+			m[key.String()] = value
+		}
+
+		wg.Done()
+	}()
+
+	go func() {
+		t.ctrie.Insert([]byte(key.String()), value)
+		wg.Done()
+	}()
+
+	wg.Wait()
+}
+
+func (t *Trie[T]) SearchExact(key *fqn.FQN) (T, bool) {
+	if res, ok := t.ctrie.Lookup([]byte(key.String())); ok {
+		return res.(T), true
 	}
 
-	trieNode := result.Results[0].Value.(*trieNode[T])
-	return trieNode.Nodes
+	var defaultT T
+	return defaultT, false
 }
 
-type SearchResult[T any] struct {
-	Key   string
-	Value T
-}
-
-func SearchResultKeys[T any](results []*SearchResult[T]) []string {
-	keys := make([]string, 0, len(results))
-	for _, result := range results {
-		keys = append(keys, result.Key)
-	}
-
-	return keys
-}
-
-func (s *Trie[T]) SearchPrefix(key string, maxResults uint) []*SearchResult[T] {
+func (t *Trie[T]) SearchNames(prefix string, maxResults int) []T {
 	opts := make([]func(*trie.SearchOptions), 0, 1)
 	if maxResults > 0 {
 		opts = append(opts, trie.WithMaxResults(int(maxResults)))
 	}
 
-	result := s.trie.Search(strings.Split(key, ""), opts...)
-
-	flatResults := make([]*SearchResult[T], 0, len(result.Results))
-	for _, res := range result.Results {
-		trieNode := res.Value.(*trieNode[T])
-		key := strings.Join(res.Key, "")
-
-		for _, inRes := range trieNode.Nodes {
-			flatResults = append(flatResults, &SearchResult[T]{
-				Key:   key,
-				Value: inRes,
-			})
+	results := t.names.Search(strings.Split(prefix, ""), opts...)
+	flatResults := make([]T, 0, len(results.Results))
+	for _, result := range results.Results {
+		for _, innerResult := range result.Value.(map[string]T) {
+			flatResults = append(flatResults, innerResult)
+			if maxResults > 0 && len(flatResults) >= maxResults {
+				break
+			}
 		}
 	}
 
 	return flatResults
 }
 
-// Puts the node at key in the trie, if this is a duplicate it stores it alongside it.
-func (s *Trie[T]) Put(key string, node T) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (t *Trie[T]) Delete(key *fqn.FQN) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
 
-	splitKey := strings.Split(key, "")
-	opts := []func(*trie.SearchOptions){trie.WithExactKey()}
-	result := s.trie.Search(splitKey, opts...)
+	go func() {
+		t.namesLock.Lock()
+		defer t.namesLock.Unlock()
 
-	if len(result.Results) == 1 {
-		trieNode := result.Results[0].Value.(*trieNode[T])
-		trieNode.Nodes = append(trieNode.Nodes, node)
+		nameKey := strings.Split(key.Name(), "")
+		opts := []func(*trie.SearchOptions){trie.WithExactKey()}
+		results := t.names.Search(nameKey, opts...)
 
-		if uint(len(trieNode.Nodes)) > s.MaxDuplicates {
-			s.MaxDuplicates = uint(len(trieNode.Nodes))
-			s.MaxDuplicatesKey = key
+		if len(results.Results) > 0 {
+			currNames := results.Results[0].Value.(map[string]T)
+			delete(currNames, key.String())
+
+			if len(currNames) == 0 {
+				t.names.Delete(nameKey)
+			}
 		}
 
-		s.Size++
-		return
-	}
+		wg.Done()
+	}()
 
-	s.trie.Put(splitKey, newTrieNode(node))
-	s.Size++
+	go func() {
+		t.ctrie.Remove([]byte(key.String()))
+		wg.Done()
+	}()
+
+	wg.Wait()
 }
 
-// Calls predicate with all the nodes that exactly match the given key,
-// Deleting the first node that returns true.
-//
-// Returns whether something has been removed.
-func (s *Trie[T]) Delete(key string, predicate func(T) bool) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+type TriePair[T any] struct {
+	Key   []byte
+	Value T
+}
 
-	splitKey := strings.Split(key, "")
-	opts := []func(*trie.SearchOptions){trie.WithExactKey()}
-	result := s.trie.Search(splitKey, opts...)
+func (t *Trie[T]) Iterator(cancel <-chan struct{}) <-chan *TriePair[T] {
+	tcancel := make(chan struct{})
+	titer := t.ctrie.Iterator(tcancel)
+	iter := make(chan *TriePair[T])
 
-	if len(result.Results) == 0 {
-		return false
-	}
+	go func() {
+		var pair *TriePair[T]
 
-	trieNode := result.Results[0].Value.(*trieNode[T])
-	for i, result := range trieNode.Nodes {
-		if !predicate(result) {
-			continue
+		for {
+			var send chan *TriePair[T]
+			if pair != nil {
+				send = iter
+			}
+
+			var receive <-chan *ctrie.Entry
+			if pair == nil {
+				receive = titer
+			}
+
+			select {
+			case <-cancel:
+				tcancel <- struct{}{}
+				close(iter)
+				return
+
+			case entry, ok := <-receive:
+				if !ok {
+					close(iter)
+					return
+				}
+
+				pair = &TriePair[T]{Key: entry.Key, Value: entry.Value.(T)}
+
+			case send <- pair:
+				pair = nil
+			}
 		}
+	}()
 
-		// Removes the node.
-		trieNode.Nodes[i] = trieNode.Nodes[len(trieNode.Nodes)-1]
-		trieNode.Nodes = trieNode.Nodes[:len(trieNode.Nodes)-1]
-
-		// If the slice is now empty, remove it completely.
-		if len(trieNode.Nodes) == 0 {
-			s.trie.Delete(splitKey)
-		}
-
-		s.Size--
-		return true
-	}
-
-	return false
-}
-
-func (s *Trie[T]) Print() {
-	s.trie.Root().Print()
-}
-
-type trieNode[T any] struct {
-	Nodes []T
-}
-
-func newTrieNode[T any](node T) *trieNode[T] {
-	return &trieNode[T]{
-		Nodes: []T{node},
-	}
+	return iter
 }

@@ -13,8 +13,9 @@ type node[V any] struct {
 type Queue[V any] struct {
 	mu sync.Mutex
 
-	head *node[V]
-	tail *node[V]
+	head    *node[V]
+	tail    *node[V]
+	pointer *node[V]
 }
 
 func New[V any]() *Queue[V] {
@@ -29,7 +30,12 @@ func (q *Queue[V]) Enqueue(value V) {
 
 	if q.head == nil {
 		q.head = node
+		q.pointer = q.head
 		return
+	}
+
+	if q.pointer == nil {
+		q.pointer = node
 	}
 
 	if q.tail == nil {
@@ -46,21 +52,25 @@ func (q *Queue[V]) Dequeue() V {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	node := q.head
+	node := q.pointer
 	if node == nil {
 		var v V
 		return v
 	}
 
-	q.head = node.next
+	q.pointer = node.next
 	return node.value
 }
 
 func (q *Queue[V]) Peek() V {
-	if q.head == nil {
+	if q.pointer == nil {
 		var v V
 		return v
 	}
 
-	return q.head.value
+	return q.pointer.value
+}
+
+func (q *Queue[V]) Reset() {
+	q.pointer = q.head
 }

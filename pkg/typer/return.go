@@ -141,23 +141,3 @@ func getMethodClass(root *ir.Root, node ir.Node) *resolvequeue.Node {
 		Kind: ir.KindClassStmt,
 	}
 }
-
-func addFuncComments(q *queue.Queue[phpdoxer.Node], funcOrMeth ir.Node) {
-	comments := NodeComments(funcOrMeth)
-
-	if method, ok := funcOrMeth.(*ir.ClassMethodStmt); ok {
-		comments = append(comments, method.Doc.Raw)
-	}
-
-	for _, comment := range comments {
-		nodes, err := phpdoxer.ParseDoc(comment)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		for _, node := range nodes {
-			q.Enqueue(node)
-		}
-	}
-}

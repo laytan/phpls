@@ -11,6 +11,10 @@ func NewNamespace(row uint) *Namespace {
 	}
 }
 
+func NewNamespaceFromNode(node ir.Node) *Namespace {
+    return NewNamespace(uint(ir.GetPosition(node).StartLine))
+}
+
 // Namespace implements ir.Visitor.
 type Namespace struct {
 	row    uint
@@ -28,7 +32,7 @@ func (n *Namespace) EnterNode(node ir.Node) bool {
 	}
 
 	// Don't go into scopes, namespace is always top level.
-	return !symbol.IsScope(node)
+	return !symbol.IsScope(ir.GetNodeKind(node))
 }
 
 func (n *Namespace) LeaveNode(ir.Node) {}

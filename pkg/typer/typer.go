@@ -12,6 +12,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/elephp/pkg/queue"
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/samber/do"
 )
@@ -32,6 +33,9 @@ type Typer interface {
 	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) phpdoxer.Type
 
 	Property(root *ir.Root, propertyList *ir.PropertyListStmt) phpdoxer.Type
+
+	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
+	Throws(funcOrMeth ir.Node) []phpdoxer.Type
 }
 
 var (
@@ -183,4 +187,24 @@ func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {
 	cl.Name = res.String()
 
 	return cl
+}
+
+func addFuncComments(q *queue.Queue[phpdoxer.Node], funcOrMeth ir.Node) {
+	comments := NodeComments(funcOrMeth)
+
+	if method, ok := funcOrMeth.(*ir.ClassMethodStmt); ok {
+		comments = append(comments, method.Doc.Raw)
+	}
+
+	for _, comment := range comments {
+		nodes, err := phpdoxer.ParseDoc(comment)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		for _, node := range nodes {
+			q.Enqueue(node)
+		}
+	}
 }

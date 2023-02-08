@@ -44,5 +44,5 @@ func (p *NameProvider) Define(ctx context.Context) ([]*definition.Definition, er
 		return nil, definition.ErrNoDefinitionFound
 	}
 
-	return []*definition.Definition{definition.TrieNodeToDef(tdef)}, nil
+	return []*definition.Definition{definition.IndexNodeToDef(tdef)}, nil
 }

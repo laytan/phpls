@@ -20,11 +20,11 @@ func (c *ClassLike) EnterNode(node ir.Node) bool {
 		return false
 	}
 
-	if symbol.IsClassLike(node) && symbol.GetIdentifier(node) == c.name {
+	if symbol.IsClassLike(ir.GetNodeKind(node)) && symbol.GetIdentifier(node) == c.name {
 		c.ClassLike = node
 	}
 
-	return !symbol.IsScope(node)
+	return !symbol.IsScope(ir.GetNodeKind(node))
 }
 
 func (c *ClassLike) LeaveNode(ir.Node) {}

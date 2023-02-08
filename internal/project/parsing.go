@@ -92,6 +92,7 @@ func (p *Project) ParseFileUpdate(path string, content string) error {
 	}
 
 	if err != nil {
+		// TODO: this does not seem to be working.
 		if strutil.RemoveWhitespace(content) == strutil.RemoveWhitespace(prevContent) {
 			what.Happens("Skipping file update (only whitespace change) of %s", path)
 			return nil

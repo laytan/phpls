@@ -7,7 +7,7 @@ import (
 	"github.com/laytan/elephp/pkg/symbol"
 )
 
-const partSeperator = `\`
+const PartSeperator = `\`
 
 type FQN struct {
 	// Examples: \DateTime, \Test\DateTime.
@@ -15,7 +15,7 @@ type FQN struct {
 }
 
 func New(value string) *FQN {
-	if value[0:1] != partSeperator {
+	if value[0:1] != PartSeperator {
 		panic("Trying to create FQN without a fully qualified input.")
 	}
 
@@ -28,13 +28,38 @@ func (f *FQN) String() string {
 }
 
 func (f *FQN) Namespace() string {
-	parts := strings.Split(f.value, partSeperator)
-	return strings.Join(parts[1:len(parts)-1], partSeperator)
+	parts := f.Parts()
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return strings.Join(parts[:len(parts)-1], PartSeperator)
 }
 
 func (f *FQN) Name() string {
-	parts := strings.Split(f.value, partSeperator)
+	parts := f.Parts()
+	if len(parts) == 0 {
+		return ""
+	}
+
 	return parts[len(parts)-1]
+}
+
+func (f *FQN) WithoutHead() *FQN {
+	return New("\\" + f.Namespace())
+}
+
+func (f *FQN) Parts() []string {
+	if f.value == PartSeperator {
+		return []string{}
+	}
+
+	parts := strings.Split(f.value, PartSeperator)
+	if len(parts) == 0 {
+		return parts
+	}
+
+	return parts[1:]
 }
 
 func NewTraverser() *Traverser {
@@ -71,22 +96,22 @@ func (f *Traverser) ResultFor(name *ir.Name) *FQN {
 	for _, usage := range f.fileUses {
 		if usage.Alias != nil {
 			if usage.Alias.Value == name.LastPart() {
-				return New(partSeperator + usage.Use.Value)
+				return New(PartSeperator + usage.Use.Value)
 			}
 		}
 
 		if usage.Use.LastPart() == name.LastPart() {
-			return New(partSeperator + usage.Use.Value)
+			return New(PartSeperator + usage.Use.Value)
 		}
 	}
 
 	// Else use namespace+class name.
 	if f.fileNamespace != "" {
-		return New(partSeperator + f.fileNamespace + partSeperator + name.LastPart())
+		return New(PartSeperator + f.fileNamespace + PartSeperator + name.LastPart())
 	}
 
 	// Else use class name.
-	return New(partSeperator + name.LastPart())
+	return New(PartSeperator + name.LastPart())
 }
 
 func (f *Traverser) EnterNode(node ir.Node) bool {
@@ -119,7 +144,7 @@ func (f *Traverser) EnterNode(node ir.Node) bool {
 		return false
 
 	default:
-		return !symbol.IsScope(typedNode)
+		return !symbol.IsScope(ir.GetNodeKind(typedNode))
 	}
 }
 

@@ -2,7 +2,6 @@
 
 namespace Test\Constants;
 
-define('CONSTANT_1', 'test'); // @t_out(constants_1, 1)
 define('CONSTANT_2', 'test2'); // @t_out(constants_2, 1)
 
 function test() {

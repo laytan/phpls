@@ -17,6 +17,7 @@ const (
 	KindInheritDoc
 	KindSince
 	KindRemoved
+	KindThrows
 )
 
 type Node interface {
@@ -118,4 +119,21 @@ func (n *NodeRemoved) String() string {
 
 func (n *NodeRemoved) Kind() NodeKind {
 	return KindRemoved
+}
+
+type NodeThrows struct {
+	Type        Type
+	Description string
+}
+
+func (n *NodeThrows) String() string {
+	if n.Description == "" {
+		return fmt.Sprintf("@throws %s", n.Type)
+	}
+
+	return fmt.Sprintf("@throws %s %s", n.Type, n.Description)
+}
+
+func (n *NodeThrows) Kind() NodeKind {
+	return KindThrows
 }

@@ -21,7 +21,7 @@ var ErrNoCompletionResults = errors.New("No completion results found for symbol 
 
 func (p *Project) Complete(
 	pos *position.Position,
-) []*traversers.TrieNode {
+) []*index.IndexNode {
 	query := p.getCompletionQuery(pos)
 	if query == "" {
 		return nil

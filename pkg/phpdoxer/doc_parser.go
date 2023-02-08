@@ -113,6 +113,16 @@ func parseGroup(at string, value string) (Node, error) {
 			Value: value,
 		}, nil
 
+	case "throws":
+		typeStr, description := splitTypeAndRest(value)
+
+		typeNode, _ := ParseType(typeStr)
+
+		return &NodeThrows{
+			Type:        typeNode,
+			Description: description,
+		}, nil
+
 	default:
 		return &NodeUnknown{
 			At:    at,

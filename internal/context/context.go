@@ -140,12 +140,12 @@ func (c *context) setScopes() {
 		}
 
 		n := c.nodes[i]
-		if !foundScope && symbol.IsScope(n) {
+		if !foundScope && symbol.IsScope(ir.GetNodeKind(n)) {
 			c.scope = n
 			foundScope = true
 		}
 
-		if !foundClassScope && symbol.IsClassLike(n) {
+		if !foundClassScope && symbol.IsClassLike(ir.GetNodeKind(n)) {
 			c.classScope = n
 			foundClassScope = true
 		}

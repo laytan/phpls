@@ -3,7 +3,6 @@ package symbol
 import (
 	"log"
 
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/position"
 )
@@ -15,6 +14,13 @@ type Symbol interface {
 	Position() *position.Position
 	NodeKind() ir.NodeKind
 	Identifier() string
+
+    /// Checks if the kinds match the symbol.
+    ///
+    /// If 0 kinds are passed, true is returned.
+    /// If kinds contains ir.KindRoot, true is returned.
+    /// Otherwise, exact matches are returned.
+    MatchesKind(kinds []ir.NodeKind) bool
 }
 
 func New(node ir.Node) Symbol {
@@ -35,13 +41,6 @@ func New(node ir.Node) Symbol {
 		return NewProperty(typedNode)
 	case *ir.ClassConstListStmt:
 		return NewClassConstant(typedNode)
-	case *ir.FunctionCallExpr:
-		if fn, ok := typedNode.Function.(*ir.Name); ok && fn.Value == "define" {
-			return NewGlobalConstant(typedNode)
-		}
-
-		log.Printf("symbol.New called with unsupported type %T", node)
-		return nil
 
 	default:
 		log.Printf("symbol.New called with unsupported type %T", node)
@@ -65,6 +64,32 @@ func (b *baseSymbol) Position() *position.Position {
 
 func (b *baseSymbol) Identifier() string {
 	return b.identifier
+}
+
+func (b *baseSymbol) SetIdentifier(value string) {
+	b.identifier = value
+}
+
+func (b *baseSymbol) NodeKind() ir.NodeKind {
+    panic("symbol.NodeKind not implemented")
+}
+
+func (b *baseSymbol) MatchesKind(kinds []ir.NodeKind) bool {
+	if len(kinds) == 0 {
+		return true
+	}
+
+	for _, kind := range kinds {
+		if kind == ir.KindRoot {
+			return true
+		}
+
+		if kind == b.NodeKind() {
+			return true
+		}
+	}
+
+	return false
 }
 
 // FunctionStmtSymbol is a stripped version of ir.FunctionStmt.
@@ -171,7 +196,6 @@ func NewGlobalConstant(defineCall *ir.FunctionCallExpr) *GlobalConstantSymbol {
 	log.Println(
 		"Invalid constant declaration, first argument of define() call is not a string (constant identifier)",
 	)
-	what.Is(defineCall)
 	c.identifier = "ELEPHP_INVALID_CONST"
 
 	return c

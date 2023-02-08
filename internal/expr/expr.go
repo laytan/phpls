@@ -13,8 +13,6 @@ import (
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/laytan/elephp/pkg/stack"
-	"github.com/laytan/elephp/pkg/symbol"
-	"github.com/laytan/elephp/pkg/traversers"
 )
 
 type ExprType int //nolint:revive // Type is not really descriptive and a reserved word in lowercase.
@@ -94,19 +92,16 @@ func Resolve(
 	symbols := stack.New[*DownResolvement]()
 	Down(AllResolvers(), symbols, node)
 
-	what.Happens("Symbols: %v", symbols.String())
-
 	if symbols.Peek() == nil {
 		return nil, nil, 0
 	}
 
 	start := symbols.Pop()
-	var res *Resolved
 	var next *phpdoxer.TypeClassLike
 	var privacy phprivacy.Privacy
 	for _, starter := range starters {
 		if r, n, p, ok := starter.Up(scopes, start); ok {
-			res = r
+			result = r
 			privacy = p
 			next = n
 			break
@@ -114,14 +109,14 @@ func Resolve(
 	}
 
 	if next == nil {
-		if res != nil {
+		if result != nil {
 			// Run out the stack, to see how many were left to do.
 			left = 0
 			for curr := symbols.Pop(); curr != nil; curr = symbols.Pop() {
 				left++
 			}
 
-			return res, nil, left
+			return result, nil, left
 		}
 
 		return nil, nil, 0
@@ -129,7 +124,7 @@ func Resolve(
 
 	for curr := symbols.Pop(); curr != nil; curr = symbols.Pop() {
 		if next == nil {
-			return res, nil, symbols.Length() + 1
+			return result, nil, symbols.Length() + 1
 		}
 
 		resolver := resolvers[curr.ExprType]
@@ -165,13 +160,10 @@ func Down(
 	}
 }
 
-func Up(symbols *stack.Stack[*DownResolvement], startClassScope, startScope ir.Node) {
-}
-
 func newResolveQueue(c *phpdoxer.TypeClassLike) (*resolvequeue.ResolveQueue, error) {
-	sym, err := index.FromContainer().Find(c.Name, symbol.ClassLikeScopes...)
-	if err != nil {
-		return nil, fmt.Errorf("newResolveQueue(%s): %w", c, err)
+	sym, ok := index.FromContainer().Find(fqn.New(c.Name))
+	if !ok {
+		return nil, fmt.Errorf("[newResolveQueue(c)]: unable to find %v in index", c)
 	}
 
 	return resolvequeue.New(rootRetriever, &resolvequeue.Node{
@@ -186,7 +178,7 @@ type walkContext struct {
 	FQN *fqn.FQN
 
 	// The definition of the current class.
-	Curr *traversers.TrieNode
+	Curr *index.IndexNode
 
 	// The root of the current class's file.
 	Root *ir.Root
@@ -197,14 +189,14 @@ func walkResolveQueue(
 	walker func(*walkContext) (done bool, err error),
 ) error {
 	for res := queue.Queue.Dequeue(); res != nil; res = queue.Queue.Dequeue() {
-		def, err := index.FromContainer().Find(res.FQN.String(), res.Kind)
-		if err != nil {
-			return fmt.Errorf("walkResolveQueue: index.Find(%s, %d): %w", res.FQN, res.Kind, err)
+		def, ok := index.FromContainer().Find(res.FQN)
+		if !ok {
+			return fmt.Errorf("[walkResolveQueue]: unable to find %s in index", res.FQN)
 		}
 
 		root, err := wrkspc.FromContainer().IROf(def.Path)
 		if err != nil {
-			return fmt.Errorf("walkResolveQueue: wrkspc.IROf(%s): %w", def.Path, err)
+			return fmt.Errorf("[walkResolveQueue]: unable to find root of %s: %w", def.Path, err)
 		}
 
 		done, err := walker(
@@ -263,14 +255,18 @@ func createAndWalkResolveQueue(
 }
 
 func rootRetriever(n *resolvequeue.Node) (*ir.Root, error) {
-	res, err := index.FromContainer().Find(n.FQN.String(), n.Kind)
-	if err != nil {
-		return nil, fmt.Errorf("rootRetriever: index.Find(%s, %d): %w", n.FQN, n.Kind, err)
+	res, ok := index.FromContainer().Find(n.FQN)
+	if !ok {
+		return nil, fmt.Errorf("[rootRetriever]: unable to find %s in the index", n.FQN)
 	}
 
 	root, err := wrkspc.FromContainer().IROf(res.Path)
 	if err != nil {
-		return nil, fmt.Errorf("rootRetriever: wrkspc.IROf(%s): %w", res.Path, err)
+		return nil, fmt.Errorf(
+			"[rootRetriever]: unable to find root of %s in the wrkspc: %w",
+			res.Path,
+			err,
+		)
 	}
 
 	return root, nil
