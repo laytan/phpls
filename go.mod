@@ -11,7 +11,6 @@ require (
 	github.com/arl/statsviz v0.5.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/websocket v1.5.0
-	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/matryer/is v1.4.0
