@@ -71,7 +71,7 @@ func TestStdlibDefinitions(t *testing.T) {
 				Path: stdlibPath,
 			},
 			out: &position.Position{
-				Row:  785,
+				Row:  797,
 				Col:  1,
 				Path: filepath.Join(stubsRoot, "standard", "standard_8.php"),
 			},
@@ -143,7 +143,7 @@ func TestStdlibDefinitions(t *testing.T) {
 				Path: stdlibPath,
 			},
 			out: &position.Position{
-				Row:  896,
+				Row:  897,
 				Col:  1,
 				Path: filepath.Join(stubsRoot, "standard", "standard_1.php"),
 			},
