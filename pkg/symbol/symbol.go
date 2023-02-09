@@ -15,12 +15,12 @@ type Symbol interface {
 	NodeKind() ir.NodeKind
 	Identifier() string
 
-    /// Checks if the kinds match the symbol.
-    ///
-    /// If 0 kinds are passed, true is returned.
-    /// If kinds contains ir.KindRoot, true is returned.
-    /// Otherwise, exact matches are returned.
-    MatchesKind(kinds []ir.NodeKind) bool
+	/// Checks if the kinds match the symbol.
+	///
+	/// If 0 kinds are passed, true is returned.
+	/// If kinds contains ir.KindRoot, true is returned.
+	/// Otherwise, exact matches are returned.
+	MatchesKind(kinds []ir.NodeKind) bool
 }
 
 func New(node ir.Node) Symbol {
@@ -71,7 +71,7 @@ func (b *baseSymbol) SetIdentifier(value string) {
 }
 
 func (b *baseSymbol) NodeKind() ir.NodeKind {
-    panic("symbol.NodeKind not implemented")
+	panic("symbol.NodeKind not implemented")
 }
 
 func (b *baseSymbol) MatchesKind(kinds []ir.NodeKind) bool {

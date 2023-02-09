@@ -65,79 +65,79 @@ func TestFQNTraverser(t *testing.T) {
 		expect string
 	}{
 		"single semicolon": {
-            code:   `
+			code: `
             <?php
             namespace Test;
             // Some comment.
             `,
-            name:   &ir.Name{Value: "TestName", Position: &position.Position{
-                StartLine: 3,
-                StartPos: 50,
-                EndLine: 3,
-                EndPos: 51,
-            }},
+			name: &ir.Name{Value: "TestName", Position: &position.Position{
+				StartLine: 3,
+				StartPos:  50,
+				EndLine:   3,
+				EndPos:    51,
+			}},
 			expect: "\\Test\\TestName",
 		},
-        "no namespaces": {
-            code: `
+		"no namespaces": {
+			code: `
             <?php
             `,
-            name: &ir.Name{Value: "TestName", Position: &position.Position{
-                StartLine: 1,
-                StartPos: 1,
-                EndLine: 1,
-                EndPos: 2,
-            }},
-            expect: "\\TestName",
-        },
-        "single global namespace block": {
-            code: `
+			name: &ir.Name{Value: "TestName", Position: &position.Position{
+				StartLine: 1,
+				StartPos:  1,
+				EndLine:   1,
+				EndPos:    2,
+			}},
+			expect: "\\TestName",
+		},
+		"single global namespace block": {
+			code: `
             <?php
             namespace {
                 // Some comment.
             }
             `,
-            name: &ir.Name{Value: "TestName", Position: &position.Position{
-                StartLine: 3,
-                StartPos: 20,
-                EndLine: 3,
-                EndPos: 24,
-            }},
-            expect: "\\TestName",
-        },
-        "single namespace block": {
-            code: `
+			name: &ir.Name{Value: "TestName", Position: &position.Position{
+				StartLine: 3,
+				StartPos:  20,
+				EndLine:   3,
+				EndPos:    24,
+			}},
+			expect: "\\TestName",
+		},
+		"single namespace block": {
+			code: `
             <?php
             namespace Test {
                 // Some comment.
             }
             `,
-            name: &ir.Name{Value: "TestName", Position: &position.Position{
-                StartLine: 3,
-                StartPos: 55,
-                EndLine: 3,
-                EndPos: 56,
-            }},
-            expect: "\\Test\\TestName",
-        },
-        "double semicolon": {
-            code: `
+			name: &ir.Name{Value: "TestName", Position: &position.Position{
+				StartLine: 3,
+				StartPos:  55,
+				EndLine:   3,
+				EndPos:    56,
+			}},
+			expect: "\\Test\\TestName",
+		},
+		"double semicolon": {
+			code: `
             <?php
             namespace Test;
             // Some comment.
             namespace Test2;
             // Some comment 2.
             `,
-            name: &ir.Name{Value: "TestName", Position: &position.Position{
-                StartLine: 3,
-                StartPos: 55,
-                EndLine: 3,
-                EndPos: 56,
-            }},
-            expect: "\\Test\\TestName",
-        },
-        "double block": {
-            code: `
+			name: &ir.Name{Value: "TestName", Position: &position.Position{
+				StartLine: 3,
+				StartPos:  55,
+				EndLine:   3,
+				EndPos:    56,
+			}},
+			expect: "\\Test\\TestName",
+		},
+		"double block": {
+			code: `
             <?php
             namespace Test {
                 // Some comment.
@@ -147,16 +147,16 @@ func TestFQNTraverser(t *testing.T) {
                 // Some comment 2.
             }
             `,
-            name: &ir.Name{Value: "TestName", Position: &position.Position{
-                StartLine: 7,
-                StartPos: 140,
-                EndLine: 7,
-                EndPos: 141,
-            }},
-            expect: "\\Test2\\TestName",
-        },
-        "mixed": {
-            code: `
+			name: &ir.Name{Value: "TestName", Position: &position.Position{
+				StartLine: 7,
+				StartPos:  140,
+				EndLine:   7,
+				EndPos:    141,
+			}},
+			expect: "\\Test2\\TestName",
+		},
+		"mixed": {
+			code: `
             <?php
             namespace {
                 // Some comment.
@@ -165,30 +165,30 @@ func TestFQNTraverser(t *testing.T) {
             use Test\Aliassed as Alias;
             // some comment 2.
             `,
-            name: &ir.Name{Value: "Alias", Position: &position.Position{
-                StartLine: 6,
-                StartPos: 130,
-                EndLine: 6,
-                EndPos: 131,
-            }},
-            expect: "\\Test\\Aliassed",
-        },
-        "block with use statement": {
-            code: `
+			name: &ir.Name{Value: "Alias", Position: &position.Position{
+				StartLine: 6,
+				StartPos:  130,
+				EndLine:   6,
+				EndPos:    131,
+			}},
+			expect: "\\Test\\Aliassed",
+		},
+		"block with use statement": {
+			code: `
             <?php
             namespace Test1 {
                 use Testing\Test;
                 // Some comment.
             }
             `,
-            name: &ir.Name{Value: "Test", Position: &position.Position{
-                StartLine: 4,
-                StartPos: 60,
-                EndLine: 4,
-                EndPos: 61,
-            }},
-            expect: "\\Testing\\Test",
-        },
+			name: &ir.Name{Value: "Test", Position: &position.Position{
+				StartLine: 4,
+				StartPos:  60,
+				EndLine:   4,
+				EndPos:    61,
+			}},
+			expect: "\\Testing\\Test",
+		},
 	}
 
 	parser := parsing.New(phpversion.EightOne())

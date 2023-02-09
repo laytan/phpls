@@ -40,25 +40,25 @@ type Index interface {
 	// The given namespace must be fully qualified.
 	//
 	// Giving this no kinds or ir.KindRoot will return any kind.
-	Find(key *fqn.FQN) (*IndexNode, bool)
+	Find(key *fqn.FQN) (*INode, bool)
 
 	// Finds a prefix/completes a string.
 	// Do not call this with a namespaced symbol, only the class or function name.
 	//
 	// Giving this no kinds will return any kind.
 	// A max of 0 or passing ir.KindRoot will return everything.
-	FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*IndexNode
+	FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*INode
 }
 
-type IndexNode struct {
+type INode struct {
 	FQN    *fqn.FQN
 	Path   string
 	Symbol symbol.Symbol
 }
 
-func NewIndexNode(FQN *fqn.FQN, path string, symbol symbol.Symbol) *IndexNode {
-	return &IndexNode{
-		FQN:    FQN,
+func NewINode(fqns *fqn.FQN, path string, symbol symbol.Symbol) *INode {
+	return &INode{
+		FQN:    fqns,
 		Path:   path,
 		Symbol: symbol,
 	}
@@ -68,7 +68,7 @@ type index struct {
 	normalParser parsing.Parser
 	stubParser   parsing.Parser
 
-	symbolTrie       *symboltrie.Trie[*IndexNode]
+	symbolTrie       *symboltrie.Trie[*INode]
 	symbolTraversers *sync.Pool
 }
 
@@ -81,7 +81,7 @@ func New(phpv *phpversion.PHPVersion) Index {
 		normalParser: normalParser,
 		stubParser:   stubsParser,
 
-		symbolTrie: symboltrie.New[*IndexNode](),
+		symbolTrie: symboltrie.New[*INode](),
 	}
 
 	ind.symbolTraversers = &sync.Pool{
@@ -98,31 +98,31 @@ func FromContainer() Index {
 }
 
 func (i *index) Index(path string, content string) error {
-    defer func() {
-        if r := recover(); r != nil {
-            log.Printf("Could not parse %s into an AST: %v", path, r)
-        }
-    }()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Could not parse %s into an AST: %v", path, r)
+		}
+	}()
 
 	root, err := i.parser(path).Parse(content)
 	if err != nil {
 		return fmt.Errorf(errParseFmt, path, err)
 	}
 
-	t := i.symbolTraversers.Get().(*IndexTraverser)
-	nodes := make(chan *IndexNode, 10)
+	t := i.symbolTraversers.Get().(*INodeTraverser)
+	nodes := make(chan *INode, 10)
 	t.Reset(path, nodes)
 
-	go func () {
-        defer func() {
-            if r := recover(); r != nil {
-                log.Printf("Could not index %s: %v", path, r)
-                close(nodes)
-            }
-        }()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Could not index %s: %v", path, r)
+				close(nodes)
+			}
+		}()
 
-        root.Walk(t)
-    }()
+		root.Walk(t)
+	}()
 
 	for node := range nodes {
 		i.symbolTrie.Put(node.FQN, node)
@@ -134,14 +134,14 @@ func (i *index) Index(path string, content string) error {
 }
 
 // Find returns the first result matching the given query.
-func (i *index) Find(key *fqn.FQN) (*IndexNode, bool) {
+func (i *index) Find(key *fqn.FQN) (*INode, bool) {
 	return i.symbolTrie.SearchExact(key)
 }
 
-func (i *index) FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*IndexNode {
+func (i *index) FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*INode {
 	results := i.symbolTrie.SearchNames(prefix, max)
 
-	values := make([]*IndexNode, 0, len(results))
+	values := make([]*INode, 0, len(results))
 	for _, result := range results {
 		if result.Symbol.MatchesKind(kind) {
 			values = append(values, result)
@@ -176,8 +176,8 @@ func (i *index) Delete(path string) error {
 		return fmt.Errorf(errParseFmt, path, err)
 	}
 
-	nodes := make(chan *IndexNode, 25)
-	removeTraverser := i.symbolTraversers.Get().(*IndexTraverser)
+	nodes := make(chan *INode, 25)
+	removeTraverser := i.symbolTraversers.Get().(*INodeTraverser)
 	removeTraverser.Reset(path, nodes)
 	prevRoot.Walk(removeTraverser)
 	i.symbolTraversers.Put(removeTraverser)

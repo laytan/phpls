@@ -4,18 +4,18 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 )
 
-type ThrowsTraverser struct {
+type throwsTraverser struct {
 	Result       []ir.Node
 	visitedFirst bool
 }
 
-func NewThrowsTraverser() *ThrowsTraverser {
-	return &ThrowsTraverser{
+func newThrowsTraverser() *throwsTraverser {
+	return &throwsTraverser{
 		Result: []ir.Node{},
 	}
 }
 
-func (t *ThrowsTraverser) EnterNode(node ir.Node) bool {
+func (t *throwsTraverser) EnterNode(node ir.Node) bool {
 	if !t.visitedFirst {
 		t.visitedFirst = true
 		return true
@@ -32,4 +32,4 @@ func (t *ThrowsTraverser) EnterNode(node ir.Node) bool {
 	}
 }
 
-func (t *ThrowsTraverser) LeaveNode(node ir.Node) {}
+func (t *throwsTraverser) LeaveNode(node ir.Node) {}

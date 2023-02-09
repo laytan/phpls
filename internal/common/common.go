@@ -27,7 +27,7 @@ func FindFullyQualified(
 	root *ir.Root,
 	name string,
 	kinds ...ir.NodeKind,
-) (*index.IndexNode, bool) {
+) (*index.INode, bool) {
 	FQN := FullyQualify(root, name)
 	return index.FromContainer().Find(FQN)
 }
