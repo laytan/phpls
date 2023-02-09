@@ -23,6 +23,7 @@ jobs:
         with:
           submodules: recursive
 
+      # TODO: cache this.
       - name: Build unsafenil
         run: go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
         working-directory: ./third_party/unsafenil
@@ -31,9 +32,10 @@ jobs:
       # In order to use unsafenil, we need to build from source so CGO is used.
       # See https://github.com/golangci/golangci-lint-action/issues/540
       # See https://github.com/golangci/golangci-lint/issues/1276
+      # TODO: cache this.
       - name: Install golangci-lint
         run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
       - name: Lint
-        run: golangci-lint run
+        run: golangci-lint run --timeout 5m
 
