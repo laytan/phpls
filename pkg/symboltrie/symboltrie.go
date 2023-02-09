@@ -9,17 +9,12 @@ import (
 	"github.com/shivamMg/trie"
 )
 
-type nameNode[T any] struct {
-	fullKey string
-	value   T
-}
-
 type Trie[T any] struct {
-	ctrie     *ctrie.Ctrie
+	ctrie *ctrie.Ctrie
 
-    // TODO: having 2 tries here is a bit of a waste of memory,
-    // also this shivaMg/trie uses a lot of memory, even compared to the larger
-    // ctrie.
+	// TODO: having 2 tries here is a bit of a waste of memory,
+	// also this shivaMg/trie uses a lot of memory, even compared to the larger
+	// ctrie.
 	names     *trie.Trie
 	namesLock sync.Mutex
 }

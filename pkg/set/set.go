@@ -31,9 +31,9 @@ func New[V comparable]() *Set[V] {
 	return s
 }
 
-func NewWithCap[V comparable](cap int) *Set[V] {
+func NewWithCap[V comparable](capacity int) *Set[V] {
 	s := &Set[V]{}
-	s.list = make(map[V]struct{}, cap)
+	s.list = make(map[V]struct{}, capacity)
 	return s
 }
 
@@ -51,11 +51,11 @@ func (s *Set[V]) AddMulti(list ...V) {
 
 type FilterFunc[V comparable] func(v V) bool
 
-// Filter returns a subset, that contains only the values that satisfies the given predicate P
-func (s *Set[V]) Filter(P FilterFunc[V]) *Set[V] {
+// Filter returns a subset, that contains only the values that satisfies the given predicate p.
+func (s *Set[V]) Filter(p FilterFunc[V]) *Set[V] {
 	res := New[V]()
 	for v := range s.list {
-		if P(v) == false {
+		if !p(v) {
 			continue
 		}
 		res.Add(v)
@@ -78,7 +78,7 @@ func (s *Set[V]) Union(s2 *Set[V]) *Set[V] {
 func (s *Set[V]) Intersect(s2 *Set[V]) *Set[V] {
 	res := New[V]()
 	for v := range s.list {
-		if s2.Has(v) == false {
+		if !s2.Has(v) {
 			continue
 		}
 		res.Add(v)
@@ -86,7 +86,7 @@ func (s *Set[V]) Intersect(s2 *Set[V]) *Set[V] {
 	return res
 }
 
-// Difference returns the subset from s, that doesn't exists in s2 (param)
+// Difference returns the subset from s, that doesn't exists in s2 (param).
 func (s *Set[V]) Difference(s2 *Set[V]) *Set[V] {
 	res := New[V]()
 	for v := range s.list {

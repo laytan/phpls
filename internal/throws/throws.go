@@ -18,24 +18,18 @@ import (
 	"github.com/laytan/elephp/pkg/typer"
 )
 
-func ThrowsFromIndex(node *index.IndexNode) []*fqn.FQN {
+func FromIndex(node *index.INode) []*fqn.FQN {
 	root, irNode, err := common.SymbolToNode(node.Path, node.Symbol)
 	if err != nil {
 		log.Println(fmt.Errorf("[throws.Throws]: %w", err))
 		return nil
 	}
 
-	return common.Map(
-		throws(root, irNode, node.Path).Slice(),
-		func(val string) *fqn.FQN { return fqn.New(val) },
-	)
+	return common.Map(throws(root, irNode, node.Path).Slice(), fqn.New)
 }
 
-func Throws(root *ir.Root, node ir.Node, path string) []*fqn.FQN {
-	return common.Map(
-		throws(root, node, path).Slice(),
-		func(val string) *fqn.FQN { return fqn.New(val) },
-	)
+func FromNode(root *ir.Root, node ir.Node, path string) []*fqn.FQN {
+	return common.Map(throws(root, node, path).Slice(), fqn.New)
 }
 
 func throws(root *ir.Root, node ir.Node, path string) *set.Set[string] {
@@ -49,7 +43,7 @@ func throws(root *ir.Root, node ir.Node, path string) *set.Set[string] {
 		}
 	}
 
-	traverser := NewThrowsTraverser()
+	traverser := newThrowsTraverser()
 	node.Walk(traverser)
 
 	for _, result := range traverser.Result {

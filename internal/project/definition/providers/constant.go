@@ -23,7 +23,7 @@ func (c *ConstantProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 	return kind == ir.KindConstFetchExpr
 }
 
-// TODO: return non-array
+// TODO: return non-array.
 func (c *ConstantProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
 	key := fqn.New(fqn.PartSeperator + ctx.Current().(*ir.ConstFetchExpr).Constant.Value)
 	result, ok := index.FromContainer().Find(key)

@@ -1,6 +1,7 @@
 package throws_test
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -21,6 +22,7 @@ import (
 )
 
 func TestThrows(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	i, err := setup(
@@ -30,23 +32,25 @@ func TestThrows(t *testing.T) {
 	is.NoErr(err)
 
 	t.Run("basic one throw using new", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 1)
 		is.Equal(throw[0].String(), "\\Exception")
 	})
 
 	t.Run("throw in called function and in current function", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_2"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 2)
 		ts := common.Map(throw, func(t *fqn.FQN) string { return t.String() })
 		is.True(slices.Contains(ts, "\\Exception"))
@@ -54,76 +58,83 @@ func TestThrows(t *testing.T) {
 	})
 
 	t.Run("basic catch of same exception class", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_3"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 0)
 	})
 
 	t.Run("catch of parent class of exception", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_4"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 0)
 	})
 
 	t.Run("try catch outside of throw scope", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_5"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 1)
 		is.Equal(throw[0].String(), "\\Exception")
 	})
 
 	t.Run("@throws tag", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_6"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 1)
 		is.Equal(throw[0].String(), "\\Throwable")
 	})
 
 	t.Run("@throws tag deep", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_7"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 1)
 		is.Equal(throw[0].String(), "\\Throwable")
 	})
 
 	t.Run("duplicate throw statements", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_8"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		is.Equal(len(throw), 1)
 		is.Equal(throw[0].String(), "\\InvalidArgumentException")
 	})
 
 	t.Run("try 2 statements catch with 1", func(t *testing.T) {
+		t.Parallel()
 		is := is.New(t)
 
 		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_9"))
 		is.True(ok)
 
-		throw := throws.ThrowsFromIndex(funcCall)
+		throw := throws.FromIndex(funcCall)
 		what.Is(throw)
 		is.Equal(len(throw), 0)
 	})
@@ -138,7 +149,7 @@ func setup(root string, phpv *phpversion.PHPVersion) (index.Index, error) {
 
 	p := project.New()
 	if err := p.ParseWithoutProgress(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[throws_test.setup]: %w", err)
 	}
 
 	return i, nil

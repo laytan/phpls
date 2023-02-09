@@ -178,7 +178,7 @@ type walkContext struct {
 	FQN *fqn.FQN
 
 	// The definition of the current class.
-	Curr *index.IndexNode
+	Curr *index.INode
 
 	// The root of the current class's file.
 	Root *ir.Root

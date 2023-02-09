@@ -12,7 +12,7 @@ func NewNamespace(row uint) *Namespace {
 }
 
 func NewNamespaceFromNode(node ir.Node) *Namespace {
-    return NewNamespace(uint(ir.GetPosition(node).StartLine))
+	return NewNamespace(uint(ir.GetPosition(node).StartLine))
 }
 
 // Namespace implements ir.Visitor.

@@ -83,9 +83,6 @@ func (p *variableResolver) Up(
 			phprivacy.PrivacyProtected,
 			true
 
-		log.Println("encountered parent:: but could not find the subject class")
-		return nil, nil, 0, false
-
 	default:
 		t := traversers.NewVariable(toResolve.Identifier)
 		scopes.Block.Walk(t)
@@ -360,7 +357,7 @@ func (newresolver *newResolver) Up(
 	return nil, nil, 0, false
 }
 
-func parentOf(scopes Scopes) *index.IndexNode {
+func parentOf(scopes Scopes) *index.INode {
 	switch scopes.Class.(type) {
 	case *ir.ClassStmt:
 		break

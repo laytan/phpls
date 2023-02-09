@@ -40,7 +40,7 @@ Nodes:
 			break Nodes
 
 		case *ir.FunctionStmt:
-			top = append(out, funcOrMethodThrows(root, typedNode, currpos.Path))
+			top = append(top, funcOrMethodThrows(root, typedNode, currpos.Path))
 
 			if cmnts := cleanedNodeComments(typedNode); len(cmnts) > 0 {
 				out = append(out, cmnts)
@@ -53,7 +53,7 @@ Nodes:
 			break Nodes
 
 		case *ir.ClassMethodStmt:
-			top = append(out, funcOrMethodThrows(root, typedNode, currpos.Path))
+			top = append(top, funcOrMethodThrows(root, typedNode, currpos.Path))
 
 			if cmnts := cleanedNodeComments(nodes[i+1]); len(cmnts) > 0 {
 				out = append(out, cmnts)
@@ -138,13 +138,16 @@ func NodeSignature(node ir.Node) string {
 
 func funcOrMethodThrows(root *ir.Root, node ir.Node, path string) string {
 	builder := strings.Builder{}
+	//nolint:revive // This always returns a nil error.
 	builder.WriteString("Throws:")
 
-	thrown := throws.Throws(root, node, path)
+	thrown := throws.FromNode(root, node, path)
 	for _, t := range thrown {
+		//nolint:revive // This always returns a nil error.
 		builder.WriteString(fmt.Sprintf("\n- `%s`", t.String()))
 	}
 
+	//nolint:revive // This always returns a nil error.
 	builder.WriteString("\n")
 
 	return builder.String()

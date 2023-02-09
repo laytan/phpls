@@ -26,7 +26,7 @@ type Definition struct {
 	Node symbol.Symbol
 }
 
-func IndexNodeToDef(node *index.IndexNode) *Definition {
+func IndexNodeToDef(node *index.INode) *Definition {
 	return &Definition{
 		Path: node.Path,
 		Node: node.Symbol,
