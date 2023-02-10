@@ -192,10 +192,6 @@ func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {
 func addFuncComments(q *queue.Queue[phpdoxer.Node], funcOrMeth ir.Node) {
 	comments := NodeComments(funcOrMeth)
 
-	if method, ok := funcOrMeth.(*ir.ClassMethodStmt); ok {
-		comments = append(comments, method.Doc.Raw)
-	}
-
 	for _, comment := range comments {
 		nodes, err := phpdoxer.ParseDoc(comment)
 		if err != nil {
