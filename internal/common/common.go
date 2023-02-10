@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/VKCOM/noverify/src/ir"
@@ -12,22 +13,37 @@ import (
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
-func FullyQualify(root *ir.Root, name string) *fqn.FQN {
-	if strings.HasPrefix(name, `\`) {
-		return fqn.New(name)
+func FullyQualifyName(root *ir.Root, name *ir.Name) *fqn.FQN {
+	if strings.HasPrefix(name.Value, `\`) {
+		return fqn.New(name.Value)
 	}
 
 	t := fqn.NewTraverser()
 	root.Walk(t)
 
-	return t.ResultFor(&ir.Name{Value: name})
+	return t.ResultFor(name)
 }
 
+func FindFullyQualifiedName(root *ir.Root, name *ir.Name) (*index.INode, bool) {
+	qualified := FullyQualifyName(root, name)
+	return index.FromContainer().Find(qualified)
+}
+
+// / FullyQualify is deprecated, you should use FullyQualifyName instead.
+func FullyQualify(root *ir.Root, name string) *fqn.FQN {
+	log.Println("common.FullyQualify is deprecated, you should use common.FullyQualifyName instead")
+	return FullyQualifyName(root, &ir.Name{Value: name})
+}
+
+// FindFullyQualified is deprecated, you should use common.FindFullyQualifiedName instead.
 func FindFullyQualified(
 	root *ir.Root,
 	name string,
 	kinds ...ir.NodeKind,
 ) (*index.INode, bool) {
+	log.Println(
+		"FindFullyQualified is deprecated, you should use common.FindFullyQualifiedName instead.",
+	)
 	FQN := FullyQualify(root, name)
 	return index.FromContainer().Find(FQN)
 }

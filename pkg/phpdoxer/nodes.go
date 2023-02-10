@@ -23,9 +23,27 @@ const (
 type Node interface {
 	String() string
 	Kind() NodeKind
+	Range() (start int, end int)
+	setRange(start int, end int)
+}
+
+type NodeRange struct {
+	StartPos int
+	EndPos   int
+}
+
+func (n *NodeRange) Range() (start int, end int) {
+	return n.StartPos, n.EndPos
+}
+
+func (n *NodeRange) setRange(start int, end int) {
+	n.StartPos = start
+	n.EndPos = end
 }
 
 type NodeUnknown struct {
+	NodeRange
+
 	// The string after @.
 	At    string
 	Value string
@@ -40,6 +58,8 @@ func (n *NodeUnknown) Kind() NodeKind {
 }
 
 type NodeReturn struct {
+	NodeRange
+
 	Type        Type
 	Description string
 }
@@ -57,6 +77,8 @@ func (n *NodeReturn) Kind() NodeKind {
 }
 
 type NodeVar struct {
+	NodeRange
+
 	Type Type
 }
 
@@ -69,6 +91,8 @@ func (n *NodeVar) Kind() NodeKind {
 }
 
 type NodeParam struct {
+	NodeRange
+
 	Type Type
 	Name string
 }
@@ -85,7 +109,9 @@ func (n *NodeParam) Kind() NodeKind {
 	return KindParam
 }
 
-type NodeInheritDoc struct{}
+type NodeInheritDoc struct {
+	NodeRange
+}
 
 func (n *NodeInheritDoc) String() string {
 	return "{@inheritdoc}"
@@ -96,6 +122,8 @@ func (n *NodeInheritDoc) Kind() NodeKind {
 }
 
 type NodeSince struct {
+	NodeRange
+
 	Version     *phpversion.PHPVersion
 	Description string
 }
@@ -109,6 +137,8 @@ func (n *NodeSince) Kind() NodeKind {
 }
 
 type NodeRemoved struct {
+	NodeRange
+
 	Version     *phpversion.PHPVersion
 	Description string
 }
@@ -122,6 +152,8 @@ func (n *NodeRemoved) Kind() NodeKind {
 }
 
 type NodeThrows struct {
+	NodeRange
+
 	Type        Type
 	Description string
 }

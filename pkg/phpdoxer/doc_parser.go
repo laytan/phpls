@@ -13,12 +13,30 @@ var (
 	emptyLineRgx = regexp.MustCompile(`[^*/\s]`)
 )
 
-func ParseDoc(doc string) ([]Node, error) {
-	matches := groupRgx.FindAllStringSubmatch(doc, -1)
+type group struct {
+	full     string
+	at       string
+	value    string
+	startPos int
+	endPos   int
+}
 
-	parsed := make([]Node, 0, len(matches))
-	for _, match := range matches {
-		res, err := parseGroup(match[1], match[2])
+func ParseDoc(doc string) ([]Node, error) {
+	groups := []*group{}
+	iMatches := groupRgx.FindAllStringSubmatchIndex(doc, -1)
+	for _, iMatch := range iMatches {
+		groups = append(groups, &group{
+			full:     doc[iMatch[0]:iMatch[1]],
+			at:       doc[iMatch[2]:iMatch[3]],
+			value:    doc[iMatch[4]:iMatch[5]],
+			startPos: iMatch[0],
+			endPos:   iMatch[1],
+		})
+	}
+
+	parsed := make([]Node, 0, len(groups))
+	for _, g := range groups {
+		res, err := parseGroup(g)
 		if err != nil {
 			return nil, err
 		}
@@ -29,19 +47,29 @@ func ParseDoc(doc string) ([]Node, error) {
 	return parsed, nil
 }
 
-func parseGroup(at string, value string) (Node, error) {
-	value = cleanGroupValue(value)
+func parseGroup(g *group) (Node, error) {
+	var result Node
 
-	switch at {
+	// Add the range to the result node before returning.
+	defer func() {
+		if result != nil {
+			result.setRange(g.startPos, g.endPos)
+		}
+	}()
+
+	value := cleanGroupValue(g.value)
+
+	switch g.at {
 	case "return":
 		typeStr, description := splitTypeAndRest(value)
 
 		typeNode, _ := ParseType(typeStr)
 
-		return &NodeReturn{
+		result = &NodeReturn{
 			Type:        typeNode,
 			Description: description,
-		}, nil
+		}
+		return result, nil
 
 	case "var":
 		typeStr, _ := splitTypeAndRest(value)
@@ -51,9 +79,10 @@ func parseGroup(at string, value string) (Node, error) {
 			return nil, err
 		}
 
-		return &NodeVar{
+		result = &NodeVar{
 			Type: typeNode,
-		}, nil
+		}
+		return result, nil
 
 	case "param":
 		split := strings.Fields(value)
@@ -77,57 +106,65 @@ func parseGroup(at string, value string) (Node, error) {
 			typeNode, _ = ParseType(split[0])
 		}
 
-		return &NodeParam{
+		result = &NodeParam{
 			Type: typeNode,
 			Name: name,
-		}, nil
+		}
+		return result, nil
 
 	case "inheritdoc", "inheritDoc":
-		return &NodeInheritDoc{}, nil
+		result = &NodeInheritDoc{}
+		return result, nil
 
 	case "since":
 		version, description := splitTypeAndRest(value)
 		if phpv, ok := phpversion.FromString(version); ok {
-			return &NodeSince{
+			result = &NodeSince{
 				Version:     phpv,
 				Description: description,
-			}, nil
+			}
+			return result, nil
 		}
 
-		return &NodeUnknown{
-			At:    at,
+		result = &NodeUnknown{
+			At:    g.at,
 			Value: value,
-		}, nil
+		}
+		return result, nil
 
 	case "removed":
 		version, description := splitTypeAndRest(value)
 		if phpv, ok := phpversion.FromString(version); ok {
-			return &NodeRemoved{
+			result = &NodeRemoved{
 				Version:     phpv,
 				Description: description,
-			}, nil
+			}
+			return result, nil
 		}
 
-		return &NodeUnknown{
-			At:    at,
+		result = &NodeUnknown{
+			At:    g.at,
 			Value: value,
-		}, nil
+		}
+		return result, nil
 
 	case "throws":
 		typeStr, description := splitTypeAndRest(value)
 
 		typeNode, _ := ParseType(typeStr)
 
-		return &NodeThrows{
+		result = &NodeThrows{
 			Type:        typeNode,
 			Description: description,
-		}, nil
+		}
+		return result, nil
 
 	default:
-		return &NodeUnknown{
-			At:    at,
+		result = &NodeUnknown{
+			At:    g.at,
 			Value: value,
-		}, nil
+		}
+		return result, nil
 	}
 }
 
