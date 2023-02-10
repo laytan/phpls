@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -162,7 +163,19 @@ func TestParseDoc(t *testing.T) {
 				t.Errorf("ParseDoc() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
+			// Use reflect to zero out the range of the node.
+			// This way we only test the parsing and type assignment and
+			// don't have to add start and end indexes which are very hard to
+			// manually do in each test case.
+			for _, gn := range got {
+				f := reflect.ValueOf(gn).Elem()
+				f.FieldByName("StartPos").SetInt(0)
+				f.FieldByName("EndPos").SetInt(0)
+			}
+
 			if !reflect.DeepEqual(got, tt.want) {
+				spew.Dump(got[0].Range())
 				t.Errorf("ParseDoc() = %v, want %v", got, tt.want)
 			}
 		})

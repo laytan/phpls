@@ -2,8 +2,10 @@ package context
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -20,6 +22,14 @@ type Context interface {
 	DirectlyWrappedBy(kind ir.NodeKind) bool
 	// Whether the current node directly wraps the given node kind.
 	DirectlyWraps(kind ir.NodeKind) bool
+
+	// Returns the token of the comment if the cursor is in a comment.
+	// Otherwise nil.
+	// The second return value is the index of the cursor into the comment.
+	InComment() (*token.Token, CommentPosition)
+
+	// Position returns the position of the cursor.
+	Position() *position.Position
 
 	// The next scope of the current node, (function, root, method, class etc.).
 	Scope() ir.Node
@@ -42,6 +52,7 @@ type Context interface {
 type context struct {
 	start      *position.Position
 	nodes      []ir.Node
+	comment    *token.Token
 	curr       int
 	scope      ir.Node
 	classScope ir.Node
@@ -73,6 +84,27 @@ func (c *context) DirectlyWrappedBy(kind ir.NodeKind) bool {
 
 func (c *context) DirectlyWraps(kind ir.NodeKind) bool {
 	return c.curr != len(c.nodes)-2 && ir.GetNodeKind(c.nodes[c.curr+1]) == kind
+}
+
+type CommentPosition int
+
+func (c *context) InComment() (*token.Token, CommentPosition) {
+	if c.comment == nil {
+		return nil, 0
+	}
+
+	content, err := wrkspc.FromContainer().ContentOf(c.start.Path)
+	if err != nil {
+		log.Println(fmt.Errorf("[context.context.InComment]: %w", err))
+		return nil, 0
+	}
+
+	cursorPos := position.LocToPos(content, c.start.Row, c.start.Col)
+	return c.comment, CommentPosition(int(cursorPos) - c.comment.Position.StartPos)
+}
+
+func (c *context) Position() *position.Position {
+	return c.start
 }
 
 func (c *context) Scope() ir.Node {
@@ -123,6 +155,8 @@ func (c *context) init() error {
 	c.nodes = nap.Nodes
 	c.curr = len(nap.Nodes)
 	c.Advance()
+
+	c.comment = nap.Comment
 
 	return nil
 }

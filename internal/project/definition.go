@@ -17,6 +17,7 @@ import (
 
 var (
 	definitionProviders = []DefinitionProvider{
+		providers.NewComments(),      // Class names in comment tags.
 		providers.NewThis(),          // $this
 		providers.NewFunction(),      // explode()
 		providers.NewVariable(),      // $a
