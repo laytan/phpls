@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
-	"github.com/laytan/elephp/internal/common"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/phplint"
 )
@@ -110,7 +110,7 @@ func (s *Server) convertIssuesToDiagnostics(
 	return &protocol.PublishDiagnosticsParams{
 		URI:     documentURI,
 		Version: documentVersion,
-		Diagnostics: common.Map(issues, func(issue *phplint.Issue) protocol.Diagnostic {
+		Diagnostics: functional.Map(issues, func(issue *phplint.Issue) protocol.Diagnostic {
 			return protocol.Diagnostic{
 				Range: protocol.Range{
 					Start: protocol.Position{

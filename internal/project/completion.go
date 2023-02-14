@@ -3,12 +3,12 @@ package project
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"log"
 	"strings"
 	"unicode"
 
-	"github.com/laytan/elephp/internal/common"
+	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
@@ -32,16 +32,8 @@ func (p *Project) Complete(
 
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.
 func (p *Project) getCompletionQuery(pos *position.Position) string {
-	content, err := wrkspc.FromContainer().ContentOf(pos.Path)
-	if err != nil {
-		log.Println(
-			fmt.Errorf("Getting file content for completion query: %w", err).Error(),
-		)
-		return ""
-	}
-
+	content := wrkspc.FromContainer().FContentOf(pos.Path)
 	scanner := bufio.NewScanner(strings.NewReader(content))
-
 	for i := 0; scanner.Scan(); i++ {
 		// The target line:
 		if uint(i) != pos.Row-1 {
@@ -95,22 +87,12 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 
 // Returns the position for the namespace statement that matches the given position.
 func (p *Project) Namespace(pos *position.Position) *position.Position {
-	content, root, err := wrkspc.FromContainer().AllOf(pos.Path)
-	if err != nil {
-		log.Println(
-			fmt.Errorf(
-				"Getting namespace, could not get content/nodes of %s: %w",
-				pos.Path,
-				err,
-			),
-		)
-	}
-
+	content, root := wrkspc.FromContainer().FAllOf(pos.Path)
 	traverser := traversers.NewNamespace(pos.Row)
 	root.Walk(traverser)
 
 	if traverser.Result == nil {
-		log.Println("Did not find namespace")
+		log.Printf("[project.Namespace]: Did not find namespace for %v", pos)
 		return nil
 	}
 
@@ -125,22 +107,16 @@ func (p *Project) Namespace(pos *position.Position) *position.Position {
 
 // Returns whether the file at given pos needs a use statement for the given fqn.
 func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
-	root, err := wrkspc.FromContainer().IROf(pos.Path)
-	if err != nil {
-		log.Println(
-			fmt.Errorf(
-				"Checking use statement needed, could not get nodes of %s: %w",
-				pos.Path,
-				err,
-			),
-		)
-	}
+	content, root := wrkspc.FromContainer().FAllOf(pos.Path)
 
 	parts := strings.Split(fqn, `\`)
 	className := parts[len(parts)-1]
 
 	// Get how it would be resolved in the current file state.
-	actFQN := common.FullyQualify(root, className)
+	actFQN := fqner.FullyQualifyName(root, &ir.Name{
+		Position: pos.ToIRPosition(content),
+		Value:    className,
+	})
 
 	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
 	return actFQN.String() != fqn

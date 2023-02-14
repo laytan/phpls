@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 func NewAssignment(variable *ir.SimpleVar) *Assignment {
@@ -26,7 +26,7 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 	defer func() { a.isFirst = false }()
 
 	// Only check the current scope.
-	if !a.isFirst && symbol.IsScope(ir.GetNodeKind(node)) {
+	if !a.isFirst && nodescopes.IsScope(ir.GetNodeKind(node)) {
 		return false
 	}
 

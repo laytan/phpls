@@ -3,7 +3,6 @@ package project
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/VKCOM/noverify/src/ir"
@@ -100,15 +99,7 @@ Nodes:
 
 func nodeToHover(p *Project, currpos *position.Position) ([]ir.Node, *ir.Root) {
 	napper := func(pos *position.Position) ([]ir.Node, *ir.Root) {
-		content, root, err := wrkspc.FromContainer().AllOf(pos.Path)
-		if err != nil {
-			log.Println(
-				fmt.Errorf("Hover error getting content/parsing of %s: %w", pos.Path, err),
-			)
-
-			return nil, nil
-		}
-
+		content, root := wrkspc.FromContainer().FAllOf(pos.Path)
 		apos := position.LocToPos(content, pos.Row, pos.Col)
 		nap := traversers.NewNodeAtPos(apos)
 		root.Walk(nap)
@@ -141,7 +132,7 @@ func funcOrMethodThrows(root *ir.Root, node ir.Node, path string) string {
 	//nolint:revive // This always returns a nil error.
 	builder.WriteString("Throws:")
 
-	thrown := throws.FromNode(root, node, path)
+	thrown := throws.NewResolver(wrkspc.NewRooter(path, root), node).Throws()
 	for _, t := range thrown {
 		//nolint:revive // This always returns a nil error.
 		builder.WriteString(fmt.Sprintf("\n- `%s`", t.String()))

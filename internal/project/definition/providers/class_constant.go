@@ -13,10 +13,10 @@ func NewClassConstant() *ClassConstantProvider {
 	return &ClassConstantProvider{}
 }
 
-func (p *ClassConstantProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *ClassConstantProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	return kind == ir.KindClassConstFetchExpr
 }
 
-func (p *ClassConstantProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *ClassConstantProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }

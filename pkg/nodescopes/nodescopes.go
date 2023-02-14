@@ -1,8 +1,6 @@
-package symbol
+package nodescopes
 
-import (
-	"github.com/VKCOM/noverify/src/ir"
-)
+import "github.com/VKCOM/noverify/src/ir"
 
 // Scopes are node kinds that declare a scope
 // where for example variables are scoped to.

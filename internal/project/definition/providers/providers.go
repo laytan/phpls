@@ -7,7 +7,7 @@ import (
 	"github.com/laytan/elephp/pkg/symbol"
 )
 
-func DefineExpr(ctx context.Context) ([]*definition.Definition, error) {
+func DefineExpr(ctx *context.Ctx) ([]*definition.Definition, error) {
 	if res, _, left := expr.Resolve(ctx.Current(), definition.ContextToScopes(ctx)); left == 0 &&
 		res != nil {
 		return []*definition.Definition{{

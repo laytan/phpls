@@ -2,13 +2,12 @@ package providers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/context"
+	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/pkg/symbol"
 )
 
-// NameProvider resolves the definition of the a class-like name.
+// NameProvider resolves the definition of a class-like name.
 // This defines the name part of 'new Name()', 'Name::method()', 'extends Name' etc.
 type NameProvider struct{}
 
@@ -16,7 +15,7 @@ func NewName() *NameProvider {
 	return &NameProvider{}
 }
 
-func (p *NameProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	if kind != ir.KindName {
 		return false
 	}
@@ -35,11 +34,11 @@ func (p *NameProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 }
 
 // TODO: use DefineExpr.
-func (p *NameProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
-	tdef, ok := common.FindFullyQualified(
+func (p *NameProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
+	tdef, ok := fqner.FindFullyQualifiedName(
 		ctx.Root(),
-		ctx.Current().(*ir.Name).Value,
-		symbol.ClassLikeScopes...)
+		ctx.Current().(*ir.Name),
+	)
 	if !ok {
 		return nil, definition.ErrNoDefinitionFound
 	}

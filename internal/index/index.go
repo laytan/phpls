@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/parsing"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/symbol"

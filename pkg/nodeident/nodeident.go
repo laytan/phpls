@@ -1,4 +1,4 @@
-package symbol
+package nodeident
 
 import (
 	"log"
@@ -9,7 +9,7 @@ import (
 // Returns the identifier/value of a node.
 //
 // NOTE: To be extended when needed.
-func GetIdentifier(n ir.Node) string {
+func Get(n ir.Node) string {
 	switch n := n.(type) {
 	case *ir.Argument:
 		return n.Name.Value
@@ -68,17 +68,19 @@ func GetIdentifier(n ir.Node) string {
 	case *ir.PropertyStmt:
 		return n.Variable.Name
 
+	case *ir.PropertyListStmt:
+		if len(n.Properties) > 1 || len(n.Properties) == 0 {
+			log.Panicf("PropertyListStmt has > 1 || 0 properties, how does this work?")
+		}
+
+		return Get(n.Properties[0])
+
 	case *ir.ClassConstListStmt:
 		if len(n.Consts) > 1 || len(n.Consts) == 0 {
 			log.Printf("Trying to get identifier of *ir.ClassConstListStmt but there are %d possibilities", len(n.Consts))
 		}
 
-		if c, ok := n.Consts[0].(*ir.ConstantStmt); ok {
-			return c.ConstantName.Value
-		}
-
-		log.Printf("Expected constant to be of type *ir.ConstantStmt but got %T", n.Consts[0])
-		return ""
+		return Get(n.Consts[0])
 
 	case *ir.SimpleVar:
 		return n.Name

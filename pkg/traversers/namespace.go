@@ -2,7 +2,7 @@ package traversers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 func NewNamespace(row uint) *Namespace {
@@ -32,7 +32,7 @@ func (n *Namespace) EnterNode(node ir.Node) bool {
 	}
 
 	// Don't go into scopes, namespace is always top level.
-	return !symbol.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(ir.GetNodeKind(node))
 }
 
 func (n *Namespace) LeaveNode(ir.Node) {}

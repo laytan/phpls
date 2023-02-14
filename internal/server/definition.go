@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
-	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/project"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
 )
@@ -32,7 +32,7 @@ func (s *Server) Definition(
 		return nil, lsperrors.ErrRequestFailed(err.Error())
 	}
 
-	return common.Map(definitions, func(def *position.Position) protocol.Location {
+	return functional.Map(definitions, func(def *position.Position) protocol.Location {
 		return def.ToLSPLocation()
 	}), nil
 }

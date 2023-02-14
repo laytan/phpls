@@ -13,10 +13,10 @@ func NewStatic() *StaticProvider {
 	return &StaticProvider{}
 }
 
-func (p *StaticProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *StaticProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	return kind == ir.KindStaticCallExpr
 }
 
-func (p *StaticProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *StaticProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }

@@ -2,7 +2,7 @@ package traversers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodeident"
 )
 
 // Variable implements ir.Visitor.
@@ -22,7 +22,7 @@ func (v *Variable) EnterNode(node ir.Node) bool {
 
 	switch typedNode := node.(type) {
 	case *ir.SimpleVar:
-		if v.name == symbol.GetIdentifier(node) {
+		if v.name == nodeident.Get(node) {
 			v.Result = typedNode
 			return false
 		}

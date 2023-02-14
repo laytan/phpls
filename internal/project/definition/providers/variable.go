@@ -16,12 +16,12 @@ func NewVariable() *VariableProvider {
 	return &VariableProvider{}
 }
 
-func (p *VariableProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *VariableProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	return kind == ir.KindSimpleVar
 }
 
 // TODO: use DefineExpr.
-func (p *VariableProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *VariableProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	t := traversers.NewAssignment(ctx.Current().(*ir.SimpleVar))
 	ctx.Scope().Walk(t)
 

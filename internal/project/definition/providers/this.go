@@ -15,7 +15,7 @@ func NewThis() *ThisProvider {
 	return &ThisProvider{}
 }
 
-func (p *ThisProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *ThisProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	if kind != ir.KindSimpleVar {
 		return false
 	}
@@ -26,7 +26,7 @@ func (p *ThisProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
 
 // TODO: use DefineExpr.
 // TODO: merge with variable provider.
-func (p *ThisProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *ThisProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	if ir.GetNodeKind(ctx.Current()) == ir.KindRoot {
 		return nil, definition.ErrNoDefinitionFound
 	}
