@@ -6,7 +6,8 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/position"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 // Traverser implements ir.Visitor.
@@ -39,7 +40,7 @@ func (f *Traverser) ResultFor(name *ir.Name) *FQN {
 	}
 
 	if name.Position == nil {
-		log.Println(fmt.Errorf(
+		log.Panic(fmt.Errorf(
 			"[fqn.Traverser.ResultFor(%v)]: given a name without a position is discouraged because it could return wrong results if the file has multiple namespaces defined",
 			name,
 		))
@@ -110,7 +111,7 @@ func (f *Traverser) EnterNode(node ir.Node) bool {
 
 	case *ir.NamespaceStmt:
 		ns := &namespace{
-			ns:   symbol.GetIdentifier(typedNode),
+			ns:   nodeident.Get(typedNode),
 			uses: []*ir.UseStmt{},
 			pos:  &position.Position{},
 		}
@@ -143,7 +144,7 @@ func (f *Traverser) EnterNode(node ir.Node) bool {
 		return true
 
 	default:
-		return !symbol.IsScope(ir.GetNodeKind(typedNode))
+		return !nodescopes.IsScope(ir.GetNodeKind(typedNode))
 	}
 }
 

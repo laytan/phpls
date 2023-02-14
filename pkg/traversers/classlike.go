@@ -2,9 +2,11 @@ package traversers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
+// TODO: accept a fqn and search right namespace.
 func NewClassLike(name string) *ClassLike {
 	return &ClassLike{name: name}
 }
@@ -20,11 +22,11 @@ func (c *ClassLike) EnterNode(node ir.Node) bool {
 		return false
 	}
 
-	if symbol.IsClassLike(ir.GetNodeKind(node)) && symbol.GetIdentifier(node) == c.name {
+	if nodescopes.IsClassLike(ir.GetNodeKind(node)) && nodeident.Get(node) == c.name {
 		c.ClassLike = node
 	}
 
-	return !symbol.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(ir.GetNodeKind(node))
 }
 
 func (c *ClassLike) LeaveNode(ir.Node) {}

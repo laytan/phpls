@@ -95,9 +95,9 @@ func TestPhpLintFile(t *testing.T) {
 		out, err := phplint.LintFile(
 			filepath.Join(
 				pathutils.Root(),
-				"test",
+				"pkg",
+				"phplint",
 				"testdata",
-				"syntaxerrors",
 				"syntax_errors.php",
 			),
 		)
@@ -116,7 +116,7 @@ func TestPhpLintFile(t *testing.T) {
 		skipCI(t)
 
 		out, err := phplint.LintFile(
-			filepath.Join(pathutils.Root(), "test", "testdata", "syntaxerrors", "bad_whiles.php"),
+			filepath.Join(pathutils.Root(), "pkg", "phplint", "testdata", "bad_whiles.php"),
 		)
 		is.NoErr(err)
 		if len(out) == 0 {

@@ -18,14 +18,43 @@ import (
 	"github.com/laytan/elephp/pkg/typer"
 	"github.com/matryer/is"
 	"github.com/samber/do"
+	"go.uber.org/goleak"
 )
 
 var (
-	stubsRoot     = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
-	stdlibRoot    = filepath.Join(pathutils.Root(), "test", "testdata", "definitions", "stdlib")
-	annotatedRoot = filepath.Join(pathutils.Root(), "test", "testdata", "definitions", "annotated")
-	syntaxErrRoot = filepath.Join(pathutils.Root(), "test", "testdata", "syntaxerrors")
+	stubsRoot  = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
+	stdlibRoot = filepath.Join(
+		pathutils.Root(),
+		"internal",
+		"project",
+		"testdata",
+		"definitions",
+		"stdlib",
+	)
+	annotatedRoot = filepath.Join(
+		pathutils.Root(),
+		"internal",
+		"project",
+		"testdata",
+		"definitions",
+		"annotated",
+	)
+	syntaxErrRoot = filepath.Join(
+		pathutils.Root(),
+		"internal",
+		"project",
+		"testdata",
+		"syntaxerrors",
+	)
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(
+		m,
+		// The cache size logger.
+		goleak.IgnoreTopFunction("github.com/laytan/elephp/internal/wrkspc.New.func1"),
+	)
+}
 
 type stdlibScenario struct {
 	in  *position.Position
@@ -215,6 +244,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 		group, gscenarios := group, gscenarios
 		t.Run(group, func(t *testing.T) {
 			t.Parallel()
+
 			for name, scenario := range gscenarios {
 				name, scenario := name, scenario
 				t.Run(name, func(t *testing.T) {

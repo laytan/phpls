@@ -2,7 +2,7 @@ package traversers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 func NewFunction(name string) *Function {
@@ -39,7 +39,7 @@ func (f *Function) EnterNode(node ir.Node) bool {
 		}
 	}
 
-	if symbol.IsScope(ir.GetNodeKind(node)) {
+	if nodescopes.IsScope(ir.GetNodeKind(node)) {
 		return false
 	}
 

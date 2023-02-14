@@ -6,8 +6,8 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/position"
-	"github.com/laytan/elephp/internal/parsing"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/matryer/is"
 )

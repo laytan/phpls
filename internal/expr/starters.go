@@ -6,9 +6,13 @@ import (
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/common"
+	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
+	newsym "github.com/laytan/elephp/internal/symbol"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/symbol"
@@ -16,11 +20,11 @@ import (
 	"github.com/laytan/elephp/pkg/typer"
 )
 
-var starters = map[ExprType]StartResolver{
-	ExprTypeVariable: &variableResolver{},
-	ExprTypeName:     &nameResolver{},
-	ExprTypeFunction: &functionResolver{},
-	ExprTypeNew:      &newResolver{},
+var starters = map[Type]StartResolver{
+	TypeVariable: &variableResolver{},
+	TypeName:     &nameResolver{},
+	TypeFunction: &functionResolver{},
+	TypeNew:      &newResolver{},
 }
 
 type variableResolver struct{}
@@ -34,35 +38,33 @@ func (p *variableResolver) Down(
 	}
 
 	return &DownResolvement{
-		ExprType:   ExprTypeVariable,
-		Identifier: symbol.GetIdentifier(propNode),
+		ExprType:   TypeVariable,
+		Identifier: nodeident.Get(propNode),
+		Position:   propNode.Position,
 	}, nil, true
 }
 
 func (p *variableResolver) Up(
-	scopes Scopes,
+	scopes *Scopes,
 	toResolve *DownResolvement,
-) (*Resolved, *phpdoxer.TypeClassLike, phprivacy.Privacy, bool) {
+) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
 	typ := typer.FromContainer()
+	wrk := wrkspc.FromContainer()
 
-	if toResolve.ExprType != ExprTypeVariable {
+	if toResolve.ExprType != TypeVariable {
 		return nil, nil, 0, false
 	}
 
 	switch toResolve.Identifier {
 	case "this", "self", "static":
-		if node, ok := common.FindFullyQualified(
-			scopes.Root,
-			symbol.GetIdentifier(scopes.Class),
-			symbol.ClassLikeScopes...); ok {
-			_, n, err := common.SymbolToNode(node.Path, node.Symbol)
-			if err != nil {
-				log.Println(fmt.Errorf("[expr.variableResolver.Up]: %w", err))
-				return nil, nil, 0, false
-			}
+		if node, ok := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
+			Position: ir.GetPosition(scopes.Class),
+			Value:    nodeident.Get(scopes.Class),
+		}); ok {
+			n := symbol.ToNode(wrk.FIROf(node.Path), node.Symbol)
 
 			return &Resolved{Path: node.Path, Node: n},
-				&phpdoxer.TypeClassLike{Name: node.FQN.String(), FullyQualified: true},
+				node.FQN,
 				phprivacy.PrivacyPrivate,
 				true
 		}
@@ -72,14 +74,10 @@ func (p *variableResolver) Up(
 
 	case "parent":
 		node := parentOf(scopes)
-		_, n, err := common.SymbolToNode(node.Path, node.Symbol)
-		if err != nil {
-			log.Println(fmt.Errorf("[expr.variableResolver.Up]: %w", err))
-			return nil, nil, 0, false
-		}
+		n := symbol.ToNode(wrk.FIROf(node.Path), node.Symbol)
 
 		return &Resolved{Path: node.Path, Node: n},
-			&phpdoxer.TypeClassLike{Name: node.FQN.String(), FullyQualified: true},
+			node.FQN,
 			phprivacy.PrivacyProtected,
 			true
 
@@ -98,8 +96,13 @@ func (p *variableResolver) Up(
 
 		if docType := typ.Variable(scopes.Root, ta.Assignment, scopes.Block); docType != nil {
 			if clsDocType, ok := docType.(*phpdoxer.TypeClassLike); ok {
+				qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
+					Position: ta.Assignment.Position,
+					Value:    clsDocType.Name,
+				})
+
 				return &Resolved{Path: scopes.Path, Node: ta.Assignment},
-					clsDocType,
+					qualified,
 					phprivacy.PrivacyPublic,
 					true
 			}
@@ -117,8 +120,13 @@ func (p *variableResolver) Up(
 		case *ir.Parameter:
 			if t := typ.Param(scopes.Root, scopes.Block, typedScope); t != nil {
 				if tc, ok := t.(*phpdoxer.TypeClassLike); ok {
+					qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
+						Position: ir.GetPosition(scopes.Block),
+						Value:    tc.Name,
+					})
+
 					return &Resolved{Node: ta.Assignment, Path: scopes.Path},
-						tc,
+						qualified,
 						phprivacy.PrivacyPublic,
 						true
 				}
@@ -144,79 +152,78 @@ func (p *nameResolver) Down(
 	}
 
 	return &DownResolvement{
-		ExprType:   ExprTypeName,
-		Identifier: symbol.GetIdentifier(propNode),
+		ExprType:   TypeName,
+		Identifier: nodeident.Get(propNode),
+		Position:   propNode.Position,
 	}, nil, true
 }
 
 func (p *nameResolver) Up(
-	scopes Scopes,
+	scopes *Scopes,
 	toResolve *DownResolvement,
-) (*Resolved, *phpdoxer.TypeClassLike, phprivacy.Privacy, bool) {
-	if toResolve.ExprType != ExprTypeName {
+) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
+	if toResolve.ExprType != TypeName {
 		return nil, nil, 0, false
 	}
 
-	fqn := common.FullyQualify(scopes.Root, toResolve.Identifier)
+	qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
+		Position: toResolve.Position,
+		Value:    toResolve.Identifier,
+	})
 
-	privacy, err := p.DeterminePrivacy(scopes, fqn)
+	privacy, err := p.DeterminePrivacy(scopes, qualified)
 	if err != nil {
 		log.Println(fmt.Errorf("[expr.nameResolver.Up]: err determining privacy: %w", err))
 		return nil, nil, 0, false
 	}
 
-	res, ok := index.FromContainer().Find(fqn)
+	res, ok := index.FromContainer().Find(qualified)
 	if !ok {
-		log.Printf("[expr.nameResolver.Up]: unable to find %s in index", fqn)
+		log.Printf("[expr.nameResolver.Up]: unable to find %s in index", qualified)
 		return nil, nil, 0, false
 	}
 
-	_, n, err := common.SymbolToNode(res.Path, res.Symbol)
-	if err != nil {
-		log.Println(fmt.Errorf("[expr.nameResolver.Up]: %w", err))
-		return nil, nil, 0, false
-	}
+	n := symbol.ToNode(wrkspc.FromContainer().FIROf(res.Path), res.Symbol)
 
 	return &Resolved{Path: res.Path, Node: n},
-		&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
+		qualified,
 		privacy,
 		true
 }
 
-func (p *nameResolver) DeterminePrivacy(scopes Scopes, fqn *fqn.FQN) (phprivacy.Privacy, error) {
+func (p *nameResolver) DeterminePrivacy(scopes *Scopes, fqn *fqn.FQN) (phprivacy.Privacy, error) {
 	// If we are not in a class, it is automatically public access.
-	if !symbol.IsClassLike(ir.GetNodeKind(scopes.Class)) {
+	if !nodescopes.IsClassLike(ir.GetNodeKind(scopes.Class)) {
 		return phprivacy.PrivacyPublic, nil
 	}
 
 	// If we are in the same class, private access.
-	scopeFqn := common.FullyQualify(scopes.Root, symbol.GetIdentifier(scopes.Class))
+	scopeFqn := fqner.FullyQualifyName(scopes.Root, &ir.Name{
+		Position: ir.GetPosition(scopes.Class),
+		Value:    nodeident.Get(scopes.Class),
+	})
 	if fqn.String() == scopeFqn.String() {
 		return phprivacy.PrivacyPrivate, nil
 	}
 
-	queue, err := newResolveQueue(
-		&phpdoxer.TypeClassLike{Name: scopeFqn.String(), FullyQualified: true},
-	)
+	cls, err := newsym.NewClassLikeFromFQN(wrkspc.NewRooter(scopes.Path, scopes.Root), scopeFqn)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("[nameResolver.DeterminePrivacy]: %w", err)
 	}
 
-	// Check if the class is in the scope's resolve queue, that means protected access.
-	result := phprivacy.PrivacyPublic
-	err = walkResolveQueue(queue, func(wc *walkContext) (done bool, err error) {
-		if wc.FQN.String() == fqn.String() {
-			result = phprivacy.PrivacyProtected
-			return true, nil
+	iter := cls.InheritsIter()
+	for inhCls, done, err := iter(); !done; inhCls, done, err = iter() {
+		if err != nil {
+			log.Println(fmt.Errorf("[nameResolver.DeterminePrivacy]: %w", err))
+			continue
 		}
 
-		return false, nil
-	})
-	if err != nil {
-		return 0, err
+		if inhCls.GetFQN().String() == fqn.String() {
+			return phprivacy.PrivacyProtected, nil
+		}
 	}
 
-	return result, nil
+	return phprivacy.PrivacyPublic, nil
 }
 
 type functionResolver struct{}
@@ -230,16 +237,17 @@ func (p *functionResolver) Down(
 	}
 
 	return &DownResolvement{
-		ExprType:   ExprTypeFunction,
-		Identifier: symbol.GetIdentifier(propNode),
+		ExprType:   TypeFunction,
+		Identifier: nodeident.Get(propNode),
+		Position:   propNode.Position,
 	}, nil, true
 }
 
 func (p *functionResolver) Up(
-	scopes Scopes,
+	scopes *Scopes,
 	toResolve *DownResolvement,
-) (*Resolved, *phpdoxer.TypeClassLike, phprivacy.Privacy, bool) {
-	if toResolve.ExprType != ExprTypeFunction {
+) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
+	if toResolve.ExprType != TypeFunction {
 		return nil, nil, 0, false
 	}
 
@@ -250,10 +258,17 @@ func (p *functionResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	typeOfFunc := func(n ir.Node) *phpdoxer.TypeClassLike {
-		ret := typer.FromContainer().Returns(scopes.Root, n, rootRetriever)
-		if clsRet, ok := ret.(*phpdoxer.TypeClassLike); ok {
-			return clsRet
+	typeOfFunc := func(n ir.Node) *fqn.FQN {
+		ret, _ := newsym.NewFunction(
+			wrkspc.NewRooter(scopes.Path, scopes.Root),
+			n.(*ir.FunctionStmt),
+		).Returns()
+
+		if retCls, ok := ret.(*phpdoxer.TypeClassLike); ok {
+			return fqner.FullyQualifyName(scopes.Root, &ir.Name{
+				Position: ir.GetPosition(n),
+				Value:    retCls.Name,
+			})
 		}
 
 		return nil
@@ -273,11 +288,11 @@ func (p *functionResolver) Up(
 	}
 
 	// Check for functions defined in the used namespaces.
-	if def, ok := common.FindFullyQualified(scopes.Root, toResolve.Identifier, ir.KindFunctionStmt); ok {
-		_, n, err := common.SymbolToNode(def.Path, def.Symbol)
-		if err != nil {
-			log.Println(fmt.Errorf("[expr.functionResolver.Up]: namespace check: %w", err))
-		}
+	if def, ok := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
+		Position: toResolve.Position,
+		Value:    toResolve.Identifier,
+	}); ok {
+		n := symbol.ToNode(wrkspc.FromContainer().FIROf(def.Path), def.Symbol)
 
 		return &Resolved{
 			Node: n,
@@ -293,11 +308,7 @@ func (p *functionResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	_, n, err := common.SymbolToNode(def.Path, def.Symbol)
-	if err != nil {
-		log.Println(fmt.Errorf("[expr.functionResolver.Up]: global check: %w", err))
-		return nil, nil, 0, false
-	}
+	n := symbol.ToNode(wrkspc.FromContainer().FIROf(def.Path), def.Symbol)
 
 	return &Resolved{
 		Node: n,
@@ -318,8 +329,9 @@ func (newresolver *newResolver) Down(
 	// TODO: new expression using a non-name node
 	if name, ok := newNode.Class.(*ir.Name); ok {
 		return &DownResolvement{
-			ExprType:   ExprTypeNew,
+			ExprType:   TypeNew,
 			Identifier: name.Value,
+			Position:   name.Position,
 		}, nil, true
 	}
 
@@ -328,28 +340,27 @@ func (newresolver *newResolver) Down(
 }
 
 func (newresolver *newResolver) Up(
-	scopes Scopes,
+	scopes *Scopes,
 	toResolve *DownResolvement,
-) (resolved *Resolved, nextCtx *phpdoxer.TypeClassLike, privacy phprivacy.Privacy, done bool) {
-	if toResolve.ExprType != ExprTypeNew {
+) (resolved *Resolved, nextCtx *fqn.FQN, privacy phprivacy.Privacy, done bool) {
+	if toResolve.ExprType != TypeNew {
 		return nil, nil, 0, false
 	}
 
-	if fqn := common.FullyQualify(scopes.Root, toResolve.Identifier); fqn != nil {
-		def, ok := index.FromContainer().Find(fqn)
+	if qualified := fqner.FullyQualifyName(
+		scopes.Root,
+		&ir.Name{Position: toResolve.Position, Value: toResolve.Identifier},
+	); qualified != nil {
+		def, ok := index.FromContainer().Find(qualified)
 		if !ok {
-			log.Println(fmt.Errorf("[expr.newResolver.Up]: unable to find %s in index", fqn))
+			log.Println(fmt.Errorf("[expr.newResolver.Up]: unable to find %s in index", qualified))
 			return nil, nil, 0, false
 		}
 
-		_, n, err := common.SymbolToNode(def.Path, def.Symbol)
-		if err != nil {
-			log.Println(fmt.Errorf("[expr.newResolver.Up]: %w", err))
-			return nil, nil, 0, false
-		}
+		n := symbol.ToNode(wrkspc.FromContainer().FIROf(def.Path), def.Symbol)
 
 		return &Resolved{Path: def.Path, Node: n},
-			&phpdoxer.TypeClassLike{Name: fqn.String(), FullyQualified: true},
+			qualified,
 			phprivacy.PrivacyPublic,
 			true
 	}
@@ -357,7 +368,7 @@ func (newresolver *newResolver) Up(
 	return nil, nil, 0, false
 }
 
-func parentOf(scopes Scopes) *index.INode {
+func parentOf(scopes *Scopes) *index.INode {
 	switch scopes.Class.(type) {
 	case *ir.ClassStmt:
 		break
@@ -378,10 +389,9 @@ func parentOf(scopes Scopes) *index.INode {
 		return nil
 	}
 
-	if node, ok := common.FindFullyQualified(
+	if node, ok := fqner.FindFullyQualifiedName(
 		scopes.Root,
-		class.Extends.ClassName.Value,
-		ir.KindClassStmt,
+		class.Extends.ClassName,
 	); ok {
 		return node
 	}

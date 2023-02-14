@@ -20,11 +20,11 @@ func NewUse() *UseProvider {
 	return &UseProvider{}
 }
 
-func (p *UseProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *UseProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	return kind == ir.KindName && ctx.DirectlyWrappedBy(ir.KindUseStmt)
 }
 
-func (p *UseProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *UseProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	key := fqn.New(fqn.PartSeperator + ctx.Current().(*ir.Name).Value)
 	res, ok := index.FromContainer().Find(key)
 	if !ok {

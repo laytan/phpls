@@ -1,8 +1,5 @@
 package typer
 
-// Typer is responsible of using ir and phpdoxer to retrieve/resolve types
-// from phpdoc or type hints of a node.
-
 import (
 	"errors"
 	"fmt"
@@ -12,19 +9,16 @@ import (
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
-	"github.com/laytan/elephp/pkg/queue"
-	"github.com/laytan/elephp/pkg/resolvequeue"
 	"github.com/samber/do"
 )
 
-type Typer interface {
-	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Returns(
-		root *ir.Root,
-		funcOrMeth ir.Node,
-		rootRetriever func(n *resolvequeue.Node) (*ir.Root, error),
-	) phpdoxer.Type
+// TODO: merge this with the symbol package, like a callable.Returns,
+// callable.Param, symbol.Variable, property.Type, callable.Throws.
 
+// Typer is responsible of using ir and phpdoxer to retrieve/resolve types
+// from phpdoc or type hints of a node.
+
+type Typer interface {
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
 	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) phpdoxer.Type
 
@@ -33,9 +27,6 @@ type Typer interface {
 	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) phpdoxer.Type
 
 	Property(root *ir.Root, propertyList *ir.PropertyListStmt) phpdoxer.Type
-
-	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Throws(funcOrMeth ir.Node) []phpdoxer.Type
 }
 
 var (
@@ -51,52 +42,6 @@ func New() Typer {
 
 func FromContainer() Typer {
 	return do.MustInvoke[Typer](nil)
-}
-
-func NodeComments(node ir.Node) []string {
-	switch typedNode := node.(type) {
-	case *ir.FunctionStmt:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.ArrowFunctionExpr:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.ClosureExpr:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.ClassConstListStmt:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.ClassMethodStmt:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.ClassStmt:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.InterfaceStmt:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.PropertyListStmt:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.TraitStmt:
-		return []string{typedNode.Doc.Raw}
-
-	case *ir.FunctionCallExpr:
-		return NodeComments(typedNode.Function)
-
-	default:
-		docs := []string{}
-		node.IterateTokens(func(t *token.Token) bool {
-			if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
-				return true
-			}
-
-			docs = append(docs, string(t.Value))
-			return true
-		})
-		return docs
-	}
 }
 
 func parseTypeHint(node ir.Node) phpdoxer.Type {
@@ -181,7 +126,7 @@ func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {
 
 	tr := fqn.NewTraverserHandlingKeywords(block)
 	root.Walk(tr)
-	res := tr.ResultFor(&ir.Name{Value: cl.Name})
+	res := tr.ResultFor(&ir.Name{Value: cl.Name, Position: ir.GetPosition(block)})
 
 	cl.FullyQualified = true
 	cl.Name = res.String()
@@ -189,18 +134,48 @@ func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {
 	return cl
 }
 
-func addFuncComments(q *queue.Queue[phpdoxer.Node], funcOrMeth ir.Node) {
-	comments := NodeComments(funcOrMeth)
+func NodeComments(node ir.Node) []string {
+	switch typedNode := node.(type) {
+	case *ir.FunctionStmt:
+		return []string{typedNode.Doc.Raw}
 
-	for _, comment := range comments {
-		nodes, err := phpdoxer.ParseDoc(comment)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
+	case *ir.ArrowFunctionExpr:
+		return []string{typedNode.Doc.Raw}
 
-		for _, node := range nodes {
-			q.Enqueue(node)
-		}
+	case *ir.ClosureExpr:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassConstListStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassMethodStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.InterfaceStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.PropertyListStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.TraitStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.FunctionCallExpr:
+		return NodeComments(typedNode.Function)
+
+	default:
+		docs := []string{}
+		node.IterateTokens(func(t *token.Token) bool {
+			if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
+				return true
+			}
+
+			docs = append(docs, string(t.Value))
+			return true
+		})
+		return docs
 	}
 }

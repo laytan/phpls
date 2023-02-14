@@ -1,10 +1,10 @@
 package traversers
 
 import (
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/phprivacy"
-	"github.com/laytan/elephp/pkg/symbol"
 )
 
 func NewProperty(name string, classLikeName string, privacy phprivacy.Privacy) *Property {
@@ -31,13 +31,11 @@ func (m *Property) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
 	// Only parse a class-like node if the name matches (for multiple classes in a file).
 	case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
-		return symbol.GetIdentifier(node) == m.classLikeName
+		return nodeident.Get(node) == m.classLikeName
 
 	case *ir.PropertyListStmt:
 		for _, property := range typedNode.Properties {
 			stmt := property.(*ir.PropertyStmt)
-
-			what.Happens("Found property %s\n", stmt.Variable.Name)
 
 			if stmt.Variable.Name != m.name {
 				return false
@@ -59,7 +57,7 @@ func (m *Property) EnterNode(node ir.Node) bool {
 		}
 	}
 
-	return !symbol.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(ir.GetNodeKind(node))
 }
 
 func (m *Property) LeaveNode(ir.Node) {}

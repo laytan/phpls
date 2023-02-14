@@ -9,7 +9,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/VKCOM/php-parser/pkg/visitor"
-	"github.com/laytan/elephp/internal/common"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"golang.org/x/exp/slices"
@@ -253,7 +253,7 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 
 		// TODO: also have non-nodes/raw comments reconstructed.
 		inner := strings.Join(
-			common.Map(newNodes, func(node phpdoxer.Node) string {
+			functional.Map(newNodes, func(node phpdoxer.Node) string {
 				// TODO: make node.String() return the raw value that was initially parsed.
 				return " * " + node.String()
 			}),

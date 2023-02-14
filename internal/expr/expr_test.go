@@ -7,7 +7,12 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/pkg/stack"
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestDown(t *testing.T) {
 	t.Parallel()
@@ -24,8 +29,8 @@ func TestDown(t *testing.T) {
 				Property: &ir.Identifier{Value: "bar"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeVariable, Identifier: "$foo"},
-				{ExprType: expr.ExprTypeProperty, Identifier: "bar"},
+				{ExprType: expr.TypeVariable, Identifier: "$foo"},
+				{ExprType: expr.TypeProperty, Identifier: "bar"},
 			}),
 		},
 		{
@@ -41,10 +46,10 @@ func TestDown(t *testing.T) {
 				Property: &ir.Identifier{Value: "foobar2"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeVariable, Identifier: "$foo"},
-				{ExprType: expr.ExprTypeProperty, Identifier: "bar"},
-				{ExprType: expr.ExprTypeProperty, Identifier: "foobar"},
-				{ExprType: expr.ExprTypeProperty, Identifier: "foobar2"},
+				{ExprType: expr.TypeVariable, Identifier: "$foo"},
+				{ExprType: expr.TypeProperty, Identifier: "bar"},
+				{ExprType: expr.TypeProperty, Identifier: "foobar"},
+				{ExprType: expr.TypeProperty, Identifier: "foobar2"},
 			}),
 		},
 		{
@@ -54,8 +59,8 @@ func TestDown(t *testing.T) {
 				Method:   &ir.Identifier{Value: "bar"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeVariable, Identifier: "$foo"},
-				{ExprType: expr.ExprTypeMethod, Identifier: "bar"},
+				{ExprType: expr.TypeVariable, Identifier: "$foo"},
+				{ExprType: expr.TypeMethod, Identifier: "bar"},
 			}),
 		},
 		{
@@ -68,9 +73,9 @@ func TestDown(t *testing.T) {
 				Method: &ir.Identifier{Value: "bar"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeVariable, Identifier: "$foo"},
-				{ExprType: expr.ExprTypeProperty, Identifier: "foobar"},
-				{ExprType: expr.ExprTypeMethod, Identifier: "bar"},
+				{ExprType: expr.TypeVariable, Identifier: "$foo"},
+				{ExprType: expr.TypeProperty, Identifier: "foobar"},
+				{ExprType: expr.TypeMethod, Identifier: "bar"},
 			}),
 		},
 		{
@@ -83,9 +88,9 @@ func TestDown(t *testing.T) {
 				Property: &ir.Identifier{Value: "bar"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeVariable, Identifier: "$foo"},
-				{ExprType: expr.ExprTypeMethod, Identifier: "foobar"},
-				{ExprType: expr.ExprTypeProperty, Identifier: "bar"},
+				{ExprType: expr.TypeVariable, Identifier: "$foo"},
+				{ExprType: expr.TypeMethod, Identifier: "foobar"},
+				{ExprType: expr.TypeProperty, Identifier: "bar"},
 			}),
 		},
 		{
@@ -101,10 +106,10 @@ func TestDown(t *testing.T) {
 				Method: &ir.Identifier{Value: "bar"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeName, Identifier: "Test"},
-				{ExprType: expr.ExprTypeStaticMethod, Identifier: "foo"},
-				{ExprType: expr.ExprTypeProperty, Identifier: "foobar"},
-				{ExprType: expr.ExprTypeMethod, Identifier: "bar"},
+				{ExprType: expr.TypeName, Identifier: "Test"},
+				{ExprType: expr.TypeStaticMethod, Identifier: "foo"},
+				{ExprType: expr.TypeProperty, Identifier: "foobar"},
+				{ExprType: expr.TypeMethod, Identifier: "bar"},
 			}),
 		},
 		{
@@ -114,8 +119,8 @@ func TestDown(t *testing.T) {
 				Call:  &ir.Identifier{Value: "foo"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeVariable, Identifier: "$foo"},
-				{ExprType: expr.ExprTypeStaticMethod, Identifier: "foo"},
+				{ExprType: expr.TypeVariable, Identifier: "$foo"},
+				{ExprType: expr.TypeStaticMethod, Identifier: "foo"},
 			}),
 		},
 		{
@@ -127,8 +132,8 @@ func TestDown(t *testing.T) {
 				Method: &ir.Identifier{Value: "bar"},
 			},
 			out: sliceStack([]*expr.DownResolvement{
-				{ExprType: expr.ExprTypeFunction, Identifier: "foo"},
-				{ExprType: expr.ExprTypeMethod, Identifier: "bar"},
+				{ExprType: expr.TypeFunction, Identifier: "foo"},
+				{ExprType: expr.TypeMethod, Identifier: "bar"},
 			}),
 		},
 	}

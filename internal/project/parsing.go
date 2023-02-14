@@ -1,7 +1,6 @@
 package project
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"runtime"
@@ -86,17 +85,12 @@ func (p *Project) ParseWithoutProgress() error {
 
 func (p *Project) ParseFileUpdate(path string, content string) error {
 	w := wrkspc.FromContainer()
-	prevContent, err := w.ContentOf(path)
-	if err != nil && !errors.Is(err, wrkspc.ErrFileNotIndexed) {
-		return fmt.Errorf("Could not read content of %s while updating: %w", path, err)
-	}
+	prevContent := w.FContentOf(path)
 
-	if err != nil {
-		// TODO: this does not seem to be working.
-		if strutil.RemoveWhitespace(content) == strutil.RemoveWhitespace(prevContent) {
-			what.Happens("Skipping file update (only whitespace change) of %s", path)
-			return nil
-		}
+	// TODO: this does not seem to be working.
+	if strutil.RemoveWhitespace(content) == strutil.RemoveWhitespace(prevContent) {
+		what.Happens("Skipping file update (only whitespace change) of %s", path)
+		return nil
 	}
 
 	// NOTE: order is important here.

@@ -1,3 +1,4 @@
+// TODO: remove
 package symbol
 
 import (
@@ -5,6 +6,7 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/position"
+	"github.com/laytan/elephp/pkg/nodeident"
 )
 
 // Symbol is basically an ir.Node with all non-relevant data stripped.
@@ -55,7 +57,7 @@ type baseSymbol struct {
 
 func (b *baseSymbol) FromNode(node ir.Node) {
 	b.position = ir.GetPosition(node)
-	b.identifier = GetIdentifier(node)
+	b.identifier = nodeident.Get(node)
 }
 
 func (b *baseSymbol) Position() *position.Position {

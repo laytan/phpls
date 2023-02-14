@@ -14,10 +14,10 @@ func NewProperty() *PropertyProvider {
 	return &PropertyProvider{}
 }
 
-func (p *PropertyProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *PropertyProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	return kind == ir.KindPropertyFetchExpr
 }
 
-func (p *PropertyProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *PropertyProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/index"
@@ -19,12 +18,12 @@ func NewConstant() *ConstantProvider {
 	return &ConstantProvider{}
 }
 
-func (c *ConstantProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (c *ConstantProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	return kind == ir.KindConstFetchExpr
 }
 
 // TODO: return non-array.
-func (c *ConstantProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (c *ConstantProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	key := fqn.New(fqn.PartSeperator + ctx.Current().(*ir.ConstFetchExpr).Constant.Value)
 	result, ok := index.FromContainer().Find(key)
 	if !ok {
@@ -33,8 +32,6 @@ func (c *ConstantProvider) Define(ctx context.Context) ([]*definition.Definition
 		)
 		return nil, definition.ErrNoDefinitionFound
 	}
-
-	what.Is(result)
 
 	return []*definition.Definition{definition.IndexNodeToDef(result)}, nil
 }

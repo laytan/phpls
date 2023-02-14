@@ -15,7 +15,7 @@ func NewFunction() *FunctionProvider {
 	return &FunctionProvider{}
 }
 
-func (p *FunctionProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *FunctionProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	if kind != ir.KindFunctionCallExpr {
 		return false
 	}
@@ -24,6 +24,6 @@ func (p *FunctionProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool
 	return ok
 }
 
-func (p *FunctionProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *FunctionProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }

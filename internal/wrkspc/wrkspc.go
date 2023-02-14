@@ -14,8 +14,8 @@ import (
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/internal/parsing"
 	"github.com/laytan/elephp/pkg/cache"
+	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/samber/do"
@@ -58,11 +58,27 @@ type Wrkspc interface {
 
 	Index(files chan<- *ParsedFile, total *atomic.Uint64, totalDone chan<- bool) error
 
+	// ContentOf returns the content of the file at the given path.
 	ContentOf(path string) (string, error)
+	// FContentOf returns the content of the file at the given path.
+	// If an error occurs, it logs it and returns an empty string.
+	// Use ContentOf for access to the error.
+	FContentOf(path string) string
 
+	// IROf returns the parsed root node of the given path.
+	// If an error occurs, it returns an empty root node, this NEVER returns nil.
 	IROf(path string) (*ir.Root, error)
+	// FIROf returns the root of the given path, if an error occurs, it logs it
+	// and returns an empty root node. This never returns nil.
+	// Use IROf for access to the error.
+	FIROf(path string) *ir.Root
 
+	// AllOf returns the content & parsed root node of the given path.
+	// If an error occurs, it returns an empty root node, this NEVER returns nil.
 	AllOf(path string) (string, *ir.Root, error)
+	// FAllOf returns both the content and root node of the given path.
+	// If an error occurs, it returns an empty root node and string after logging the error.
+	FAllOf(path string) (string, *ir.Root)
 
 	Refresh(path string) error
 
@@ -165,6 +181,7 @@ func (w *wrkspc) Index(
 	return nil
 }
 
+// ContentOf returns the content of the file at the given path.
 func (w *wrkspc) ContentOf(path string) (string, error) {
 	file := w.files.Cached(path, func() *file {
 		what.Happens("Getting fresh content of %s", path)
@@ -185,6 +202,20 @@ func (w *wrkspc) ContentOf(path string) (string, error) {
 	return file.content, nil
 }
 
+// FContentOf returns the content of the file at the given path.
+// If an error occurs, it logs it and returns an empty string.
+// Use ContentOf for access to the error.
+func (w *wrkspc) FContentOf(path string) string {
+	content, err := w.ContentOf(path)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return content
+}
+
+// IROf returns the parsed root node of the given path.
+// If an error occurs, it returns an empty root node, this NEVER returns nil.
 func (w *wrkspc) IROf(path string) (*ir.Root, error) {
 	root := w.irs.Cached(path, func() *ir.Root {
 		what.Happens("Getting fresh IR of %s", path)
@@ -205,24 +236,50 @@ func (w *wrkspc) IROf(path string) (*ir.Root, error) {
 	})
 
 	if root == nil {
-		return nil, ErrFileNotIndexed
+		return &ir.Root{}, ErrFileNotIndexed
 	}
 
 	return root, nil
 }
 
-func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
-	content, err := w.ContentOf(path)
-	if err != nil {
-		return "", nil, err
-	}
-
+// FIROf returns the root of the given path, if an error occurs, it logs it
+// and returns an empty root node. This never returns nil.
+// Use IROf for access to the error.
+func (w *wrkspc) FIROf(path string) *ir.Root {
 	root, err := w.IROf(path)
 	if err != nil {
-		return "", nil, fmt.Errorf(ErrParseFmt, path, err)
+		log.Println(err)
+	}
+
+	return root
+}
+
+// AllOf returns the content & parsed root node of the given path.
+// If an error occurs, it returns an empty root node, this NEVER returns nil.
+func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
+	content, cErr := w.ContentOf(path)
+	root, rErr := w.IROf(path)
+
+	if cErr != nil {
+		return content, root, cErr
+	}
+
+	if rErr != nil {
+		return content, root, rErr
 	}
 
 	return content, root, nil
+}
+
+// FAllOf returns both the content and root node of the given path.
+// If an error occurs, it returns an empty root node and string after logging the error.
+func (w *wrkspc) FAllOf(path string) (string, *ir.Root) {
+	content, root, err := w.AllOf(path)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return content, root
 }
 
 func (w *wrkspc) Refresh(path string) error {

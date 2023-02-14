@@ -4,8 +4,9 @@ import (
 	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/phprivacy"
-	"github.com/laytan/elephp/pkg/symbol"
 )
 
 func NewClassLikeConstant(
@@ -36,7 +37,7 @@ func (m *ClassLikeConstant) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
 	// Only parse a class-like node if the name matches (for multiple classes in a file).
 	case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
-		return symbol.GetIdentifier(node) == m.classLikeName
+		return nodeident.Get(node) == m.classLikeName
 
 	case *ir.ClassConstListStmt:
 		hasConst := false
@@ -80,7 +81,7 @@ func (m *ClassLikeConstant) EnterNode(node ir.Node) bool {
 		}
 	}
 
-	return !symbol.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(ir.GetNodeKind(node))
 }
 
 func (m *ClassLikeConstant) LeaveNode(ir.Node) {}

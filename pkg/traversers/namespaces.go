@@ -2,7 +2,8 @@ package traversers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 // TODO: rename file.
@@ -23,7 +24,7 @@ func (u *Uses) EnterNode(node ir.Node) bool {
 	switch typedNode := node.(type) {
 	// Only parse a class-like node if the name matches (for multiple classes in a file).
 	case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
-		if symbol.GetIdentifier(node) == u.classLikeName {
+		if nodeident.Get(node) == u.classLikeName {
 			return true
 		}
 
@@ -37,7 +38,7 @@ func (u *Uses) EnterNode(node ir.Node) bool {
 		}
 	}
 
-	return !symbol.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(ir.GetNodeKind(node))
 }
 
 func (u *Uses) LeaveNode(ir.Node) {}

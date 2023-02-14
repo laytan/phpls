@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/laytan/elephp/internal/common"
+	"github.com/laytan/elephp/pkg/functional"
 )
 
 // TODO: support phpstan's generics: https://phpstan.org/writing-php-code/phpdoc-types#generics.
@@ -516,7 +516,7 @@ type TypeArrayShape struct {
 }
 
 func (t *TypeArrayShape) String() string {
-	values := common.Map(t.Values, func(v *TypeArrayShapeValue) string { return v.String() })
+	values := functional.Map(t.Values, func(v *TypeArrayShapeValue) string { return v.String() })
 	return fmt.Sprintf("array{%s}", strings.Join(values, typeSeperator+" "))
 }
 
@@ -583,7 +583,7 @@ type TypeIntMask struct {
 }
 
 func (t *TypeIntMask) String() string {
-	values := common.Map(t.Values, func(v int) string { return fmt.Sprintf("%d", v) })
+	values := functional.Map(t.Values, func(v int) string { return fmt.Sprintf("%d", v) })
 	return fmt.Sprintf("int-mask<%s>", strings.Join(values, typeSeperator+" "))
 }
 

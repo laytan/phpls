@@ -2,7 +2,7 @@ package traversers
 
 import (
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 type ScopesTraverser struct {
@@ -41,11 +41,11 @@ func (s *ScopesTraverser) EnterNode(node ir.Node) bool {
 		return false
 	}
 
-	if symbol.IsClassLike(ir.GetNodeKind(node)) {
+	if nodescopes.IsClassLike(ir.GetNodeKind(node)) {
 		s.Class = node
 	}
 
-	if symbol.IsScope(ir.GetNodeKind(node)) {
+	if nodescopes.IsScope(ir.GetNodeKind(node)) {
 		s.Block = node
 	}
 

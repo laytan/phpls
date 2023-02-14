@@ -7,11 +7,11 @@ import (
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/common"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/project/definition/providers"
 	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/position"
 )
 
@@ -36,8 +36,8 @@ var (
 )
 
 type DefinitionProvider interface {
-	CanDefine(ctx context.Context, kind ir.NodeKind) bool
-	Define(ctx context.Context) ([]*definition.Definition, error)
+	CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool
+	Define(ctx *context.Ctx) ([]*definition.Definition, error)
 }
 
 func (p *Project) Definition(pos *position.Position) ([]*position.Position, error) {
@@ -59,15 +59,7 @@ func (p *Project) Definition(pos *position.Position) ([]*position.Position, erro
 					return nil, ErrNoDefinitionFound
 				}
 
-				return common.MapFilter(defs, func(def *definition.Definition) *position.Position {
-					pos, err := defPosition(def)
-					if err != nil {
-						log.Println(err)
-						return nil
-					}
-
-					return pos
-				}), nil
+				return functional.MapFilter(defs, defPosition), nil
 			}
 		}
 	}
@@ -76,19 +68,7 @@ func (p *Project) Definition(pos *position.Position) ([]*position.Position, erro
 	return nil, ErrNoDefinitionFound
 }
 
-func defPosition(def *definition.Definition) (*position.Position, error) {
-	content, err := wrkspc.FromContainer().ContentOf(def.Path)
-	if err != nil {
-		log.Println(err)
-		return nil, ErrNoDefinitionFound
-	}
-
-	pos := def.Node.Position()
-	_, col := position.PosToLoc(content, uint(pos.StartPos))
-
-	return &position.Position{
-		Row:  uint(pos.StartLine),
-		Col:  col,
-		Path: def.Path,
-	}, nil
+func defPosition(def *definition.Definition) *position.Position {
+	content := wrkspc.FromContainer().FContentOf(def.Path)
+	return position.FromIRPosition(def.Path, content, def.Node.Position().StartPos)
 }

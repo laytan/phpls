@@ -33,8 +33,8 @@ func IndexNodeToDef(node *index.INode) *Definition {
 	}
 }
 
-func ContextToScopes(ctx context.Context) expr.Scopes {
-	return expr.Scopes{
+func ContextToScopes(ctx *context.Ctx) *expr.Scopes {
+	return &expr.Scopes{
 		Path:  ctx.Start().Path,
 		Root:  ctx.Root(),
 		Class: ctx.ClassScope(),

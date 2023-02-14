@@ -14,10 +14,10 @@ func NewMethod() *MethodProvider {
 	return &MethodProvider{}
 }
 
-func (p *MethodProvider) CanDefine(ctx context.Context, kind ir.NodeKind) bool {
+func (p *MethodProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 	return kind == ir.KindMethodCallExpr
 }
 
-func (p *MethodProvider) Define(ctx context.Context) ([]*definition.Definition, error) {
+func (p *MethodProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	return DefineExpr(ctx)
 }
