@@ -1,4 +1,4 @@
-package symbol
+package symbol //nolint:dupl // The subtle changes justify the duplication imo.
 
 import (
 	"fmt"
