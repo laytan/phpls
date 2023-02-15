@@ -6,7 +6,6 @@ import (
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
-// TODO: accept a fqn and search right namespace.
 func NewClassLike(name string) *ClassLike {
 	return &ClassLike{name: name}
 }

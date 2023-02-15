@@ -2,7 +2,6 @@ package symbol
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/fqner"
@@ -89,7 +88,6 @@ func NewClassLikeFromMethod(root *ir.Root, method *ir.ClassMethodStmt) (*ClassLi
 }
 
 func NewClassLikeFromFQN(r rooter, qualified *fqn.FQN) (*ClassLike, error) {
-	// TODO: make this traverser check full fqn, not only name.
 	trav := traversers.NewClassLike(qualified.Name())
 	r.Root().Walk(trav)
 
@@ -136,16 +134,4 @@ func (i *inheritor) Extends() *ir.Name {
 func (i *inheritor) Implements() []*ir.Name {
 	i.ensureTraversed()
 	return i.traverser.implements
-}
-
-func nodeToName(node ir.Node) *ir.Name {
-	switch typed := node.(type) {
-	case *ir.Name:
-		return typed
-	case *ir.Identifier:
-		return &ir.Name{Position: typed.Position, Value: typed.Value}
-	default:
-		log.Panicf("[symbol.nodeToName]: expected type %T to be ir.Name\n", node)
-		return nil
-	}
 }
