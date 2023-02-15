@@ -91,7 +91,7 @@ func (p *parser) Read(path string) (string, error) {
 func (p *parser) Walk(root string, walker func(path string, d fs.DirEntry, err error) error) error {
 	err := filepath.WalkDir(root, walker)
 	if err != nil {
-        if err == filepath.SkipDir { //nolint:errorlint // stdlib checks == so don't want wrapping.
+		if err == filepath.SkipDir { //nolint:errorlint // stdlib checks == so don't want wrapping.
 			return err //nolint:wrapcheck // stdlib checks == so don't want wrapping.
 		}
 

@@ -101,7 +101,7 @@ func (t *Trie[T]) Delete(key *fqn.FQN) {
 	go func() {
 		t.namesLock.Lock()
 		defer t.namesLock.Unlock()
-        defer wg.Done()
+		defer wg.Done()
 
 		nameKey := strings.Split(key.Name(), "")
 		opts := []func(*trie.SearchOptions){trie.WithExactKey()}
@@ -118,9 +118,9 @@ func (t *Trie[T]) Delete(key *fqn.FQN) {
 	}()
 
 	go func() {
-        t.fqnsLock.Lock()
-        defer t.fqnsLock.Unlock()
-        defer wg.Done()
+		t.fqnsLock.Lock()
+		defer t.fqnsLock.Unlock()
+		defer wg.Done()
 
 		delete(t.fqns, key.String())
 	}()
