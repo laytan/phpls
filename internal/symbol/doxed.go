@@ -8,6 +8,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/position"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/typer"
 )
@@ -20,17 +21,19 @@ func FilterDocKind(kind phpdoxer.NodeKind) DocFilter {
 	}
 }
 
-type Doxed struct {
+type doxed struct {
 	node ir.Node
 
 	docNodeCache []phpdoxer.Node
 }
 
-func NewDoxed(node ir.Node) *Doxed {
-	return &Doxed{node: node}
+func NewDoxed(
+	node ir.Node,
+) *doxed { //nolint:revive // This struct is embedded inside other symbol structs, if we leave it public, it will be accessible by users.
+	return &doxed{node: node}
 }
 
-func (d *Doxed) Docs() []phpdoxer.Node {
+func (d *doxed) Docs() []phpdoxer.Node {
 	if d.docNodeCache != nil {
 		return d.docNodeCache
 	}
@@ -51,7 +54,7 @@ func (d *Doxed) Docs() []phpdoxer.Node {
 	return nodes
 }
 
-func (d *Doxed) FindDoc(filters ...DocFilter) phpdoxer.Node {
+func (d *doxed) FindDoc(filters ...DocFilter) phpdoxer.Node {
 	docs := d.Docs()
 
 	for _, doc := range docs {
@@ -71,7 +74,7 @@ func (d *Doxed) FindDoc(filters ...DocFilter) phpdoxer.Node {
 	return nil
 }
 
-func (d *Doxed) FindAllDocs(filters ...DocFilter) (results []phpdoxer.Node) {
+func (d *doxed) FindAllDocs(filters ...DocFilter) (results []phpdoxer.Node) {
 	docs := d.Docs()
 
 DocsRange:
@@ -88,7 +91,24 @@ DocsRange:
 	return results
 }
 
-func (d *Doxed) RawDocs() string {
+func (d *doxed) FindThrows() []*phpdoxer.NodeThrows {
+	results := d.FindAllDocs(FilterDocKind(phpdoxer.KindThrows))
+	throws := make([]*phpdoxer.NodeThrows, 0, len(results))
+	throws = append(throws, functional.Map(results, func(n phpdoxer.Node) *phpdoxer.NodeThrows {
+		typed, ok := n.(*phpdoxer.NodeThrows)
+		if !ok {
+			log.Panic(
+				"[doxed.FindThrows]: phpdoxer node with kind phpdoxer.KindThrows is not of type *phpdoxer.NodeThrows",
+			)
+		}
+
+		return typed
+	})...)
+
+	return throws
+}
+
+func (d *doxed) RawDocs() string {
 	return strings.Join(typer.NodeComments(d.node), "\n")
 }
 

@@ -7,7 +7,7 @@ import (
 
 type Property struct {
 	*modified
-	*Doxed
+	*doxed
 
 	node *ir.PropertyListStmt
 }
@@ -16,7 +16,7 @@ func NewProperty(node *ir.PropertyListStmt) *Property {
 	return &Property{
 		node:     node,
 		modified: newModifiedFromNode(node),
-		Doxed:    NewDoxed(node),
+		doxed:    NewDoxed(node),
 	}
 }
 

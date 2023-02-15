@@ -13,7 +13,7 @@ import (
 var ErrNoReturn = errors.New("node has no return type")
 
 type canReturn struct {
-	doxed *Doxed
+	doxed *doxed
 	rooter
 	node ir.Node
 

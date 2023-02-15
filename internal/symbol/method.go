@@ -8,7 +8,7 @@ import (
 type Method struct {
 	*modified
 	*canReturn
-	*Doxed
+	*doxed
 
 	node *ir.ClassMethodStmt
 }
@@ -23,7 +23,7 @@ func NewMethod(root rooter, node *ir.ClassMethodStmt) *Method {
 			rooter: root,
 			node:   node,
 		},
-		Doxed: doxed,
+		doxed: doxed,
 		node:  node,
 	}
 }
