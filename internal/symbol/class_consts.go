@@ -33,7 +33,7 @@ func (c *ClassLike) FindConstant(filters ...FilterFunc[*ClassConst]) *ClassConst
 ConstantsIter:
 	for p, done, err := iter(); !done; p, done, err = iter() {
 		if err != nil {
-			log.Println(fmt.Errorf("[class.ClassLike.FindConstant]: %w", err))
+			log.Println(fmt.Errorf("[symbol.ClassLike.FindConstant]: %w", err))
 			continue
 		}
 

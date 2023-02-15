@@ -23,9 +23,6 @@ func determinePrivacy(
 ) phprivacy.Privacy {
 	actPrivacy := startPrivacy
 
-	what.Is(startPrivacy)
-	what.Is(currKind)
-	what.Is(iteration)
 
 	// If we are in the class, the first run can check >= private members,
 	// the rest only >= protected members.

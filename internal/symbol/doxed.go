@@ -96,14 +96,15 @@ func (d *Doxed) RawDocs() string {
 // does not have).
 //
 // Normalizations:
-// 1. "static" -> current class
-// 2. "$this" -> current class
-// 3. A class in all CAPS -> qualified class
-// 4. Precedence -> recursively unpacked
-// 5. Union -> recursively unpacked
-// 6. Intersection -> recursively unpacked
+// - "static" -> current class
+// - "$this" -> current class
+// - "self" -> current class
+// - A class in all CAPS -> qualified class
+// - Precedence -> recursively unpacked
+// - Union -> recursively unpacked
+// - Intersection -> recursively unpacked
 //
-// Cases 4, 5 and 6 can result in multiple classes, so a slice is returned.
+// Precedence, union & intersection can result in multiple classes, so a slice is returned.
 func DocClassNormalize(
 	fqnt *fqn.Traverser,
 	currFqn *fqn.FQN,
