@@ -8,4 +8,5 @@ type opts struct {
 	ClientProcessID uint     `long:"clientProcessId" description:"Process ID that when terminated, terminates the language server"    short:"p"`
 	URL             string   `long:"url"             description:"The URL to listen on for tcp or websocket connections"                        default:"127.0.0.1:2001"`
 	FileExtensions  []string `long:"fileExtensions"  description:"Define file extensions to treat as PHP source files"                short:"e" default:"php"`
+    IgnoredDirNames []string `long:"ignoredDirNames" description:"Define directory names that should be ignored completely"           short:"i" default:".git" default:"node_modules"`
 }

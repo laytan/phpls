@@ -89,12 +89,16 @@ func New(phpv *phpversion.PHPVersion, root string) Wrkspc {
 	}()
 
 	return &wrkspc{
-		normalParser:   normalParser,
-		stubParser:     stubParser,
-		roots:          []string{root, filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")},
-		fileExtensions: Config().FileExtensions(),
-		files:          files,
-		irs:            irs,
+		normalParser: normalParser,
+		stubParser:   stubParser,
+		roots: []string{
+			root,
+			filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs"),
+		},
+		fileExtensions:  Config().FileExtensions(),
+		ignoredDirNames: Config().IgnoredDirNames(),
+		files:           files,
+		irs:             irs,
 	}
 }
 
@@ -103,12 +107,13 @@ func FromContainer() Wrkspc {
 }
 
 type wrkspc struct {
-	normalParser   parsing.Parser
-	stubParser     parsing.Parser
-	roots          []string
-	fileExtensions []string
-	files          *cache.Cache[string, *file]
-	irs            *cache.Cache[string, *ir.Root]
+	normalParser    parsing.Parser
+	stubParser      parsing.Parser
+	roots           []string
+	fileExtensions  []string
+	ignoredDirNames []string
+	files           *cache.Cache[string, *file]
+	irs             *cache.Cache[string, *ir.Root]
 }
 
 func (w *wrkspc) Root() string {
@@ -259,7 +264,12 @@ func (w *wrkspc) walk(walker func(path string, d fs.DirEntry) error) error {
 					return err
 				}
 
-				if w.shouldParse(d) {
+				doParse, err := w.shouldParse(d)
+				if err != nil {
+					return err
+				}
+
+				if doParse {
 					return walker(path, d)
 				}
 
@@ -275,19 +285,27 @@ func (w *wrkspc) walk(walker func(path string, d fs.DirEntry) error) error {
 	return finalErr
 }
 
-func (w *wrkspc) shouldParse(d fs.DirEntry) bool {
+func (w *wrkspc) shouldParse(d fs.DirEntry) (bool, error) {
 	if d.IsDir() {
-		return false
+		// Skip ignored directories.
+		n := d.Name()
+		for _, ignored := range w.ignoredDirNames {
+			if n == ignored {
+				return false, filepath.SkipDir
+			}
+		}
+
+		return false, nil
 	}
 
 	name := d.Name()
 	for _, extension := range w.fileExtensions {
 		if strings.HasSuffix(name, extension) {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func (w *wrkspc) parser(path string) parsing.Parser {

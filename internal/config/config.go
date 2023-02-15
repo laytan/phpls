@@ -32,6 +32,7 @@ func Default() Config {
 			ClientProcessID: 0,
 			URL:             "",
 			FileExtensions:  []string{"php"},
+			IgnoredDirNames: []string{".git", "node_modules"},
 		},
 	}
 }
@@ -45,6 +46,7 @@ type Config interface {
 	ConnURL() string
 	UseStatsviz() bool
 	FileExtensions() []string
+	IgnoredDirNames() []string
 }
 
 type lsConfig struct {
@@ -127,4 +129,13 @@ func (c *lsConfig) FileExtensions() []string {
 	}
 
 	return exts
+}
+
+func (c *lsConfig) IgnoredDirNames() []string {
+	dirs := make([]string, 0, len(c.opts.IgnoredDirNames))
+	for _, dir := range c.opts.IgnoredDirNames {
+		dirs = append(dirs, strings.TrimSpace(dir))
+	}
+
+	return dirs
 }
