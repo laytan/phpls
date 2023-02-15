@@ -28,7 +28,7 @@ class MethodTest { // @t_out(comments_trait, 1) @t_out(comments_interface, 1)
     /**
      * @param Exception $a // @t_in(comments_param_method, 19)
      */
-    function test1($a) {}
+    function test1($a) {} // @t_out(comments_inherit, 5)
 
     /**
      * @param Exception $a // @t_in(comments_param_method_public_static, 19)
@@ -51,3 +51,10 @@ trait TraitTest {}
  */
 interface InterfaceTest {}
 
+class InheritsTest extends MethodTest {
+
+    /**
+     * {@inheritdoc} // @t_in(comments_inherit, 12)
+     */
+    public function test1($a) {}
+}

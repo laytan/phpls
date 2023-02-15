@@ -115,6 +115,10 @@ func (c *Ctx) Root() *ir.Root {
 	return c.nodes[0].(*ir.Root)
 }
 
+func (c *Ctx) Path() string {
+	return c.Position().Path
+}
+
 func (c *Ctx) Start() *position.Position {
 	return c.start
 }

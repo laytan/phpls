@@ -1,7 +1,6 @@
 package expr
 
 import (
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/phprivacy"
 )
@@ -22,7 +21,6 @@ func determinePrivacy(
 	iteration *iteration,
 ) phprivacy.Privacy {
 	actPrivacy := startPrivacy
-
 
 	// If we are in the class, the first run can check >= private members,
 	// the rest only >= protected members.
