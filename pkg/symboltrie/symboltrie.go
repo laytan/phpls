@@ -4,24 +4,23 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Workiva/go-datastructures/trie/ctrie"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/shivamMg/trie"
 )
 
 type Trie[T any] struct {
-	ctrie *ctrie.Ctrie
+	fqns     map[string]T
+	fqnsLock sync.RWMutex
 
 	// TODO: having 2 tries here is a bit of a waste of memory,
-	// also this shivaMg/trie uses a lot of memory, even compared to the larger
-	// ctrie.
+	// also this shivaMg/trie uses a lot of memory.
 	names     *trie.Trie
 	namesLock sync.Mutex
 }
 
 func New[T any]() *Trie[T] {
 	return &Trie[T]{
-		ctrie: ctrie.New(nil),
+		fqns:  make(map[string]T, 250),
 		names: trie.New(),
 	}
 }
@@ -33,6 +32,7 @@ func (t *Trie[T]) Put(key *fqn.FQN, value T) {
 	go func() {
 		t.namesLock.Lock()
 		defer t.namesLock.Unlock()
+		defer wg.Done()
 
 		name := strings.Split(key.Name(), "")
 
@@ -49,21 +49,25 @@ func (t *Trie[T]) Put(key *fqn.FQN, value T) {
 			m := result.Results[0].Value.(map[string]T)
 			m[key.String()] = value
 		}
-
-		wg.Done()
 	}()
 
 	go func() {
-		t.ctrie.Insert([]byte(key.String()), value)
-		wg.Done()
+		t.fqnsLock.Lock()
+		defer t.fqnsLock.Unlock()
+		defer wg.Done()
+
+		t.fqns[key.String()] = value
 	}()
 
 	wg.Wait()
 }
 
 func (t *Trie[T]) SearchExact(key *fqn.FQN) (T, bool) {
-	if res, ok := t.ctrie.Lookup([]byte(key.String())); ok {
-		return res.(T), true
+	t.fqnsLock.RLock()
+	defer t.fqnsLock.RUnlock()
+
+	if res, ok := t.fqns[key.String()]; ok {
+		return res, true
 	}
 
 	var defaultT T
@@ -97,6 +101,7 @@ func (t *Trie[T]) Delete(key *fqn.FQN) {
 	go func() {
 		t.namesLock.Lock()
 		defer t.namesLock.Unlock()
+        defer wg.Done()
 
 		nameKey := strings.Split(key.Name(), "")
 		opts := []func(*trie.SearchOptions){trie.WithExactKey()}
@@ -110,13 +115,14 @@ func (t *Trie[T]) Delete(key *fqn.FQN) {
 				t.names.Delete(nameKey)
 			}
 		}
-
-		wg.Done()
 	}()
 
 	go func() {
-		t.ctrie.Remove([]byte(key.String()))
-		wg.Done()
+        t.fqnsLock.Lock()
+        defer t.fqnsLock.Unlock()
+        defer wg.Done()
+
+		delete(t.fqns, key.String())
 	}()
 
 	wg.Wait()
@@ -125,46 +131,4 @@ func (t *Trie[T]) Delete(key *fqn.FQN) {
 type TriePair[T any] struct {
 	Key   []byte
 	Value T
-}
-
-func (t *Trie[T]) Iterator(cancel <-chan struct{}) <-chan *TriePair[T] {
-	tcancel := make(chan struct{})
-	titer := t.ctrie.Iterator(tcancel)
-	iter := make(chan *TriePair[T])
-
-	go func() {
-		var pair *TriePair[T]
-
-		for {
-			var send chan *TriePair[T]
-			if pair != nil {
-				send = iter
-			}
-
-			var receive <-chan *ctrie.Entry
-			if pair == nil {
-				receive = titer
-			}
-
-			select {
-			case <-cancel:
-				tcancel <- struct{}{}
-				close(iter)
-				return
-
-			case entry, ok := <-receive:
-				if !ok {
-					close(iter)
-					return
-				}
-
-				pair = &TriePair[T]{Key: entry.Key, Value: entry.Value.(T)}
-
-			case send <- pair:
-				pair = nil
-			}
-		}
-	}()
-
-	return iter
 }

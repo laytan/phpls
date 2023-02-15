@@ -1,10 +1,8 @@
 package symboltrie_test
 
 import (
-	"fmt"
 	"testing"
 
-	"appliedgo.net/what"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/matryer/is"
@@ -59,24 +57,4 @@ func TestSymbolTrieSearchPrefix(t *testing.T) {
 	itrie.Put(fqn.New("\\Drupal"), 2)
 	itrie.Put(fqn.New("\\Drupal\\Exceptions\\BaseException"), 6)
 	itrie.Put(fqn.New("\\Drupal\\Exceptions\\InvalidException"), 1)
-
-	cancel := make(chan struct{})
-	i := 0
-	for entry := range itrie.Iterator(cancel) {
-		i++
-		what.Happens(fmt.Sprint(i))
-		is.True(i < 4)
-		is.True(i == entry.Value)
-
-		if i == 3 {
-			cancel <- struct{}{}
-		}
-	}
-
-	i = 0
-	for range itrie.Iterator(nil) {
-		i++
-	}
-
-	is.Equal(i, 6)
 }
