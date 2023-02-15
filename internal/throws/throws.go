@@ -102,7 +102,7 @@ func (t *Throws) throws() *set.Set[string] {
 		case *ir.FunctionCallExpr, *ir.MethodCallExpr:
 			resolvedRoot, resolvement, err := t.resolve(result)
 			if err != nil {
-				log.Println(fmt.Errorf("[symbol.throws.throws]: %w", err))
+				log.Println(fmt.Errorf("[throws.throws]: %w", err))
 				continue
 			}
 
@@ -161,7 +161,7 @@ func (t *Throws) phpDocThrows() (throws []*fqn.FQN) {
 			throws = append(throws, resFqn)
 
 		default:
-			log.Printf("[symbol.throws.PhpDocThrows]: Detected @throws tag with unexpected type: %v, expected a class like", result)
+			log.Printf("[throws.PhpDocThrows]: Detected @throws tag with unexpected type: %v, expected a class like", result)
 		}
 	}
 
@@ -215,12 +215,14 @@ func (t *Throws) catches(thrown *fqn.FQN) func(catch *fqn.FQN) bool {
 	// Cache loaded classes for next calls.
 	classes := []*symbol.ClassLike{cls}
 	return func(catch *fqn.FQN) bool {
+        // Go through cached classes first.
 		for _, c := range classes {
 			if c.GetFQN().String() == catch.String() {
 				return true
 			}
 		}
 
+        // Got through all cached classes, start iterating from the last cached class.
 		iter := classes[len(classes)-1].InheritsIter()
 		for inhCls, done, err := iter(); !done; inhCls, done, err = iter() {
 			if err != nil {

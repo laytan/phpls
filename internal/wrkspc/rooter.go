@@ -1,6 +1,8 @@
 package wrkspc
 
 import (
+    "log"
+
 	"github.com/VKCOM/noverify/src/ir"
 )
 
@@ -11,7 +13,7 @@ type Rooter struct {
 
 func NewRooter(path string, root ...*ir.Root) *Rooter {
 	if len(root) > 1 {
-		panic("[class.NewRooter]: can only create a rooter with one root")
+		log.Panic("[wrkspc.NewRooter]: can only create a rooter with one root")
 	}
 
 	if len(root) == 1 {

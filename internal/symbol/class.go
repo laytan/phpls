@@ -83,7 +83,7 @@ func NewClassLikeFromMethod(root *ir.Root, method *ir.ClassMethodStmt) (*ClassLi
 	}
 
 	return nil, fmt.Errorf(
-		"[class.NewClassLikeFromMethod]: can't find class-like surrounding the given method %s",
+		"[symbol.NewClassLikeFromMethod]: can't find class-like surrounding the given method %s",
 		method.MethodName.Value,
 	)
 }
