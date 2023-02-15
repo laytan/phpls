@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"log"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -34,7 +33,7 @@ const (
 
 var (
 	ErrFileNotIndexed    = errors.New("File is not indexed in the workspace")
-	indexGoRoutinesLimit = runtime.NumCPU()
+	indexGoRoutinesLimit = 64
 	stubsPath            = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 	Config               = func() config.Config { return do.MustInvoke[config.Config](nil) }
 )
