@@ -1,6 +1,8 @@
 package symbol
 
-import "github.com/laytan/elephp/pkg/phprivacy"
+import (
+	"github.com/laytan/elephp/pkg/phprivacy"
+)
 
 type FilterFunc[T any] func(T) bool
 

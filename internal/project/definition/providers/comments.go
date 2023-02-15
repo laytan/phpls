@@ -7,7 +7,9 @@ import (
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/project/definition"
+	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	oldsym "github.com/laytan/elephp/pkg/symbol"
 )
 
 type CommentsProvider struct{}
@@ -89,38 +91,30 @@ func (p *CommentsProvider) defineInheritDoc(
 	ctx *context.Ctx,
 	m *ir.ClassMethodStmt,
 ) ([]*definition.Definition, error) {
-	// meth := class.NewMethodFromNode(m)
-	// cls := class.New(
-	// 	class.NewRooter(ctx.Position().Path, ctx.Root()),
-	// 	ctx.ClassScope(),
-	// )
-	//
-	// var targetCls *class.ClassLikeImpl
-	// var targetMeth *class.MethodImpl
-	// inhIter := cls.InheritsIter()
-	// for inhCls, done, err := inhIter(); !done; inhCls, done, err = inhIter() {
-	// 	if err != nil {
-	// 		log.Println(fmt.Errorf("[providers.CommentsProvider.Define]: %w", err))
-	// 		continue
-	// 	}
-	//
-	// 	targetMeth = inhCls.FindMethod(class.FilterOverwrittenBy(meth))
-	// 	if targetMeth != nil {
-	// 		targetCls = inhCls
-	// 		break
-	// 	}
-	// }
-	//
-	// if targetMeth == nil {
-	// 	return nil, fmt.Errorf(
-	// 		"[providers.CommentsProvider.Define]: @inheritdoc, but the method has no parent method",
-	// 	)
-	// }
-	//
-	// return []*definition.Definition{{
-	// 	Path: targetCls.Path(),
-	// 	Node: targetMeth.Symbol(),
-	// }}, nil
+	meth := symbol.NewMethod(ctx, m)
+	cls, err := symbol.NewClassLikeFromMethod(ctx.Root(), m)
+	if err != nil {
+		return nil, fmt.Errorf("[CommentsProvider.defineInheritDoc]: %w", err)
+	}
 
-	return []*definition.Definition{}, nil
+	iter := cls.InheritsIter()
+	for inhCls, done, err := iter(); !done; inhCls, done, err = iter() {
+		if err != nil {
+			return nil, fmt.Errorf("[CommentsProvider.defineInheritDoc]: %w", err)
+		}
+
+		inhMeth := inhCls.FindMethod(symbol.FilterOverwrittenBy(meth))
+		if inhMeth != nil {
+			s := oldsym.NewMethod(inhMeth.Node())
+
+			return []*definition.Definition{{
+				Path: inhCls.Path(),
+				Node: s,
+			}}, nil
+		}
+	}
+
+	return nil, fmt.Errorf(
+		"[CommentsProvider.defineInheritDoc]: @inheritdoc, but the method has no parent method",
+	)
 }
