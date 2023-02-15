@@ -31,7 +31,6 @@ func NewFunction(root rooter, node *ir.FunctionStmt) *Function {
 }
 
 func NewFunctionFromFQN(root rooter, qualified *fqn.FQN) (*Function, error) {
-	// TODO: take the fqn, check namespaces.
 	ft := traversers.NewFunction(qualified.Name())
 	root.Root().Walk(ft)
 

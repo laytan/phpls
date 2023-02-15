@@ -215,14 +215,14 @@ func (t *Throws) catches(thrown *fqn.FQN) func(catch *fqn.FQN) bool {
 	// Cache loaded classes for next calls.
 	classes := []*symbol.ClassLike{cls}
 	return func(catch *fqn.FQN) bool {
-        // Go through cached classes first.
+		// Go through cached classes first.
 		for _, c := range classes {
 			if c.GetFQN().String() == catch.String() {
 				return true
 			}
 		}
 
-        // Got through all cached classes, start iterating from the last cached class.
+		// Got through all cached classes, start iterating from the last cached class.
 		iter := classes[len(classes)-1].InheritsIter()
 		for inhCls, done, err := iter(); !done; inhCls, done, err = iter() {
 			if err != nil {
