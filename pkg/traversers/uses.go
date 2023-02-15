@@ -6,7 +6,6 @@ import (
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
-// TODO: rename file.
 func NewUses(classLikeName string) *Uses {
 	return &Uses{
 		Uses:          make([]*ir.Name, 0),

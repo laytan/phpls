@@ -351,8 +351,6 @@ func resolveMethod(
 
 	res := m.ReturnsClass(cls.GetFQN())
 	if len(res) > 0 {
-		// TODO: return all returned classes, and check them all accordingly.
-		// Will require some rewrite of this pkg.
 		return resolvement, fqn.New(res[0].Name)
 	}
 

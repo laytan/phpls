@@ -117,8 +117,6 @@ func (s *Server) additionalTextEdits(
 		return nil
 	}
 
-	// TODO: add use function or use const if it is a function or const.
-	// TODO: add alias when there is already a class used with the same name.
 	useStmt := fmt.Sprintf("use %s;", item.Detail)
 	nsPos := s.project.Namespace(pos)
 	if nsPos == nil {
@@ -142,7 +140,6 @@ func (s *Server) additionalTextEdits(
 	}}
 }
 
-// TODO: once hover is added, add the hover output here.
 func (s *Server) documentation(item *protocol.CompletionItem, pos *position.Position) string {
 	return ""
 }

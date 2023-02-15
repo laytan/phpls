@@ -72,8 +72,6 @@ var (
 	clsCnstRgxClsG  = 1
 	clsCnstRgxCnstG = 2
 
-	// TODO: This should not match when there is a class with this name, but
-	// TODO: that is very hard to check in this situation.
 	globalConstRegex = regexp.MustCompile(`^[_A-Z]*$`)
 
 	callableRegex = regexp.MustCompile(`^callable\((.*)\): ?(.*)$`)
@@ -105,8 +103,10 @@ var (
 
 // TODO: type aliasses
 
-// TODO: const and classlike types are basically the same format, to parse those
-// TODO: correctly we need context of the actual project, which we don't have here.
+// NOTE: const and classlike types are basically the same format, to parse those
+// NOTE: correctly we need context of the actual project, which we don't have here.
+// NOTE: for elephp, the internal package 'doxcontext' is there to
+// NOTE: apply context and transform these cases.
 func ParseType(value string) (Type, error) {
 	value = strings.TrimSpace(value)
 

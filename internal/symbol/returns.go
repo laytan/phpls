@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
@@ -63,7 +64,7 @@ func (r *canReturn) Returns() (phpdoxer.Type, bool) {
 
 // ReturnsClass resolves and unpacks the raw type returned from Returns into
 // the classes it represents.
-// See symbol.DocClassNormalize for more.
+// See doxcontext.ApplyContext for more.
 func (r *canReturn) ReturnsClass(currFqn *fqn.FQN) []*phpdoxer.TypeClassLike {
 	if r.clsCache != nil {
 		return r.clsCache
@@ -77,7 +78,7 @@ func (r *canReturn) ReturnsClass(currFqn *fqn.FQN) []*phpdoxer.TypeClassLike {
 	fqnt := fqn.NewTraverser()
 	r.Root().Walk(fqnt)
 
-	return DocClassNormalize(fqnt, currFqn, ir.GetPosition(r.node), ret)
+	return doxcontext.ApplyContext(fqnt, currFqn, ir.GetPosition(r.node), ret)
 }
 
 func (r *canReturn) returnsComment() (phpdoxer.Type, error) {
