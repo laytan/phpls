@@ -13,8 +13,9 @@ import (
 var ErrNoReturn = errors.New("node has no return type")
 
 type canReturn struct {
-	doxed *doxed
+	*doxed
 	rooter
+
 	node ir.Node
 
 	cache   phpdoxer.Type
@@ -80,12 +81,12 @@ func (r *canReturn) ReturnsClass(currFqn *fqn.FQN) []*phpdoxer.TypeClassLike {
 }
 
 func (r *canReturn) returnsComment() (phpdoxer.Type, error) {
-	docNode := r.doxed.FindDoc(FilterDocKind(phpdoxer.KindReturn))
+	docNode := r.FindDoc(FilterDocKind(phpdoxer.KindReturn))
 	if docNode != nil {
 		return docNode.(*phpdoxer.NodeReturn).Type, nil
 	}
 
-	if inhDoc := r.doxed.FindDoc(FilterDocKind(phpdoxer.KindInheritDoc)); inhDoc == nil {
+	if inhDoc := r.FindDoc(FilterDocKind(phpdoxer.KindInheritDoc)); inhDoc == nil {
 		return nil, ErrNoReturn
 	}
 
