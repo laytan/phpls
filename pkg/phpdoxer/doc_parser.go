@@ -166,11 +166,12 @@ func parseGroup(g *group) (Node, error) {
 			descStr = value
 		}
 
-		return &NodeParam{
+		result = &NodeParam{
 			Type:        typeNode,
 			Name:        nameStr,
 			Description: descStr,
-		}, nil
+		}
+		return result, nil
 
 	case "inheritdoc", "inheritDoc":
 		result = &NodeInheritDoc{}
