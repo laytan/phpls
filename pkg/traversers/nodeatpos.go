@@ -24,6 +24,10 @@ type NodeAtPos struct {
 }
 
 func (n *NodeAtPos) EnterNode(node ir.Node) bool {
+	if n.Comment != nil {
+		return true
+	}
+
 	pos := ir.GetPosition(node)
 	if pos == nil {
 		return true
@@ -37,13 +41,13 @@ func (n *NodeAtPos) EnterNode(node ir.Node) bool {
 		// NOTE: so if we need the ClassExtendsStmt in the returned nodes in the future, this needs to change.
 		return true
 	case *ir.FunctionStmt, *ir.TraitStmt, *ir.InterfaceStmt:
-		n.checkComment(node, nil)
+		n.checkComment(node, node, nil)
 	case *ir.PropertyListStmt:
-		n.checkComment(node, typedNode.Modifiers)
+		n.checkComment(node, node, typedNode.Modifiers)
 	case *ir.ClassMethodStmt:
-		n.checkComment(typedNode, typedNode.Modifiers)
+		n.checkComment(typedNode, typedNode, typedNode.Modifiers)
 	case *ir.ClassStmt:
-		n.checkComment(typedNode, typedNode.Modifiers)
+		n.checkComment(typedNode, typedNode, typedNode.Modifiers)
 
 	default:
 		break
@@ -59,13 +63,13 @@ func (n *NodeAtPos) EnterNode(node ir.Node) bool {
 
 func (n *NodeAtPos) LeaveNode(ir.Node) {}
 
-func (n *NodeAtPos) checkComment(node ir.Node, modifiers []*ir.Identifier) {
+func (n *NodeAtPos) checkComment(node ir.Node, toCheck ir.Node, modifiers []*ir.Identifier) {
 	if len(modifiers) > 0 {
-		n.checkComment(modifiers[0], nil)
+		n.checkComment(node, modifiers[0], nil)
 		return
 	}
 
-	node.IterateTokens(func(t *token.Token) bool {
+	toCheck.IterateTokens(func(t *token.Token) bool {
 		if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
 			return true
 		}
