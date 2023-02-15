@@ -22,7 +22,7 @@ type fullyQualifier interface {
 type ClassLike struct {
 	*inheritor
 	*modified
-	*Doxed
+	*doxed
 
 	rooter
 	fullyQualifier
@@ -40,7 +40,7 @@ func NewClassLike(root rooter, node ir.Node) *ClassLike {
 			rooter:         root,
 		},
 		modified: newModifiedFromNode(node),
-		Doxed:    NewDoxed(node),
+		doxed:    NewDoxed(node),
 		rooter:   root,
 		node:     node,
 	}

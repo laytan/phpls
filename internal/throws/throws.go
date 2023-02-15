@@ -24,10 +24,14 @@ type rooter interface {
 	Path() string
 }
 
+type doxFinder interface {
+	FindThrows() []*phpdoxer.NodeThrows
+}
+
 type Throws struct {
 	rooter
 
-	doxed *symbol.Doxed
+	doxed doxFinder
 
 	node ir.Node
 }
@@ -138,11 +142,9 @@ func (t *Throws) throws() *set.Set[string] {
 func (t *Throws) phpDocThrows() (throws []*fqn.FQN) {
 	var fqnt *fqn.Traverser
 
-	results := t.doxed.FindAllDocs(symbol.FilterDocKind(phpdoxer.KindThrows))
+	results := t.doxed.FindThrows()
 	for _, result := range results {
-		resultType := result.(*phpdoxer.NodeThrows).Type
-
-		switch typedRes := resultType.(type) {
+		switch typedRes := result.Type.(type) {
 		case *phpdoxer.TypeClassLike:
 			if typedRes.FullyQualified {
 				throws = append(throws, fqn.New(typedRes.Name))

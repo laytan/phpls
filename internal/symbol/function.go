@@ -11,7 +11,7 @@ import (
 
 type Function struct {
 	*canReturn
-	*Doxed
+	*doxed
 
 	node *ir.FunctionStmt
 }
@@ -25,7 +25,7 @@ func NewFunction(root rooter, node *ir.FunctionStmt) *Function {
 			rooter: root,
 			node:   node,
 		},
-		Doxed: doxed,
+		doxed: doxed,
 		node:  node,
 	}
 }
