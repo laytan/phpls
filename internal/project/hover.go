@@ -27,7 +27,6 @@ Nodes:
 	for i := len(nodes) - 1; i >= 0; i-- {
 		switch typedNode := nodes[i].(type) {
 		case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt, *ir.PropertyListStmt, *ir.FunctionCallExpr:
-			// TODO: show all methods on the class (also properties?).
 			if cmnts := cleanedNodeComments(typedNode); len(cmnts) > 0 {
 				out = append(out, cmnts)
 			}

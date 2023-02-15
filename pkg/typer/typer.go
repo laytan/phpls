@@ -12,12 +12,8 @@ import (
 	"github.com/samber/do"
 )
 
-// TODO: merge this with the symbol package, like a callable.Returns,
-// callable.Param, symbol.Variable, property.Type, callable.Throws.
-
 // Typer is responsible of using ir and phpdoxer to retrieve/resolve types
 // from phpdoc or type hints of a node.
-
 type Typer interface {
 	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
 	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) phpdoxer.Type

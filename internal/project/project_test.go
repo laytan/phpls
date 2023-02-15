@@ -68,31 +68,6 @@ func TestStdlibDefinitions(t *testing.T) {
 	stdlibPath := filepath.Join(stdlibRoot, "stdlib.php")
 
 	scenarios := map[string]*stdlibScenario{
-		// TODO: fix & uncomment.
-		// "use": {
-		// 	in: &position.Position{
-		// 		Row:  3,
-		// 		Col:  5,
-		// 		Path: stdlibPath,
-		// 	},
-		// 	out: &position.Position{
-		// 		Row:  7,
-		// 		Col:  1,
-		// 		Path: path.Join(stubsRoot, "swoole", "Swoole", "WebSocket", "Server.php"),
-		// 	},
-		// },
-		// "use_alias": {
-		// 	in: &position.Position{
-		// 		Row:  4,
-		// 		Col:  23,
-		// 		Path: stdlibPath,
-		// 	},
-		// 	out: &position.Position{
-		// 		Row:  7,
-		// 		Col:  1,
-		// 		Path: path.Join(stubsRoot, "swoole", "Swoole", "Process.php"),
-		// 	},
-		// },
 		"in_array": {
 			in: &position.Position{
 				Row:  10,
