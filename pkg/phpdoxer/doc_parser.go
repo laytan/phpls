@@ -125,7 +125,6 @@ func parseGroup(g *group) (Node, error) {
 	switch g.at {
 	case "return":
 		typeStr, description := splitTypeAndRest(value)
-
 		typeNode, _ := ParseType(typeStr)
 
 		result = &NodeReturn{
@@ -135,15 +134,12 @@ func parseGroup(g *group) (Node, error) {
 		return result, nil
 
 	case "var":
-		typeStr, _ := splitTypeAndRest(value)
-
-		typeNode, err := ParseType(typeStr)
-		if err != nil {
-			return nil, err
-		}
+		typeStr, description := splitTypeAndRest(value)
+		typeNode, _ := ParseType(typeStr)
 
 		result = &NodeVar{
-			Type: typeNode,
+			Type:        typeNode,
+			Description: description,
 		}
 		return result, nil
 

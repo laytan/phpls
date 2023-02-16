@@ -4,10 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/andreyvit/diff"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hexops/gotextdiff"
-	"github.com/hexops/gotextdiff/myers"
-	"github.com/hexops/gotextdiff/span"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -381,11 +379,7 @@ func TestDoc_String(t *testing.T) {
 				Nodes:       tt.fields.Nodes,
 			}
 			if got := d.String(); got != tt.want {
-				edits := myers.ComputeEdits(span.URIFromPath("expected.txt"), tt.want, got)
-				t.Errorf(
-					"Expected output and actual output don't match:\n%v",
-					gotextdiff.ToUnified("expected.txt", "out.txt", tt.want, edits),
-				)
+				t.Errorf("Results don't match:\n%v", diff.CharacterDiff(got, tt.want))
 			}
 		})
 	}

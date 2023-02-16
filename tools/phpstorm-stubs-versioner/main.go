@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,7 +36,7 @@ var (
 	parserConfig = conf.Config{
 		Version: &version.Version{Major: latestParserMajor, Minor: latestParserMinor},
 		ErrorHandlerFunc: func(e *errors.Error) {
-			log.Println(e)
+			// log.Println(e)
 		},
 	}
 )
@@ -95,6 +94,7 @@ func main() {
 	transformers = []Transformer{
 		transformer.NewAtSinceAtRemoved(genVersion),
 		transformer.NewElementAvailableAttribute(genVersion),
+		transformer.NewLanguageLevelTypeAware(genVersion),
 	}
 
 	_, _ = fmt.Printf(
@@ -203,6 +203,10 @@ func transform(path string) error {
 	}
 
 	defer file.Close()
+
+	// TODO: can we get this to work in php 8?
+	// f := formatter.NewFormatter()
+	// ast.Accept(f)
 
 	p := printer.NewPrinter(file)
 	ast.Accept(p)
