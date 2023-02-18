@@ -205,27 +205,29 @@ func (e *LanguageLevelTypeAware) checkAttrGroup(n *ast.AttributeGroup) phpdoxer.
 		)
 	}
 
+	typ := attr.Args[1].(*ast.Argument).Expr.(*ast.ScalarString).Value
+
 	arg1ArrItems := attr.Args[0].(*ast.Argument).Expr.(*ast.ExprArray).Items
+	for _, item := range arg1ArrItems {
+		// I think this happens when you add an extra comma at the end, not sure.
+		// But it results in an extra item with everything set to nil.
+		if item.(*ast.ExprArrayItem).Key == nil {
+			continue
+		}
 
-	version := arg1ArrItems[0].(*ast.ExprArrayItem).Key.(*ast.ScalarString).Value
-	typ := arg1ArrItems[0].(*ast.ExprArrayItem).Val.(*ast.ScalarString).Value
+		version := string(item.(*ast.ExprArrayItem).Key.(*ast.ScalarString).Value)
+		version = version[1 : len(version)-1]
+		versionO, ok := phpversion.FromString(version)
+		if !ok {
+			log.Panicf("version %s is not able to be converted into a PHPVersion type", version)
+		}
 
-	defaultTyp := attr.Args[1].(*ast.Argument).Expr.(*ast.ScalarString).Value
-
-	versionStr := string(version)
-	versionStr = versionStr[1 : len(versionStr)-1]
-	versionO, ok := phpversion.FromString(versionStr)
-	if !ok {
-		panic(string(version))
+		if e.version.Equals(versionO) || e.version.IsHigherThan(versionO) {
+			typ = item.(*ast.ExprArrayItem).Val.(*ast.ScalarString).Value
+		}
 	}
 
-	var typeStr string
-	if e.version.Equals(versionO) || e.version.IsHigherThan(versionO) {
-		typeStr = string(typ)
-	} else {
-		typeStr = string(defaultTyp)
-	}
-
+	typeStr := string(typ)
 	typeStr = typeStr[1 : len(typeStr)-1]
 	if typeStr == "" {
 		typeStr = "mixed"

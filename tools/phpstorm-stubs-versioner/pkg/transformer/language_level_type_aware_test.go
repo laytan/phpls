@@ -230,6 +230,45 @@ func TestLanguageLevelTypeAware(t *testing.T) {
                 function session_cache_expire($value) {}
             `,
 		},
+		{
+			name:    "multiple constraints",
+			version: "8.0.0",
+			input: `
+                <?php
+                #[LanguageLevelTypeAware([
+                    '5.6' => 'bool',
+                    '7.4' => 'null|true',
+                ], default: '')]
+                function session_cache_expire() {}
+            `,
+			expected: `
+                <?php
+                /**
+                 * @return null|true
+                 */
+                function session_cache_expire() {}
+            `,
+		},
+		{
+			name:    "multiple constraints 2",
+			version: "8.0",
+			input: `
+                <?php
+                #[LanguageLevelTypeAware([
+                    '5.6' => 'string|bool',
+                    '7.4' => 'string',
+                    '8.1' => 'non-empty-string',
+                ], default: '')]
+                function test(): bool {}
+            `,
+			expected: `
+                <?php
+                /**
+                 * @return string
+                 */
+                function test() {}
+            `,
+		},
 	}
 
 	parserConfig := conf.Config{
