@@ -48,7 +48,7 @@ func TestPhpLint(t *testing.T) {
 
 		out, err := phplint.LintString([]byte("<?php echo ?>"))
 		is.NoErr(err)
-		if len(out) == 0 || out[0].Line != 1 {
+		if len(out) == 0 || out[0].Line() != 1 {
 			t.Errorf(
 				"Error linting string '<?php echo ?>', should return an issue on line 1, got: %v",
 				out,

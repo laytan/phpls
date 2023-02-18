@@ -1,13 +1,17 @@
 package project
 
-import "github.com/laytan/elephp/pkg/phplint"
+type Issue interface {
+	Message() string
+	Code() string
+	Line() int
+}
 
 type Project struct {
-	diagnostics map[string][]*phplint.Issue
+	diagnostics map[string][]Issue
 }
 
 func New() *Project {
 	return &Project{
-		diagnostics: make(map[string][]*phplint.Issue),
+		diagnostics: make(map[string][]Issue),
 	}
 }

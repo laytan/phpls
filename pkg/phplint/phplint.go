@@ -18,13 +18,21 @@ var outputWithCodeRgx = regexp.MustCompile(
 var outputWithoutCodeRgx = regexp.MustCompile(`^(.*) in .* on line (\d+)$`)
 
 type Issue struct {
-	Message string
-	Code    string
-	Line    int
+	message string
+	code    string
+	line    int
 }
 
-func (i *Issue) Equals(o *Issue) bool {
-	return i.Message == o.Message && i.Code == o.Code && i.Line == o.Line
+func (i *Issue) Message() string {
+	return i.message
+}
+
+func (i *Issue) Code() string {
+	return i.code
+}
+
+func (i *Issue) Line() int {
+	return i.line
 }
 
 // LintString lints the code given in the parameter, returning any issues.
@@ -105,9 +113,9 @@ func parseIssues(out []byte) ([]*Issue, error) {
 			}
 
 			issues = append(issues, &Issue{
-				Message: match[1] + " " + match[3],
-				Code:    match[2],
-				Line:    line,
+				message: match[1] + " " + match[3],
+				code:    match[2],
+				line:    line,
 			})
 			continue
 		}
@@ -123,9 +131,9 @@ func parseIssues(out []byte) ([]*Issue, error) {
 			}
 
 			issues = append(issues, &Issue{
-				Message: match[1],
-				Code:    "",
-				Line:    line,
+				message: match[1],
+				code:    "",
+				line:    line,
 			})
 		}
 	}
