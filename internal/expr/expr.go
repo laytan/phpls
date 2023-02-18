@@ -88,7 +88,7 @@ func Resolve(
 	Down(AllResolvers(), symbols, node)
 
 	if symbols.Peek() == nil {
-		return nil, nil, 0
+		return nil, nil, -1
 	}
 
 	start := symbols.Pop()
@@ -115,7 +115,7 @@ func Resolve(
 			return result, nil, left
 		}
 
-		return nil, nil, 0
+		return nil, nil, -1
 	}
 
 	for curr := symbols.Pop(); curr != nil; curr = symbols.Pop() {

@@ -7,10 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/strutil"
 )
 
 // This should only be called once at the beginning of the connection with a
@@ -85,12 +83,6 @@ func (p *Project) ParseWithoutProgress() error {
 
 func (p *Project) ParseFileUpdate(path string, content string) error {
 	w := wrkspc.FromContainer()
-	prevContent := w.FContentOf(path)
-
-	if strutil.RemoveWhitespace(content) == strutil.RemoveWhitespace(prevContent) {
-		what.Happens("Skipping file update (only whitespace change) of %s", path)
-		return nil
-	}
 
 	// NOTE: order is important here.
 	if err := w.RefreshFrom(path, content); err != nil {

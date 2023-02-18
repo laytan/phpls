@@ -191,6 +191,10 @@ func cleanGroupValue(value string) string {
 
 func splitTypeAndRest(value string) (docType string, rest string) {
 	split := strings.Fields(value)
+	if len(split) == 0 {
+		return value, ""
+	}
+
 	rest = strings.TrimSpace(strings.TrimPrefix(value, split[0]))
 	return split[0], rest
 }

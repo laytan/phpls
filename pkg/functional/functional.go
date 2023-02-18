@@ -29,3 +29,12 @@ func Map[V any, R any](slice []V, mapper func(entry V) R) []R {
 
 	return res
 }
+
+type stringer interface {
+	String() string
+}
+
+// ToString is a function useful to pass into a mapper, to map all values to a string.
+func ToString[T stringer](v T) string {
+	return v.String()
+}

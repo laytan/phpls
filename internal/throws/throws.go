@@ -3,6 +3,8 @@ package throws
 import (
 	"fmt"
 	"log"
+	"strings"
+	"sync"
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/expr"
@@ -12,11 +14,13 @@ import (
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/elephp/pkg/ie"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/set"
 	oldsym "github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
+	"golang.org/x/exp/slices"
 )
 
 type rooter interface {
@@ -34,6 +38,8 @@ type Throws struct {
 	doxed doxFinder
 
 	node ir.Node
+
+	ignoreFirstFuncDoc bool
 }
 
 func NewResolver(root rooter, node ir.Node) *Throws {
@@ -49,18 +55,122 @@ func NewResolverFromIndex(n *index.INode) *Throws {
 	return NewResolver(rooter, oldsym.ToNode(rooter.Root(), n.Symbol))
 }
 
-func (t *Throws) Throws() []*fqn.FQN {
-	return functional.Map(t.throws().Slice(), fqn.New)
+type Violation struct {
+	// Either a function or class method statement.
+	Node   ir.Node
+	Throws []*fqn.FQN
+
+	message string
 }
 
-func (t *Throws) throws() *set.Set[string] {
+func (v *Violation) Message() string {
+	if len(v.message) > 0 {
+		return v.message
+	}
+
+	typeStr := ie.IfElse(ir.GetNodeKind(v.Node) == ir.KindFunctionStmt, "function", "method")
+	throwsStr := strings.Join(functional.Map(v.Throws, functional.ToString[*fqn.FQN]), ", ")
+
+	v.message = fmt.Sprintf(
+		"The %s %s throws %s but these exceptions are not caught or added to the PHPDoc.",
+		typeStr,
+		nodeident.Get(v.Node),
+		throwsStr,
+	)
+	return v.message
+}
+
+func (v *Violation) Code() string {
+	return "uncaught"
+}
+
+func (v *Violation) Line() int {
+	return ir.GetPosition(v.Node).StartLine
+}
+
+// Diagnose finds all the functions or methods in the given file that throw
+// exceptions that are not added to the PHPDoc with an @throws tag or caught in
+// that method.
+func Diagnose(root rooter) (results []*Violation) {
+	// NOTE: might be a good idea to hold a map in the index, from path to fqns.
+	// That way we can easily get all the functions and methods of the file.
+
+	nodes := make(chan ir.Node)
+	violations := make(chan *Violation)
+
+	go func() {
+		defer close(violations)
+
+		wg := sync.WaitGroup{}
+		for throwing := range nodes {
+			wg.Add(1)
+			go func(throwing ir.Node) {
+				defer wg.Done()
+
+				r := &Throws{
+					rooter:             root,
+					doxed:              symbol.NewDoxed(throwing),
+					node:               throwing,
+					ignoreFirstFuncDoc: true,
+				}
+				throws := r.Throws()
+				if len(throws) == 0 {
+					return
+				}
+
+				// Remove any returned throw that is documented to be thrown.
+				doxed := r.phpDocThrows()
+				if len(doxed) > 0 {
+					for i := len(throws) - 1; i >= 0; i-- {
+						checker := r.catches(throws[i])
+
+						for _, d := range doxed {
+							if checker(d) {
+								throws = slices.Delete(throws, i, i+1)
+								if len(throws) == 0 {
+									return
+								}
+							}
+						}
+					}
+				}
+
+				violations <- &Violation{
+					Node:   throwing,
+					Throws: throws,
+				}
+			}(throwing)
+		}
+
+		wg.Wait()
+	}()
+
+	go func() {
+		t := newThrowingSymbolTraverser(nodes)
+		root.Root().Walk(t)
+	}()
+
+	for violation := range violations {
+		results = append(results, violation)
+	}
+
+	return results
+}
+
+func (t *Throws) Throws() []*fqn.FQN {
+	return functional.Map(t.throws(true).Slice(), fqn.New)
+}
+
+func (t *Throws) throws(firstCall bool) *set.Set[string] {
 	thrownSet := set.New[string]()
 	catchedSet := set.New[string]()
 
-	switch t.node.(type) {
-	case *ir.FunctionStmt, *ir.ClassMethodStmt:
-		for _, throw := range t.phpDocThrows() {
-			thrownSet.Add(throw.String())
+	if !firstCall || !t.ignoreFirstFuncDoc {
+		switch t.node.(type) {
+		case *ir.FunctionStmt, *ir.ClassMethodStmt:
+			for _, throw := range t.phpDocThrows() {
+				thrownSet.Add(throw.String())
+			}
 		}
 	}
 
@@ -75,7 +185,7 @@ func (t *Throws) throws() *set.Set[string] {
 				doxed:  symbol.NewDoxed(result),
 				node:   result,
 			}
-			thrownSet = thrownSet.Union(blockThrows.throws())
+			thrownSet = thrownSet.Union(blockThrows.throws(false))
 
 		case *ir.CatchStmt:
 			fqnt := fqn.NewTraverser()
@@ -115,7 +225,7 @@ func (t *Throws) throws() *set.Set[string] {
 				doxed:  symbol.NewDoxed(resolvement.Node),
 				node:   resolvement.Node,
 			}
-			thrownSet = thrownSet.Union(blockThrows.throws())
+			thrownSet = thrownSet.Union(blockThrows.throws(false))
 		}
 	}
 
@@ -272,3 +382,40 @@ func (t *throwsTraverser) EnterNode(node ir.Node) bool {
 }
 
 func (t *throwsTraverser) LeaveNode(node ir.Node) {}
+
+func newThrowingSymbolTraverser(nodes chan<- ir.Node) *throwingSymbolsTraverser {
+	return &throwingSymbolsTraverser{nodes: nodes}
+}
+
+type throwingSymbolsTraverser struct {
+	nodes            chan<- ir.Node
+	currentNamespace string
+}
+
+func (t *throwingSymbolsTraverser) EnterNode(node ir.Node) bool {
+	switch typedNode := node.(type) {
+	case *ir.NamespaceStmt:
+		if typedNode.NamespaceName != nil {
+			t.currentNamespace = "\\" + typedNode.NamespaceName.Value + "\\"
+		}
+
+		return true
+
+	case *ir.FunctionStmt, *ir.ClassMethodStmt:
+		t.nodes <- node
+
+		return false
+
+	case *ir.Root, *ir.ClassStmt, *ir.TraitStmt:
+		return true
+
+	default:
+		return false
+	}
+}
+
+func (t *throwingSymbolsTraverser) LeaveNode(node ir.Node) {
+	if _, ok := node.(*ir.Root); ok {
+		close(t.nodes)
+	}
+}
