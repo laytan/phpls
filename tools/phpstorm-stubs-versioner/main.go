@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,16 +29,12 @@ const (
 )
 
 var (
-	in, out      string
-	genVersion   *phpversion.PHPVersion
-	transformers []Transformer
-
-	// Parsing is done with the latest version of the parser, because this parses the stubs.
-	parserConfig = conf.Config{
-		Version: &version.Version{Major: latestParserMajor, Minor: latestParserMinor},
-		ErrorHandlerFunc: func(e *errors.Error) {
-			// log.Println(e)
-		},
+	in, out       string
+	genVersion    *phpversion.PHPVersion
+	transformers  []Transformer
+	parserVersion = &version.Version{
+		Major: latestParserMajor,
+		Minor: latestParserMinor,
 	}
 )
 
@@ -188,7 +185,17 @@ func transform(path string) error {
 		return fmt.Errorf("os.ReadFile(%s): %w", path, err)
 	}
 
-	ast, err := parser.Parse(content, parserConfig)
+	ast, err := parser.Parse(content, conf.Config{
+		Version: parserVersion,
+		ErrorHandlerFunc: func(e *errors.Error) {
+			log.Printf(
+				"Error parsing into AST, path: %s, message: %s, line: %d",
+				path,
+				e.Msg,
+				e.Pos.StartLine,
+			)
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("parser.Parse(...): %w", err)
 	}

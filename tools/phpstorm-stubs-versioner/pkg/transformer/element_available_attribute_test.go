@@ -29,16 +29,21 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 #[PhpStormStubsElementAvailable(from: '8.0')]
                 function test(string $string, &$result): bool {}
             `,
-			expected: "<?php",
+			expected: `
+                <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
+            `,
 		},
 		{
 			name:    "method that should be removed",
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 class Test {
                     #[PhpStormStubsElementAvailable(to: '6.0')]
                     public function test() {}
@@ -46,6 +51,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 class Test {
                 }
             `,
@@ -55,6 +61,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function test(
                     $test,
                     #[PhpStormStubsElementAvailable(from: '8.0')] $query
@@ -62,6 +69,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function test(
                     $test
                 ) {}
@@ -72,6 +80,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function test(
                     $test,
                     #[PhpStormStubsElementAvailable(from: '8.0')] $test2,
@@ -81,6 +90,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function test(
                     $test,
                     $test4
@@ -92,6 +102,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * @param string $query A string containing the queries to be executed. Multiple queries must be separated by a semicolon.
                  */
@@ -102,6 +113,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * @param string $query A string containing the queries to be executed. Multiple queries must be separated by a semicolon.
                  */
@@ -114,6 +126,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * @param string $query A string containing the queries to be executed. Multiple queries must be separated by a semicolon.
                  */
@@ -124,7 +137,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
-                
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function mysqli_multi_query(
                 ) {}
             `,
@@ -134,6 +147,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 class Test {
                     /**
                      * @param int $test
@@ -143,8 +157,8 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 class Test {
-                    
                     public function test() {}
                 }
             `,
@@ -154,6 +168,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Hello World!
                  *
@@ -167,6 +182,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Hello World!
                  *
@@ -182,6 +198,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Hello World!
                  *
@@ -195,6 +212,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Hello World!
                  *
@@ -210,6 +228,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function test(
                     #[PhpStormStubsElementAvailable(from: '5.3', to: '7.0')] $query,
                     #[PhpStormStubsElementAvailable(from: '7.1', to: '7.4')] $query
@@ -217,6 +236,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function test( $query
                 ) {}
             `,
@@ -226,6 +246,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * @param mixed ...$args
                  */
@@ -235,7 +256,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
-                
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 function test(
                 ) {}
             `,
@@ -245,6 +266,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Find lowest value
                  * @link https://php.net/manual/en/function.min.php
@@ -262,6 +284,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Find lowest value
                  *
@@ -281,6 +304,7 @@ func TestElementAvailableAttribute(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Sort multiple or multi-dimensional arrays
                  * @link https://php.net/manual/en/function.array-multisort.php
@@ -303,6 +327,7 @@ func TestElementAvailableAttribute(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\PhpStormStubsElementAvailable;
                 /**
                  * Sort multiple or multi-dimensional arrays
                  *
@@ -353,7 +378,12 @@ func TestElementAvailableAttribute(t *testing.T) {
 			cExpected := strutil.RemoveWhitespace(scenario.expected)
 			cOut := strutil.RemoveWhitespace(out.String())
 			if cExpected != cOut {
-                t.Errorf("Result not as expected:\nWant: %v\nGot : %v\nDiff: %v", cExpected, cOut, diff.CharacterDiff(cExpected, cOut))
+				t.Errorf(
+					"Result not as expected:\nWant: %v\nGot : %v\nDiff: %v",
+					cExpected,
+					cOut,
+					diff.CharacterDiff(cExpected, cOut),
+				)
 			}
 		})
 	}

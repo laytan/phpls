@@ -14,19 +14,13 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// The original name is `PhpStormStubsElementAvailable` but this is sometimes aliassed.
-// TODO: We should ideally resolve the use statements as well.
-var names = [][]byte{
-	[]byte("PhpStormStubsElementAvailable"),
-	[]byte("Available"),
-	[]byte("ElementAvailable"),
-}
-
 type ElementAvailableAttribute struct {
 	visitor.Null
 
 	version *phpversion.PHPVersion
 	logging bool
+
+	targetter *targetter
 }
 
 func NewElementAvailableAttribute(
@@ -36,6 +30,12 @@ func NewElementAvailableAttribute(
 	return &ElementAvailableAttribute{
 		version: version,
 		logging: logging,
+		targetter: newTargetter([][]byte{
+			[]byte("JetBrains"),
+			[]byte("PhpStorm"),
+			[]byte("Internal"),
+			[]byte("PhpStormStubsElementAvailable"),
+		}),
 	}
 }
 
@@ -44,7 +44,20 @@ func (e *ElementAvailableAttribute) Root(n *ast.Root) {
 }
 
 func (e *ElementAvailableAttribute) StmtNamespace(n *ast.StmtNamespace) {
+	exit := e.targetter.EnterNamespace(n)
+	defer exit()
+
 	n.Stmts = e.filterStmts(n.Stmts)
+}
+
+func (e *ElementAvailableAttribute) StmtUse(n *ast.StmtUseList) {
+	for _, s := range n.Uses {
+		s.Accept(e)
+	}
+}
+
+func (e *ElementAvailableAttribute) StmtUseDeclaration(n *ast.StmtUse) {
+	e.targetter.EnterUse(n)
 }
 
 func (e *ElementAvailableAttribute) StmtClass(n *ast.StmtClass) {
@@ -64,7 +77,7 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 	for _, stmt := range nodes {
 		ok := true
 		switch typedStmt := stmt.(type) {
-		case *ast.StmtNamespace, *ast.StmtClass, *ast.StmtTrait, *ast.StmtInterface:
+		case *ast.StmtUseList, *ast.StmtNamespace, *ast.StmtClass, *ast.StmtTrait, *ast.StmtInterface:
 			stmt.Accept(e)
 
 		case *ast.StmtFunction:
@@ -195,23 +208,8 @@ func (e *ElementAvailableAttribute) shouldRemove(
 				continue
 			}
 
-			attrName := attr.(*ast.Attribute).Name.(*ast.Name)
-			if len(attrName.Parts) != 1 {
+			if !e.targetter.MatchName(attr.(*ast.Attribute).Name) {
 				continue
-			}
-
-			if attrNamePart, ok := attrName.Parts[0].(*ast.NamePart); ok {
-				var match bool
-				for _, name := range names {
-					if bytes.Equal(attrNamePart.Value, name) {
-						match = true
-						break
-					}
-				}
-
-				if !match {
-					continue
-				}
 			}
 
 			for i, arg := range attr.(*ast.Attribute).Args {

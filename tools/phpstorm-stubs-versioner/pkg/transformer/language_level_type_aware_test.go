@@ -29,11 +29,13 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "8.1",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 #[LanguageLevelTypeAware(["8.0" => "InflateContext|false"], default: "resource|false")]
                 function inflate_init() {}
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return InflateContext|false
                  */
@@ -45,11 +47,13 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "7.4",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 #[LanguageLevelTypeAware(["8.0" => "InflateContext|false"], default: "resource|false")]
                 function inflate_init() {}
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return resource|false
                  */
@@ -61,12 +65,14 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "7.4",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 #[LanguageLevelTypeAware(["8.0" => "InflateContext|false"], default: "resource|false")]
                 #[Pure]
                 function inflate_init() {}
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return resource|false
                  */
@@ -79,12 +85,14 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "7.4",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 #[Pure]
                 #[LanguageLevelTypeAware(["8.0" => "InflateContext|false"], default: "resource|false")]
                 function inflate_init() {}
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return resource|false
                  */
@@ -97,6 +105,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return int|false
                  */
@@ -106,6 +115,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return bool
                  */
@@ -118,6 +128,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 class Test {
                     /**
                      * @var string Fully qualified class name where this method was defined
@@ -129,6 +140,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 class Test {
                     /**
                      * @var mixed Fully qualified class name where this method was defined
@@ -143,6 +155,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "8.1",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 class Test {
                     /**
                      * @var string Fully qualified class name where this method was defined
@@ -153,6 +166,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 class Test {
                     /**
                      * @var bool Fully qualified class name where this method was defined
@@ -166,6 +180,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "7.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 interface Test {
                     /**
                      * @return int|false
@@ -177,6 +192,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 interface Test {
                     /**
                      * @return bool
@@ -192,6 +208,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			input: `
                 <?php
                 namespace Test {
+                    use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                     class Test {
                         /**
                          * @return int|false
@@ -204,6 +221,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			expected: `
                 <?php
                 namespace Test {
+                    use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                     class Test {
                         /**
                          * @return int|false
@@ -218,12 +236,14 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "8.0.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 function session_cache_expire(
                     #[LanguageLevelTypeAware(['8.0' => 'null|int'], default: 'int')] $value
                 ) {}
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @param null|int $value
                  */
@@ -235,6 +255,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "8.0.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 #[LanguageLevelTypeAware([
                     '5.6' => 'bool',
                     '7.4' => 'null|true',
@@ -243,6 +264,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return null|true
                  */
@@ -254,6 +276,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 			version: "8.0",
 			input: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 #[LanguageLevelTypeAware([
                     '5.6' => 'string|bool',
                     '7.4' => 'string',
@@ -263,10 +286,81 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             `,
 			expected: `
                 <?php
+                use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
                 /**
                  * @return string
                  */
                 function test() {}
+            `,
+		},
+		{
+			name:    "doesn't do anything without use",
+			version: "8.0",
+			input: `
+            <?php
+            #[LanguageLevelTypeAware(['5.6' => 'string'], default: 'bool')]
+            function test(): bool {}
+            `,
+			expected: `
+            <?php
+            #[LanguageLevelTypeAware(['5.6' => 'string'], default: 'bool')]
+            function test(): bool {}
+            `,
+		},
+		{
+			name:    "aliasses",
+			version: "8.0",
+			input: `
+            <?php
+            use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware as VersionAware;
+            #[VersionAware(['5.6' => 'string'], default: 'bool')]
+            function test(): bool {}
+            `,
+			expected: `
+            <?php
+            use JetBrains\PhpStorm\Internal\LanguageLevelTypeAware as VersionAware;
+            /**
+             * @return string
+             */
+            function test() {}
+            `,
+		},
+		{
+			name:    "fully qualified",
+			version: "8.0",
+			input: `
+            <?php
+            #[\JetBrains\PhpStorm\Internal\LanguageLevelTypeAware(['5.6' => 'string'], default: 'bool')]
+            function test(): bool {}
+            `,
+			expected: `
+            <?php
+            /**
+             * @return string
+             */
+            function test() {}
+            `,
+		},
+		{
+			name:    "namespace block resets usage",
+			version: "8.0",
+			input: `
+            <?php
+            use \JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
+
+            namespace Test {
+                #[LanguageLevelTypeAware(['5.6' => 'string'], default: 'bool')]
+                function test(): bool {}
+            }
+            `,
+			expected: `
+            <?php
+            use \JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
+
+            namespace Test {
+                #[LanguageLevelTypeAware(['5.6' => 'string'], default: 'bool')]
+                function test(): bool {}
+            }
             `,
 		},
 	}

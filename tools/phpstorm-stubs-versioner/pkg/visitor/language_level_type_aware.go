@@ -1,7 +1,6 @@
 package visitor
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 
@@ -13,17 +12,13 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var LanguageLevelTypeAwareAliasses = [][]byte{
-	[]byte("LanguageLevelTypeAware"),
-	[]byte("PhpVersionAware"),
-	[]byte("TypeAware"),
-}
-
 type LanguageLevelTypeAware struct {
 	visitor.Null
 
 	version *phpversion.PHPVersion
 	logging bool
+
+	targetter *targetter
 }
 
 func NewLanguageLevelTypeAware(
@@ -33,6 +28,12 @@ func NewLanguageLevelTypeAware(
 	return &LanguageLevelTypeAware{
 		version: version,
 		logging: logging,
+		targetter: newTargetter([][]byte{
+			[]byte("JetBrains"),
+			[]byte("PhpStorm"),
+			[]byte("Internal"),
+			[]byte("LanguageLevelTypeAware"),
+		}),
 	}
 }
 
@@ -43,9 +44,22 @@ func (e *LanguageLevelTypeAware) Root(n *ast.Root) {
 }
 
 func (e *LanguageLevelTypeAware) StmtNamespace(n *ast.StmtNamespace) {
+	exit := e.targetter.EnterNamespace(n)
+	defer exit()
+
 	for _, s := range n.Stmts {
 		s.Accept(e)
 	}
+}
+
+func (e *LanguageLevelTypeAware) StmtUse(n *ast.StmtUseList) {
+	for _, s := range n.Uses {
+		s.Accept(e)
+	}
+}
+
+func (e *LanguageLevelTypeAware) StmtUseDeclaration(n *ast.StmtUse) {
+	e.targetter.EnterUse(n)
 }
 
 func (e *LanguageLevelTypeAware) StmtClass(n *ast.StmtClass) {
@@ -195,7 +209,7 @@ func (e *LanguageLevelTypeAware) StmtClassMethod(n *ast.StmtClassMethod) {
 func (e *LanguageLevelTypeAware) checkAttrGroup(n *ast.AttributeGroup) phpdoxer.Type {
 	attr := n.Attrs[0].(*ast.Attribute)
 
-	if !isTargetAttr(attr) {
+	if !e.targetter.MatchName(attr.Name) {
 		return nil
 	}
 
@@ -318,70 +332,6 @@ func findOrAppendParam(currDox *phpdoxer.Doc, name string) *phpdoxer.NodeParam {
 	return def
 }
 
-// func (e *LanguageLevelTypeAware) filterStmts(nodes []ast.Vertex) []ast.Vertex {
-// 	for _, stmt := range nodes {
-// 		switch typedStmt := stmt.(type) {
-// 		// case *ast.StmtNamespace, *ast.StmtClass, *ast.StmtTrait, *ast.StmtInterface:
-// 		// 	stmt.Accept(e)
-//
-// 		case *ast.StmtFunction:
-// 			rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
-// 			ok = !rm
-//
-// 			if ok {
-// 				typedStmt.AttrGroups = newAttrGroups
-// 				params, removedParams := e.filterParams(typedStmt.Params)
-// 				removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
-// 				typedStmt.Params = params
-//
-// 				if removedParams {
-// 					e.removeParamsDocFromFunction(typedStmt, removedParamNames)
-//
-// 					// Setting this to be empty seems to make the printer
-// 					// add/recalculate where separators go.
-// 					typedStmt.SeparatorTkns = []*token.Token{}
-// 				}
-// 			}
-//
-// 		// case *ast.StmtClassMethod:
-// 		// 	rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
-// 		// 	ok = !rm
-// 		//
-// 		// 	if ok {
-// 		// 		typedStmt.AttrGroups = newAttrGroups
-// 		// 		params, removedParams := e.filterParams(typedStmt.Params)
-// 		// 		removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
-// 		// 		typedStmt.Params = params
-// 		//
-// 		// 		if removedParams {
-// 		// 			e.removeParamsDocFromMethod(typedStmt, removedParamNames)
-// 		//
-// 		// 			// Setting this to be empty seems to make the printer
-// 		// 			// add/recalculate where separators go.
-// 		// 			typedStmt.SeparatorTkns = []*token.Token{}
-// 		// 		}
-// 		// 	}
-// 		//
-// 		// case *ast.StmtPropertyList:
-// 		// 	rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
-// 		// 	ok = !rm
-// 		//
-// 		// 	if ok {
-// 		// 		typedStmt.AttrGroups = newAttrGroups
-// 		// 	}
-// 		}
-//
-// 		if ok {
-// 			newStmts = append(newStmts, stmt)
-// 			continue
-// 		}
-//
-// 		e.logRemoval(stmt)
-// 	}
-//
-// 	return newStmts
-// }
-
 func addDocToFunc(n *ast.StmtFunction, currDox *phpdoxer.Doc) {
 	token := &token.Token{
 		ID:    token.T_DOC_COMMENT,
@@ -439,28 +389,6 @@ func addDocToProp(n *ast.StmtPropertyList, currDox *phpdoxer.Doc) {
 			token,
 		)
 	}
-}
-
-func attrName(n *ast.Attribute) []byte {
-	switch tn := n.Name.(type) {
-	case *ast.Name:
-		return tn.Parts[0].(*ast.NamePart).Value
-	case *ast.NameFullyQualified:
-		return tn.Parts[len(tn.Parts)-1].(*ast.NamePart).Value
-	default:
-		log.Panicf("can't get name of attribute %T", n.Name)
-		return []byte{}
-	}
-}
-
-func isTargetAttr(n *ast.Attribute) bool {
-	for _, a := range LanguageLevelTypeAwareAliasses {
-		if bytes.Equal(a, attrName(n)) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // TODO: don't require arg.
