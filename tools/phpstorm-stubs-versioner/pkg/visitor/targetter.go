@@ -2,7 +2,7 @@ package visitor
 
 import (
 	"bytes"
-	"log"
+	"fmt"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/functional"
@@ -103,7 +103,7 @@ func (t *targetter) MatchName(n ast.Vertex) bool {
 			return part.(*ast.NamePart).Value
 		})
 	default:
-		log.Panicf("can't get name of attribute %T", n)
+		panic(fmt.Sprintf("can't get name of attribute %T", n))
 	}
 
 	return t.Match(name)

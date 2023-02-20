@@ -334,6 +334,6 @@ func TestElementAvailableAttribute(t *testing.T) {
 	}
 
 	runScenarios(t, scenarios, func(v *phpversion.PHPVersion) transformer.Transformer {
-		return transformer.NewElementAvailableAttribute(v)
+		return transformer.NewElementAvailableAttribute(v, nil)
 	})
 }

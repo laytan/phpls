@@ -11,9 +11,9 @@ type LanguageLevelTypeAware struct {
 	visitor *visitor.LanguageLevelTypeAware
 }
 
-func NewLanguageLevelTypeAware(version *phpversion.PHPVersion) *LanguageLevelTypeAware {
+func NewLanguageLevelTypeAware(version *phpversion.PHPVersion, logger Logger) *LanguageLevelTypeAware {
 	return &LanguageLevelTypeAware{
-		visitor: visitor.NewLanguageLevelTypeAware(version, true),
+		visitor: visitor.NewLanguageLevelTypeAware(version, logger),
 	}
 }
 

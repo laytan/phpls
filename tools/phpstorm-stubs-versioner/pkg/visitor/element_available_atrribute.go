@@ -2,7 +2,6 @@ package visitor
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"strings"
 
@@ -16,20 +15,18 @@ import (
 
 type ElementAvailableAttribute struct {
 	visitor.Null
-
-	version *phpversion.PHPVersion
-	logging bool
-
+	version   *phpversion.PHPVersion
 	targetter *targetter
+	logger    Logger
 }
 
 func NewElementAvailableAttribute(
 	version *phpversion.PHPVersion,
-	logging bool,
+	logger Logger,
 ) *ElementAvailableAttribute {
 	return &ElementAvailableAttribute{
 		version: version,
-		logging: logging,
+		logger:  logger,
 		targetter: newTargetter([][]byte{
 			[]byte("JetBrains"),
 			[]byte("PhpStorm"),
@@ -132,7 +129,7 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 			continue
 		}
 
-		e.logRemoval(stmt)
+		e.logRemoval()
 	}
 
 	return newStmts
@@ -153,7 +150,7 @@ func (e *ElementAvailableAttribute) filterParams(
 				continue
 			}
 
-			e.logRemoval(param)
+			e.logRemoval()
 			removedParams = true
 		}
 	}
@@ -247,7 +244,7 @@ func (e *ElementAvailableAttribute) shouldRemove(
 				}
 			}
 
-			e.logRemoval(attrGroup)
+			e.logRemoval()
 			attrGroups = slices.Delete(attrGroups, attrI, attrI+1)
 			return false, attrGroups
 		}
@@ -307,7 +304,7 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 		for _, node := range doc.Nodes {
 			if paramNode, ok := node.(*phpdoxer.NodeParam); ok {
 				if slices.Contains(params, paramNode.Name) {
-					e.logRemoval(nil)
+					e.logRemoval()
 					continue
 				}
 			}
@@ -322,9 +319,8 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 	return freefloatings
 }
 
-// TODO: don't require arg.
-func (e *ElementAvailableAttribute) logRemoval(n ast.Vertex) {
-	if e.logging {
-		_, _ = fmt.Printf("x") //nolint:forbidigo // For visualization.
+func (e *ElementAvailableAttribute) logRemoval() {
+	if e.logger != nil {
+		e.logger.Printf("x")
 	}
 }

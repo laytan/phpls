@@ -353,6 +353,6 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 	}
 
 	runScenarios(t, scenarios, func(v *phpversion.PHPVersion) transformer.Transformer {
-		return transformer.NewLanguageLevelTypeAware(v)
+		return transformer.NewLanguageLevelTypeAware(v, nil)
 	})
 }

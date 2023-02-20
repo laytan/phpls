@@ -2,7 +2,6 @@ package visitor
 
 import (
 	"bytes"
-	"fmt"
 
 	"appliedgo.net/what"
 	"github.com/VKCOM/php-parser/pkg/ast"
@@ -15,15 +14,14 @@ import (
 // AtSinceAtRemoved removes nodes that are @since > or @removed <= the given version.
 type AtSinceAtRemoved struct {
 	visitor.Null
-
 	version *phpversion.PHPVersion
-	logging bool
+	logger  Logger
 }
 
-func NewAtSinceAtRemoved(version *phpversion.PHPVersion, logging bool) *AtSinceAtRemoved {
+func NewAtSinceAtRemoved(version *phpversion.PHPVersion, logger Logger) *AtSinceAtRemoved {
 	return &AtSinceAtRemoved{
 		version: version,
-		logging: logging,
+		logger:  logger,
 	}
 }
 
@@ -91,7 +89,7 @@ func (r *AtSinceAtRemoved) filterStmts(nodes []ast.Vertex) []ast.Vertex {
 			continue
 		}
 
-		r.logRemoval(stmt)
+		r.logRemoval()
 	}
 
 	return newStmts
@@ -186,7 +184,7 @@ func (r *AtSinceAtRemoved) shouldRemove(freefloatings []*token.Token) bool {
 		if t.ID == token.T_DOC_COMMENT || t.ID == token.T_COMMENT {
 			nodes, err := phpdoxer.ParseDoc(string(t.Value))
 			if err != nil {
-				what.Happens(fmt.Errorf("phpdoxer.ParseDoc(%s): %w", string(t.Value), err).Error())
+				what.Happens("parse doc %s: %w", string(t.Value), err.Error())
 				continue
 			}
 
@@ -234,8 +232,8 @@ func (r *AtSinceAtRemoved) identifiersFreefloatings(n []ast.Vertex) []*token.Tok
 	return freefloatings
 }
 
-func (r *AtSinceAtRemoved) logRemoval(n ast.Vertex) {
-	if r.logging {
-		_, _ = fmt.Printf("x") //nolint:forbidigo // For visualization.
+func (r *AtSinceAtRemoved) logRemoval() {
+	if r.logger != nil {
+		r.logger.Printf("x")
 	}
 }

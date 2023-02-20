@@ -12,9 +12,9 @@ type ElementAvailableAttribute struct {
 	visitor *visitor.ElementAvailableAttribute
 }
 
-func NewElementAvailableAttribute(version *phpversion.PHPVersion) *ElementAvailableAttribute {
+func NewElementAvailableAttribute(version *phpversion.PHPVersion, logger Logger) *ElementAvailableAttribute {
 	return &ElementAvailableAttribute{
-		visitor: visitor.NewElementAvailableAttribute(version, true),
+		visitor: visitor.NewElementAvailableAttribute(version, logger),
 	}
 }
 

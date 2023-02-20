@@ -22,7 +22,13 @@ type scenario struct {
 	expected string
 }
 
-func runScenarios(t *testing.T, scenarios []scenario, createTransformer func(*phpversion.PHPVersion) transformer.Transformer) {
+func runScenarios(
+	t *testing.T,
+	scenarios []scenario,
+	createTransformer func(*phpversion.PHPVersion) transformer.Transformer,
+) {
+	t.Helper()
+
 	parserConfig := conf.Config{
 		Version: &version.Version{Major: 8, Minor: 1},
 		ErrorHandlerFunc: func(e *errors.Error) {
@@ -45,7 +51,7 @@ func runScenarios(t *testing.T, scenarios []scenario, createTransformer func(*ph
 				t.Fatal(err)
 			}
 
-            trans := createTransformer(phpv)
+			trans := createTransformer(phpv)
 			trans.Transform(ast)
 
 			out := bytes.NewBufferString("")

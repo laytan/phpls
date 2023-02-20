@@ -2,7 +2,6 @@ package visitor
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/token"
@@ -14,20 +13,18 @@ import (
 
 type LanguageLevelTypeAware struct {
 	visitor.Null
-
-	version *phpversion.PHPVersion
-	logging bool
-
+	version   *phpversion.PHPVersion
 	targetter *targetter
+	logger    Logger
 }
 
 func NewLanguageLevelTypeAware(
 	version *phpversion.PHPVersion,
-	logging bool,
+	logger Logger,
 ) *LanguageLevelTypeAware {
 	return &LanguageLevelTypeAware{
 		version: version,
-		logging: logging,
+		logger:  logger,
 		targetter: newTargetter([][]byte{
 			[]byte("JetBrains"),
 			[]byte("PhpStorm"),
@@ -96,7 +93,7 @@ func (e *LanguageLevelTypeAware) StmtFunction(n *ast.StmtFunction) {
 		doc.Type = typ
 
 		n.AttrGroups = slices.Delete(n.AttrGroups, i, i+1)
-		e.logRemoval(n)
+		e.logRemoval()
 
 		addDocToFunc(n, currDox)
 
@@ -145,7 +142,7 @@ func (e *LanguageLevelTypeAware) StmtPropertyList(n *ast.StmtPropertyList) {
 		doc.Type = typ
 
 		n.AttrGroups = slices.Delete(n.AttrGroups, i, i+1)
-		e.logRemoval(n)
+		e.logRemoval()
 
 		addDocToProp(n, currDox)
 
@@ -169,7 +166,7 @@ func (e *LanguageLevelTypeAware) StmtClassMethod(n *ast.StmtClassMethod) {
 		doc.Type = typ
 
 		n.AttrGroups = slices.Delete(n.AttrGroups, i, i+1)
-		e.logRemoval(n)
+		e.logRemoval()
 
 		addDocToMeth(n, currDox)
 
@@ -233,7 +230,12 @@ func (e *LanguageLevelTypeAware) checkAttrGroup(n *ast.AttributeGroup) phpdoxer.
 		version = version[1 : len(version)-1]
 		versionO, ok := phpversion.FromString(version)
 		if !ok {
-			log.Panicf("version %s is not able to be converted into a PHPVersion type", version)
+			panic(
+				fmt.Sprintf(
+					"version %s is not able to be converted into a PHPVersion type",
+					version,
+				),
+			)
 		}
 
 		if e.version.Equals(versionO) || e.version.IsHigherThan(versionO) {
@@ -276,7 +278,7 @@ func (e *LanguageLevelTypeAware) checkParams(ns []ast.Vertex) (changed []*paramC
 			})
 
 			typedParam.AttrGroups = slices.Delete(typedParam.AttrGroups, j, j+1)
-			e.logRemoval(param)
+			e.logRemoval()
 
 			typedParam.Type = nil
 		}
@@ -391,9 +393,8 @@ func addDocToProp(n *ast.StmtPropertyList, currDox *phpdoxer.Doc) {
 	}
 }
 
-// TODO: don't require arg.
-func (e *LanguageLevelTypeAware) logRemoval(n ast.Vertex) {
-	if e.logging {
-		_, _ = fmt.Printf("x") //nolint:forbidigo // For visualization.
+func (e *LanguageLevelTypeAware) logRemoval() {
+	if e.logger != nil {
+		e.logger.Printf("x")
 	}
 }
