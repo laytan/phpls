@@ -4,15 +4,57 @@ import (
 	"bytes"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/laytan/elephp/internal/config"
+	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/project"
+	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/datasize"
+	"github.com/laytan/elephp/pkg/pathutils"
+	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/matryer/is"
+	"github.com/samber/do"
 )
+
+func BenchmarkIndex(b *testing.B) {
+	// prof := profile.Start(
+	// 	profile.MemProfile,
+	// 	profile.ProfilePath(pathutils.Root()),
+	// 	profile.NoShutdownHook,
+	// )
+	// defer prof.Stop()
+
+	is := is.New(b)
+
+	do.OverrideValue(nil, index.New(phpversion.EightOne()))
+	do.OverrideValue(nil, config.Default())
+
+	// NOTE: manually change this to some bigger projects for benching.
+	do.OverrideValue(nil, wrkspc.New(phpversion.EightOne(), filepath.Join(
+		pathutils.Root(),
+		"third_party",
+		"phpstorm-stubs",
+	)))
+
+	p := project.New()
+
+	for i := 0; i < b.N; i++ {
+		err := p.ParseWithoutProgress()
+		is.NoErr(err)
+
+		stats := runtime.MemStats{}
+		runtime.ReadMemStats(&stats)
+		log.Printf("Memory alloc: %s", datasize.Size(stats.Alloc*datasize.BitsInByte).String())
+	}
+}
 
 var root = os.Getenv("ROOT")
 
