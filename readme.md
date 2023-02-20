@@ -44,20 +44,21 @@ Or if you're on windows, add it to your path.
 Running a language server is done using your IDE/editor most of the time,
 but here are the options available:
 
-```
+```bash
 elephp -h
 
-Application Options:
-      --stdio            Communicate over stdio
-      --ws               Communicate over websockets
-      --tcp              Communicate over TCP
-  -v, --statsviz         Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz
-  -p, --clientProcessId= Process ID that when terminated, terminates the language server
-      --url=             The URL to listen on for tcp or websocket connections (default: 127.0.0.1:2001)
-  -e, --fileExtensions=  Define file extensions to treat as PHP source files (default: php)
-
-Help Options:
-  -h, --help             Show this help message
+# Application Options:
+#       --stdio            Communicate over stdio
+#       --ws               Communicate over websockets
+#       --tcp              Communicate over TCP
+#   -v, --statsviz         Visualize stats(CPU, memory etc.) on localhost:6060/debug/statsviz
+#   -p, --clientProcessId= Process ID that when terminated, terminates the language server
+#       --url=             The URL to listen on for tcp or websocket connections (default: 127.0.0.1:2001)
+#   -e, --fileExtensions=  Define file extensions to treat as PHP source files (default: php)
+#   -i, --ignoredDirNames= Define directory names that should be ignored completely (default: .git, node_modules)
+# 
+# Help Options:
+#   -h, --help             Show this help message
 ```
 
 ## Development
