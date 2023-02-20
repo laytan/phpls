@@ -1,6 +1,7 @@
 package phpversion
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"reflect"
@@ -15,7 +16,10 @@ const (
 	versionBitSize           = 8
 )
 
-var versionRgx = regexp.MustCompile(`^(\d+)\.?(\d*)\.?(\d*)$`)
+var (
+	versionRgx    = regexp.MustCompile(`^(\d+)\.?(\d*)\.?(\d*)$`)
+	cliVersionRgx = regexp.MustCompile(`PHP (\d+\.\d+\.\d+)`)
+)
 
 // PHPVersion struct is a representation of a PHP version with methods to retrieve it.
 type PHPVersion struct {
@@ -59,6 +63,10 @@ func (v *PHPVersion) IsHigherThan(other *PHPVersion) bool {
 
 func (v *PHPVersion) Equals(other *PHPVersion) bool {
 	return v.Major == other.Major && v.Minor == other.Minor && v.Patch == other.Patch
+}
+
+func (v *PHPVersion) EqualsMajorMinor(other *PHPVersion) bool {
+	return v.Major == other.Major && v.Minor == other.Minor
 }
 
 func Get() (*PHPVersion, error) {
@@ -131,6 +139,27 @@ func FromString(version string) (*PHPVersion, bool) {
 		Minor: minor,
 		Patch: patch,
 	}, true
+}
+
+func CurrentVersion() (*PHPVersion, error) {
+	cmd := exec.Command("php", "-v")
+	out, err := cmd.Output()
+	var exitErr *exec.ExitError
+	if err != nil && !errors.As(err, &exitErr) {
+		return nil, fmt.Errorf("running php -v: %w", err)
+	}
+
+	matches := cliVersionRgx.FindSubmatch(out)
+	if len(matches) != 2 {
+		return nil, fmt.Errorf("could not parse php version from output \"%s\"", string(out))
+	}
+
+	version, ok := FromString(string(matches[1]))
+	if !ok {
+		return nil, fmt.Errorf("could not parse %s into a version", string(matches[1]))
+	}
+
+	return version, nil
 }
 
 func versionConversionErr(err error) error {
