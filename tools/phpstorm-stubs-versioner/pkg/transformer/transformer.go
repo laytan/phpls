@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
@@ -19,17 +20,23 @@ import (
 )
 
 var (
-	MaxConcurrency = 4
+	// Fastest based on benchmarking.
+	MaxConcurrency = 14
 
-	NonStubs = []string{
-		"/.github",
-		"/.idea",
-		"/FFI/.phpstorm.meta.php",
-		"/meta",
-		"/Reflection/.phpstorm.meta.php",
-		"/tests",
-		"/.php-cs-fixer.php",
-		"/PhpStormStubsMap.php",
+	NonStubs = map[string]struct{}{
+		filepath.Join(string(os.PathSeparator), ".github"):                          {},
+		filepath.Join(string(os.PathSeparator), ".idea"):                            {},
+		filepath.Join(string(os.PathSeparator), "FFI", ".phpstorm.meta.php"):        {},
+		filepath.Join(string(os.PathSeparator), "meta"):                             {},
+		filepath.Join(string(os.PathSeparator), "Reflection", ".phpstorm.meta.php"): {},
+		filepath.Join(string(os.PathSeparator), "tests"):                            {},
+		filepath.Join(string(os.PathSeparator), ".php-cs-fixer.php"):                {},
+		filepath.Join(string(os.PathSeparator), "PhpStormStubsMap.php"):             {},
+		filepath.Join(string(os.PathSeparator), ".phpstorm.meta.php"):               {},
+
+		// Special case, this file contains an enum which the parser should support,
+		// but it doesn't, TODO: see what's up.
+		filepath.Join(string(os.PathSeparator), "relay", "KeyType.php"): {},
 	}
 
 	// The version to parse the stubs with.
@@ -48,41 +55,67 @@ type Logger interface {
 }
 
 // logger is allowed to be nil.
-func All(version *phpversion.PHPVersion, logger Logger) []Transformer {
-	return []Transformer{
-		NewAtSinceAtRemoved(version, logger),
-		NewElementAvailableAttribute(version, logger),
-		NewLanguageLevelTypeAware(version, logger),
+func All(version *phpversion.PHPVersion, logger Logger) func() []Transformer {
+	return func() []Transformer {
+		return []Transformer{
+			NewAtSinceAtRemoved(version, logger),
+			NewElementAvailableAttribute(version, logger),
+			NewLanguageLevelTypeAware(version, logger),
+		}
 	}
 }
 
-func Transform(
+type Walker struct {
+	Transformers *sync.Pool
+	Logger       Logger
+	StubsDir     string
+	OutDir       string
+	Version      *phpversion.PHPVersion
+}
+
+func NewWalker(
 	logger Logger,
-	version *phpversion.PHPVersion,
 	stubsDir string,
 	outDir string,
-	transformers ...Transformer,
-) error {
+	version *phpversion.PHPVersion,
+	transformers func() []Transformer,
+) *Walker {
+	return &Walker{
+		Transformers: &sync.Pool{
+			New: func() any {
+				return transformers()
+			},
+		},
+		Logger:   logger,
+		StubsDir: stubsDir,
+		OutDir:   outDir,
+		Version:  version,
+	}
+}
+
+func (w *Walker) Go() error {
 	g := errgroup.Group{}
 	g.SetLimit(MaxConcurrency)
 
-	if err := filepath.WalkDir(stubsDir, func(path string, d fs.DirEntry, err error) error {
+	if err := filepath.WalkDir(w.StubsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		relPath := strings.TrimPrefix(path, stubsDir)
-		for _, ns := range NonStubs {
-			if strings.HasPrefix(relPath, ns) {
-				return nil
+		relPath := strings.TrimPrefix(path, w.StubsDir)
+		if _, ok := NonStubs[relPath]; ok {
+			if d.IsDir() {
+				return filepath.SkipDir
 			}
+
+			return nil
 		}
 
 		if !d.IsDir() && !strings.HasSuffix(path, ".php") {
 			return nil
 		}
 
-		finalPath := outPath(stubsDir, outDir, path, version.String())
+		finalPath := outPath(w.StubsDir, w.OutDir, path, w.Version.String())
 
 		// Directories need to be created before transformed files are written,
 		// So we can't do this in the g.Go call because of race conditions.
@@ -95,7 +128,8 @@ func Transform(
 		}
 
 		g.Go(func() error {
-			if err := TransformFile(logger, transformers, path, finalPath); err != nil {
+			transformers := w.Transformers.Get().([]Transformer)
+			if err := TransformFile(w.Logger, transformers, path, finalPath); err != nil {
 				return fmt.Errorf("transforming %s: %w", path, err)
 			}
 
@@ -104,7 +138,7 @@ func Transform(
 
 		return nil
 	}); err != nil {
-		return fmt.Errorf("walking stubs %s: %w", stubsDir, err)
+		return fmt.Errorf("walking stubs %s: %w", w.StubsDir, err)
 	}
 
 	if err := g.Wait(); err != nil {

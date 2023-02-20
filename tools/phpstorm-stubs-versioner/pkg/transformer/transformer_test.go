@@ -2,6 +2,8 @@ package transformer_test
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/VKCOM/php-parser/pkg/conf"
@@ -10,6 +12,7 @@ import (
 	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/VKCOM/php-parser/pkg/visitor/printer"
 	"github.com/andreyvit/diff"
+	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/strutil"
 	"github.com/laytan/elephp/tools/phpstorm-stubs-versioner/pkg/transformer"
@@ -69,5 +72,41 @@ func runScenarios(
 				)
 			}
 		})
+	}
+}
+
+type logger struct {
+	b *testing.B
+}
+
+func (l *logger) Printf(format string, args ...any) {
+}
+
+func BenchmarkTransformer(b *testing.B) {
+	stubsDir := filepath.Join(pathutils.Root(), "..", "..", "third_party", "phpstorm-stubs")
+	outDir := filepath.Join(os.TempDir(), "elephp-stub-benchmark")
+
+	l := &logger{b: b}
+	version := phpversion.EightOne()
+
+	clean := func() {
+		err := os.RemoveAll(outDir)
+		if err != nil {
+			b.Error(err)
+		}
+	}
+
+	clean()
+
+	for i := 0; i < b.N; i++ {
+		func() {
+			defer clean()
+
+			w := transformer.NewWalker(l, stubsDir, outDir, version, transformer.All(version, nil))
+			err := w.Go()
+			if err != nil {
+				b.Error(err)
+			}
+		}()
 	}
 }

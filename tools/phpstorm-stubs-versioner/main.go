@@ -87,13 +87,8 @@ func main() {
 
 	l := &logger{}
 
-	err = transformer.Transform(
-		l,
-		phpv,
-		in,
-		out,
-		transformer.All(phpv, l)...,
-	)
+	w := transformer.NewWalker(l, in, out, phpv, transformer.All(phpv, l))
+	err = w.Go()
 	if err != nil {
 		panic(err)
 	}
