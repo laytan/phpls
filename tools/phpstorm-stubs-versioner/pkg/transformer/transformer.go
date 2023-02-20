@@ -20,6 +20,17 @@ import (
 var (
 	MaxConcurrency = 4
 
+	NonStubs = []string{
+		"/.github",
+		"/.idea",
+		"/FFI/.phpstorm.meta.php",
+		"/meta",
+		"/Reflection/.phpstorm.meta.php",
+		"/tests",
+		"/.php-cs-fixer.php",
+		"/PhpStormStubsMap.php",
+	}
+
 	// The version to parse the stubs with.
 	parserVersion = &version.Version{
 		Major: 8,
@@ -54,28 +65,35 @@ func Transform(
 	g := errgroup.Group{}
 	g.SetLimit(MaxConcurrency)
 
-	touched := make(map[string]bool, 1500)
 	if err := filepath.WalkDir(stubsDir, func(path string, d fs.DirEntry, err error) error {
-		touched[strings.TrimPrefix(path, stubsDir)] = true
+		if err != nil {
+			return err
+		}
+
+		relPath := strings.TrimPrefix(path, stubsDir)
+		for _, ns := range NonStubs {
+			if strings.HasPrefix(relPath, ns) {
+				return nil
+			}
+		}
+
+		if !d.IsDir() && !strings.HasSuffix(path, ".php") {
+			return nil
+		}
 
 		finalPath := outPath(stubsDir, outDir, path, version.String())
+
 		// Directories need to be created before transformed files are written,
 		// So we can't do this in the g.Go call because of race conditions.
 		if d.IsDir() {
 			if err := os.MkdirAll(finalPath, 0o755); err != nil {
 				return fmt.Errorf("creating directories towards %s: %w", finalPath, err)
 			}
+
+			return nil
 		}
 
 		g.Go(func() error {
-			if err != nil {
-				return err
-			}
-
-			if !strings.HasSuffix(path, ".php") {
-				return nil
-			}
-
 			if err := TransformFile(logger, transformers, path, finalPath); err != nil {
 				return fmt.Errorf("transforming %s: %w", path, err)
 			}
@@ -90,22 +108,6 @@ func Transform(
 
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("waiting for transformations to complete: %w", err)
-	}
-
-	// Clean up any files that haven't been touched just now.
-	prefix := filepath.Join(outDir, version.String())
-	if err := filepath.WalkDir(prefix, func(path string, d fs.DirEntry, err error) error {
-		relPath := strings.TrimPrefix(path, prefix)
-		_, ok := touched[relPath]
-		if relPath != "" && !ok {
-			if err := os.RemoveAll(path); err != nil {
-				return fmt.Errorf("removing insignificant file and parents %s: %w", path, err)
-			}
-		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("walking out dir (%s) to remove insignificant files: %w", prefix, err)
 	}
 
 	return nil
