@@ -669,6 +669,14 @@ func TestParse(t *testing.T) {
 			},
 			wantEqualStrings: true,
 		},
+		{
+			name: "short nullable",
+			args: "?bool",
+			want: &phpdoxer.TypeUnion{
+				Left:  &phpdoxer.TypeNull{},
+				Right: &phpdoxer.TypeBool{Accepts: phpdoxer.BoolAcceptsAll},
+			},
+		},
 	}
 
 	for _, tt := range tests {

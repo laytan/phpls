@@ -84,6 +84,9 @@ var (
 	intMaskOfRegex  = regexp.MustCompile(`^int-mask-of<(.*)>$`)
 	intMskOfRgxTypG = 1
 
+	nullableRegex = regexp.MustCompile(`^\?(.*)$`)
+	nullableeTypG = 1
+
 	conditionalReturnRegex = regexp.MustCompile(
 		`^\( *(\$?[\w]+) *is *(\S+) *\? *(\S+) *: *(\S+) *\)$`,
 	)
@@ -252,6 +255,10 @@ func ParseType(value string) (Type, error) {
 	}
 
 	if match, rType, rErr := parseGenericClass(value); match {
+		return rType, rErr
+	}
+
+	if match, rType, rErr := parseNullable(value); match {
 		return rType, rErr
 	}
 
@@ -849,5 +856,23 @@ func parseGenericClass(value string) (bool, Type, error) {
 		Name:           name,
 		FullyQualified: fullyQualified,
 		GenericOver:    genOver,
+	}, nil
+}
+
+func parseNullable(value string) (bool, Type, error) {
+	match := nullableRegex.FindStringSubmatch(value)
+	if len(match) < nullableeTypG+1 {
+		return false, nil, nil
+	}
+
+	typ := match[nullableeTypG]
+	resType, err := ParseType(typ)
+	if err != nil {
+		return true, nil, fmt.Errorf("parsing type that is nullable %s: %w", typ, err)
+	}
+
+	return true, &TypeUnion{
+		Left:  &TypeNull{},
+		Right: resType,
 	}, nil
 }

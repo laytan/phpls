@@ -79,11 +79,16 @@ func (n *NodeReturn) Kind() NodeKind {
 type NodeVar struct {
 	NodeRange
 
-	Type Type
+	Type        Type
+	Description string
 }
 
 func (n *NodeVar) String() string {
-	return fmt.Sprintf("@var %s", n.Type)
+	if n.Description == "" {
+		return fmt.Sprintf("@var %s", n.Type)
+	}
+
+	return fmt.Sprintf("@var %s %s", n.Type, n.Description)
 }
 
 func (n *NodeVar) Kind() NodeKind {
@@ -93,16 +98,22 @@ func (n *NodeVar) Kind() NodeKind {
 type NodeParam struct {
 	NodeRange
 
-	Type Type
-	Name string
+	Type        Type
+	Name        string
+	Description string
 }
 
 func (n *NodeParam) String() string {
-	if n.Type != nil {
-		return fmt.Sprintf("@param %s %s", n.Type.String(), n.Name)
+	desc := n.Description
+	if desc != "" {
+		desc = " " + desc
 	}
 
-	return fmt.Sprintf("@param %s", n.Name)
+	if n.Type != nil {
+		return fmt.Sprintf("@param %s %s%s", n.Type.String(), n.Name, desc)
+	}
+
+	return fmt.Sprintf("@param %s%s", n.Name, desc)
 }
 
 func (n *NodeParam) Kind() NodeKind {

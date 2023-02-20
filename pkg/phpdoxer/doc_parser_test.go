@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/andreyvit/diff"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
@@ -152,6 +153,73 @@ func TestParseDoc(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "param with description",
+			args: `
+            /**
+             * @param string $test The test description.
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeString{},
+					Name:        "$test",
+					Description: "The test description.",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "param with multi line description",
+			args: `
+            /**
+             * @param string $test The test description.
+             *   Use at own risk.
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeString{},
+					Name:        "$test",
+					Description: "The test description.\nUse at own risk.",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "param variadic",
+			args: `
+            /**
+             * @param mixed ...$test
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeMixed{},
+					Name:        "...$test",
+					Description: "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "param doc multi line with html tags",
+			args: `
+            /**
+             * @param string $string <p>
+             * The packed data.
+             * </p>
+             */
+            `,
+			want: []phpdoxer.Node{
+				&phpdoxer.NodeParam{
+					Type:        &phpdoxer.TypeString{},
+					Name:        "$string",
+					Description: "<p>\nThe packed data.\n</p>",
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -177,6 +245,141 @@ func TestParseDoc(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				spew.Dump(got[0].Range())
 				t.Errorf("ParseDoc() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDoc_String(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		Top         string
+		Indentation string
+		Nodes       []phpdoxer.Node
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			name: "empty",
+			fields: fields{
+				Top:         "",
+				Indentation: "",
+				Nodes:       []phpdoxer.Node{},
+			},
+			want: "",
+		},
+		{
+			name: "no top 1 param",
+			fields: fields{
+				Top:         "",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+				},
+			},
+			want: "/**\n * @param string $test\n */",
+		},
+		{
+			name: "1 line top 1 param",
+			fields: fields{
+				Top:         "Hello world",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+				},
+			},
+			want: "/**\n * Hello world\n *\n * @param string $test\n */",
+		},
+		{
+			name: "2 line top, 1 param",
+			fields: fields{
+				Top:         "Hello\nWorld!",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+				},
+			},
+			want: "/**\n * Hello\n * World!\n *\n * @param string $test\n */",
+		},
+		{
+			name: "1 top 2 param",
+			fields: fields{
+				Top:         "Hello World!",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test",
+					},
+					&phpdoxer.NodeParam{
+						Type: &phpdoxer.TypeString{},
+						Name: "$test2",
+					},
+				},
+			},
+			want: "/**\n * Hello World!\n *\n * @param string $test\n * @param string $test2\n */",
+		},
+		{
+			name: "top, no param",
+			fields: fields{
+				Top:         "Hello World!",
+				Indentation: " ",
+				Nodes:       []phpdoxer.Node{},
+			},
+			want: "/**\n * Hello World!\n */",
+		},
+		{
+			name: "2 top, no param",
+			fields: fields{
+				Top:         "Hello\nWorld!",
+				Indentation: " ",
+				Nodes:       []phpdoxer.Node{},
+			},
+			want: "/**\n * Hello\n * World!\n */",
+		},
+		{
+			name: "with html",
+			fields: fields{
+				Top:         "",
+				Indentation: " ",
+				Nodes: []phpdoxer.Node{
+					&phpdoxer.NodeParam{
+						Type:        &phpdoxer.TypeString{},
+						Name:        "$string",
+						Description: "<p>\nThe packed data.\n</p>",
+					},
+				},
+			},
+			want: "/**\n * @param string $string <p>\n * The packed data.\n * </p>\n */",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			d := &phpdoxer.Doc{
+				Top:         tt.fields.Top,
+				Indentation: tt.fields.Indentation,
+				Nodes:       tt.fields.Nodes,
+			}
+			if got := d.String(); got != tt.want {
+				t.Errorf("Results don't match:\n%v", diff.CharacterDiff(got, tt.want))
 			}
 		})
 	}

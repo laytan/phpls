@@ -12,9 +12,9 @@ type AtSinceAtRemoved struct {
 	visitor *visitor.AtSinceAtRemoved
 }
 
-func NewAtSinceAtRemoved(version *phpversion.PHPVersion) *AtSinceAtRemoved {
+func NewAtSinceAtRemoved(version *phpversion.PHPVersion, logger Logger) *AtSinceAtRemoved {
 	return &AtSinceAtRemoved{
-		visitor: visitor.NewAtSinceAtRemoved(version, true),
+		visitor: visitor.NewAtSinceAtRemoved(version, logger),
 	}
 }
 

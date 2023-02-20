@@ -1,16 +1,17 @@
 package phpdoxer
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/strutil"
 )
 
 var (
-	groupRgx     = regexp.MustCompile(`@(\w+)\s*([^@]*)`)
-	emptyLineRgx = regexp.MustCompile(`[^*/\s]`)
+	groupRgx      = regexp.MustCompile(`@(\w+)\s*([^@]*)`)
+	emptyLineRgx  = regexp.MustCompile(`[^*/\s]`)
+	whitespaceRgx = regexp.MustCompile(`\n(\s+)`)
 )
 
 type group struct {
@@ -47,6 +48,68 @@ func ParseDoc(doc string) ([]Node, error) {
 	return parsed, nil
 }
 
+type Doc struct {
+	Top         string
+	Indentation string
+	Nodes       []Node
+}
+
+// Parse the doc string, keeping the leading documentation.
+func ParseFullDoc(doc string) (*Doc, error) {
+	top, _, _ := strings.Cut(doc, "@")
+	nodes, err := ParseDoc(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	indentation := " "
+	wsMatches := whitespaceRgx.FindStringSubmatch(doc)
+	if len(wsMatches) > 1 {
+		indentation = wsMatches[1]
+	}
+
+	return &Doc{
+		Top:         cleanGroupValue(top),
+		Nodes:       nodes,
+		Indentation: indentation,
+	}, nil
+}
+
+// Turns the doc back into a valid PHPDoc string.
+//
+// NOTE: this is not intended to closely represent the input, but to produce
+// NOTE: an output that has all the information the source had,
+// NOTE: formatting might be slightly different.
+//
+// It does try to roughly return the doc with the same indentation level as the
+// source.
+func (d *Doc) String() string {
+	if d.Top == "" && len(d.Nodes) == 0 {
+		return ""
+	}
+
+	ret := "/**\n"
+
+	for _, line := range strutil.Lines(d.Top) {
+		if line != "" {
+			ret += d.Indentation + "* " + line + "\n"
+		}
+	}
+
+	if d.Top != "" && len(d.Nodes) > 0 {
+		ret += d.Indentation + "*" + "\n"
+	}
+
+	for _, node := range d.Nodes {
+		for _, line := range strutil.Lines(node.String()) {
+			ret += d.Indentation + "* " + line + "\n"
+		}
+	}
+
+	ret += d.Indentation + "*/"
+	return ret
+}
+
 func parseGroup(g *group) (Node, error) {
 	var result Node
 
@@ -62,7 +125,6 @@ func parseGroup(g *group) (Node, error) {
 	switch g.at {
 	case "return":
 		typeStr, description := splitTypeAndRest(value)
-
 		typeNode, _ := ParseType(typeStr)
 
 		result = &NodeReturn{
@@ -72,43 +134,38 @@ func parseGroup(g *group) (Node, error) {
 		return result, nil
 
 	case "var":
-		typeStr, _ := splitTypeAndRest(value)
-
-		typeNode, err := ParseType(typeStr)
-		if err != nil {
-			return nil, err
-		}
+		typeStr, description := splitTypeAndRest(value)
+		typeNode, _ := ParseType(typeStr)
 
 		result = &NodeVar{
-			Type: typeNode,
+			Type:        typeNode,
+			Description: description,
 		}
 		return result, nil
 
 	case "param":
-		split := strings.Fields(value)
-		if len(split) == 0 {
-			return nil, fmt.Errorf(
-				"PHPDoc error: found @param %s with 0 arguments, must be at least 1",
-				value,
-			)
-		}
-
-		var name string
+		var nameStr, descStr string
 		var typeNode Type
 
-		if len(split) == 1 {
-			name = split[0]
-		}
+		typeOrName, rest := splitTypeAndRest(value)
+		typeOrNameRest, desc, _ := strings.Cut(rest, " ")
 
-		if len(split) > 1 {
-			name = split[1]
-
-			typeNode, _ = ParseType(split[0])
+		//nolint:gocritic // Does not make sense to change to switch.
+		if isStrVariable(typeOrName) {
+			nameStr = typeOrName
+			descStr = rest
+		} else if isStrVariable(typeOrNameRest) {
+			nameStr = typeOrNameRest
+			typeNode, _ = ParseType(typeOrName)
+			descStr = desc
+		} else {
+			descStr = value
 		}
 
 		result = &NodeParam{
-			Type: typeNode,
-			Name: name,
+			Type:        typeNode,
+			Name:        nameStr,
+			Description: descStr,
 		}
 		return result, nil
 
@@ -169,8 +226,8 @@ func parseGroup(g *group) (Node, error) {
 }
 
 func cleanGroupValue(value string) string {
-	lines := strings.Split(strings.ReplaceAll(value, "\r\n", "\n"), "\n")
-	outLines := []string{}
+	lines := strutil.Lines(value)
+	outLines := make([]string, 0, len(lines))
 
 	// Removes any leading or ending /'s, *'s or whitespace.
 	// Removes any empty lines.
@@ -197,4 +254,10 @@ func splitTypeAndRest(value string) (docType string, rest string) {
 
 	rest = strings.TrimSpace(strings.TrimPrefix(value, split[0]))
 	return split[0], rest
+}
+
+func isStrVariable(value string) bool {
+	return strings.HasPrefix(value, "$") ||
+		strings.HasPrefix(value, "...") ||
+		strings.HasPrefix(value, "&")
 }

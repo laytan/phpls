@@ -2,41 +2,37 @@ package visitor
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"strings"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/VKCOM/php-parser/pkg/visitor"
-	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"golang.org/x/exp/slices"
 )
 
-// The original name is `PhpStormStubsElementAvailable` but this is sometimes aliassed.
-// TODO: We should ideally resolve the use statements as well.
-var names = [][]byte{
-	[]byte("PhpStormStubsElementAvailable"),
-	[]byte("Available"),
-	[]byte("ElementAvailable"),
-}
-
 type ElementAvailableAttribute struct {
 	visitor.Null
-
-	version *phpversion.PHPVersion
-	logging bool
+	version   *phpversion.PHPVersion
+	targetter *targetter
+	logger    Logger
 }
 
 func NewElementAvailableAttribute(
 	version *phpversion.PHPVersion,
-	logging bool,
+	logger Logger,
 ) *ElementAvailableAttribute {
 	return &ElementAvailableAttribute{
 		version: version,
-		logging: logging,
+		logger:  logger,
+		targetter: newTargetter([][]byte{
+			[]byte("JetBrains"),
+			[]byte("PhpStorm"),
+			[]byte("Internal"),
+			[]byte("PhpStormStubsElementAvailable"),
+		}),
 	}
 }
 
@@ -45,7 +41,20 @@ func (e *ElementAvailableAttribute) Root(n *ast.Root) {
 }
 
 func (e *ElementAvailableAttribute) StmtNamespace(n *ast.StmtNamespace) {
+	exit := e.targetter.EnterNamespace(n)
+	defer exit()
+
 	n.Stmts = e.filterStmts(n.Stmts)
+}
+
+func (e *ElementAvailableAttribute) StmtUse(n *ast.StmtUseList) {
+	for _, s := range n.Uses {
+		s.Accept(e)
+	}
+}
+
+func (e *ElementAvailableAttribute) StmtUseDeclaration(n *ast.StmtUse) {
+	e.targetter.EnterUse(n)
 }
 
 func (e *ElementAvailableAttribute) StmtClass(n *ast.StmtClass) {
@@ -65,33 +74,54 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 	for _, stmt := range nodes {
 		ok := true
 		switch typedStmt := stmt.(type) {
-		case *ast.StmtNamespace, *ast.StmtClass, *ast.StmtTrait, *ast.StmtInterface:
+		case *ast.StmtUseList, *ast.StmtNamespace, *ast.StmtClass, *ast.StmtTrait, *ast.StmtInterface:
 			stmt.Accept(e)
 
 		case *ast.StmtFunction:
-			ok = !e.shouldRemove(typedStmt.AttrGroups)
+			rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
+			ok = !rm
+
 			if ok {
+				typedStmt.AttrGroups = newAttrGroups
 				params, removedParams := e.filterParams(typedStmt.Params)
+				removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
 				typedStmt.Params = params
 
-				if len(removedParams) > 0 {
-					e.removeParamsDocFromFunction(typedStmt, removedParams)
+				if removedParams {
+					e.removeParamsDocFromFunction(typedStmt, removedParamNames)
+
+					// Setting this to be empty seems to make the printer
+					// add/recalculate where separators go.
+					typedStmt.SeparatorTkns = []*token.Token{}
 				}
 			}
 
 		case *ast.StmtClassMethod:
-			ok = !e.shouldRemove(typedStmt.AttrGroups)
+			rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
+			ok = !rm
+
 			if ok {
+				typedStmt.AttrGroups = newAttrGroups
 				params, removedParams := e.filterParams(typedStmt.Params)
+				removedParamNames := e.getRemovedParamNames(typedStmt.Params, params)
 				typedStmt.Params = params
 
-				if len(removedParams) > 0 {
-					e.removeParamsDocFromMethod(typedStmt, removedParams)
+				if removedParams {
+					e.removeParamsDocFromMethod(typedStmt, removedParamNames)
+
+					// Setting this to be empty seems to make the printer
+					// add/recalculate where separators go.
+					typedStmt.SeparatorTkns = []*token.Token{}
 				}
 			}
 
 		case *ast.StmtPropertyList:
-			ok = !e.shouldRemove(typedStmt.AttrGroups)
+			rm, newAttrGroups := e.shouldRemove(typedStmt.AttrGroups)
+			ok = !rm
+
+			if ok {
+				typedStmt.AttrGroups = newAttrGroups
+			}
 		}
 
 		if ok {
@@ -99,7 +129,7 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 			continue
 		}
 
-		e.logRemoval(stmt)
+		e.logRemoval()
 	}
 
 	return newStmts
@@ -107,56 +137,76 @@ func (e *ElementAvailableAttribute) filterStmts(nodes []ast.Vertex) []ast.Vertex
 
 func (e *ElementAvailableAttribute) filterParams(
 	params []ast.Vertex,
-) (newParams []ast.Vertex, removedParams []string) {
-	// PERF: should only create a new slice if we actually are removing a parameter.
+) (newParams []ast.Vertex, removedParams bool) {
 	newParams = make([]ast.Vertex, 0, len(params))
 	for _, param := range params {
 		if typedParam, ok := param.(*ast.Parameter); ok {
-			if !e.shouldRemove(typedParam.AttrGroups) {
-				newParams = append(newParams, param)
+			rm, newAttrGroups := e.shouldRemove(typedParam.AttrGroups)
+
+			if !rm {
+				typedParam.AttrGroups = newAttrGroups
+
+				newParams = append(newParams, typedParam)
 				continue
 			}
 
-			paramName := string(typedParam.Var.(*ast.ExprVariable).Name.(*ast.Identifier).Value)
-			// TODO: don't know what is going on here.
-			// if typedParam.VariadicTkn != nil {
-			// 	paramName = "..." + paramName
-			// }
-
-			removedParams = append(removedParams, paramName)
-
-			e.logRemoval(param)
+			e.logRemoval()
+			removedParams = true
 		}
 	}
 
 	return newParams, removedParams
 }
 
-func (e *ElementAvailableAttribute) shouldRemove(attrGroups []ast.Vertex) bool {
-	for _, attrGroup := range attrGroups {
+// Returns all the parameters that were in 'params' but are not in 'newParams'
+// to the 'removedParams' slice.
+func (e *ElementAvailableAttribute) getRemovedParamNames(
+	params []ast.Vertex,
+	newParams []ast.Vertex,
+) []string {
+	removedParamNames := []string{}
+	for _, param := range params {
+		paramName := param.(*ast.Parameter).Var.(*ast.ExprVariable).Name.(*ast.Identifier).Value
+
+		var inNewParams bool
+		for _, newParam := range newParams {
+			newParamName := newParam.(*ast.Parameter).Var.(*ast.ExprVariable).Name.(*ast.Identifier).Value
+			if bytes.Equal(paramName, newParamName) {
+				inNewParams = true
+				break
+			}
+		}
+
+		if !inNewParams {
+			name := string(paramName)
+
+			if param.(*ast.Parameter).VariadicTkn != nil {
+				name = "..." + name
+			}
+
+			if param.(*ast.Parameter).AmpersandTkn != nil {
+				name = "&" + name
+			}
+
+			removedParamNames = append(removedParamNames, name)
+		}
+	}
+
+	return removedParamNames
+}
+
+func (e *ElementAvailableAttribute) shouldRemove(
+	attrGroups []ast.Vertex,
+) (bool, []ast.Vertex) {
+	for attrI, attrGroup := range attrGroups {
 	Attributes:
 		for _, attr := range attrGroup.(*ast.AttributeGroup).Attrs {
 			if len(attr.(*ast.Attribute).Args) == 0 {
 				continue
 			}
 
-			attrName := attr.(*ast.Attribute).Name.(*ast.Name)
-			if len(attrName.Parts) != 1 {
+			if !e.targetter.MatchName(attr.(*ast.Attribute).Name) {
 				continue
-			}
-
-			if attrNamePart, ok := attrName.Parts[0].(*ast.NamePart); ok {
-				var match bool
-				for _, name := range names {
-					if bytes.Equal(attrNamePart.Value, name) {
-						match = true
-						break
-					}
-				}
-
-				if !match {
-					continue
-				}
 			}
 
 			for i, arg := range attr.(*ast.Attribute).Args {
@@ -183,20 +233,24 @@ func (e *ElementAvailableAttribute) shouldRemove(attrGroups []ast.Vertex) bool {
 
 				if bytes.Equal(n, []byte("from")) || i == 0 {
 					if v.IsHigherThan(e.version) {
-						return true
+						return true, attrGroups
 					}
 				}
 
 				if bytes.Equal(n, []byte("to")) || i == 1 {
 					if e.version.IsHigherThan(v) {
-						return true
+						return true, attrGroups
 					}
 				}
 			}
+
+			e.logRemoval()
+			attrGroups = slices.Delete(attrGroups, attrI, attrI+1)
+			return false, attrGroups
 		}
 	}
 
-	return false
+	return false, attrGroups
 }
 
 func (e *ElementAvailableAttribute) removeParamsDocFromFunction(
@@ -218,6 +272,12 @@ func (e *ElementAvailableAttribute) removeParamsDocFromMethod(
 ) {
 	function.FunctionTkn.FreeFloating = e.removeParamsDoc(function.FunctionTkn.FreeFloating, params)
 
+	for _, modifier := range function.Modifiers {
+		modifier.(*ast.Identifier).IdentifierTkn.FreeFloating = e.removeParamsDoc(
+			modifier.(*ast.Identifier).IdentifierTkn.FreeFloating, params,
+		)
+	}
+
 	for _, attrGroup := range function.AttrGroups {
 		attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating = e.removeParamsDoc(
 			attrGroup.(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating, params,
@@ -234,16 +294,17 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 			continue
 		}
 
-		nodes, err := phpdoxer.ParseDoc(string(t.Value))
+		doc, err := phpdoxer.ParseFullDoc(string(t.Value))
 		if err != nil {
 			log.Println(err)
+			return freefloatings
 		}
 
-		newNodes := make([]phpdoxer.Node, 0, len(nodes))
-		for _, node := range nodes {
+		newNodes := make([]phpdoxer.Node, 0, len(doc.Nodes))
+		for _, node := range doc.Nodes {
 			if paramNode, ok := node.(*phpdoxer.NodeParam); ok {
 				if slices.Contains(params, paramNode.Name) {
-					e.logRemoval(nil)
+					e.logRemoval()
 					continue
 				}
 			}
@@ -251,23 +312,15 @@ func (e *ElementAvailableAttribute) removeParamsDoc(
 			newNodes = append(newNodes, node)
 		}
 
-		// TODO: also have non-nodes/raw comments reconstructed.
-		inner := strings.Join(
-			functional.Map(newNodes, func(node phpdoxer.Node) string {
-				// TODO: make node.String() return the raw value that was initially parsed.
-				return " * " + node.String()
-			}),
-			"\n",
-		)
-		t.Value = []byte("/**\n" + inner + "\n */")
+		doc.Nodes = newNodes
+		t.Value = []byte(doc.String())
 	}
 
 	return freefloatings
 }
 
-// TODO: don't require arg.
-func (e *ElementAvailableAttribute) logRemoval(n ast.Vertex) {
-	if e.logging {
-		_, _ = fmt.Printf("x") //nolint:forbidigo // For visualization.
+func (e *ElementAvailableAttribute) logRemoval() {
+	if e.logger != nil {
+		e.logger.Printf("x")
 	}
 }
