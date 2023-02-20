@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
 	"github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/parser"
@@ -31,16 +30,12 @@ const (
 var (
 	in, out       string
 	genVersion    *phpversion.PHPVersion
-	transformers  []Transformer
+	transformers  []transformer.Transformer
 	parserVersion = &version.Version{
 		Major: latestParserMajor,
 		Minor: latestParserMinor,
 	}
 )
-
-type Transformer interface {
-	Transform(ast ast.Vertex)
-}
 
 func main() {
 	var versionStr string
@@ -88,7 +83,7 @@ func main() {
 	out = absOut
 
 	genVersion = phpv
-	transformers = []Transformer{
+	transformers = []transformer.Transformer{
 		transformer.NewAtSinceAtRemoved(genVersion),
 		transformer.NewElementAvailableAttribute(genVersion),
 		transformer.NewLanguageLevelTypeAware(genVersion),
