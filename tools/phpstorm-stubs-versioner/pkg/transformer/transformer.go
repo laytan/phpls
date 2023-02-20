@@ -1,6 +1,7 @@
 package transformer
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
@@ -149,7 +150,7 @@ func TransformFile(logger Logger, transformers []Transformer, path string, final
 	// f := formatter.NewFormatter()
 	// ast.Accept(f)
 
-	p := printer.NewPrinter(file)
+	p := printer.NewPrinter(bufio.NewWriter(file))
 	ast.Accept(p)
 
 	return nil
