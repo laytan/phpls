@@ -34,7 +34,6 @@ const (
 var (
 	ErrFileNotIndexed    = errors.New("File is not indexed in the workspace")
 	indexGoRoutinesLimit = 64
-	stubsPath            = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 	Config               = func() config.Config { return do.MustInvoke[config.Config](nil) }
 )
 
@@ -86,7 +85,7 @@ type Wrkspc interface {
 }
 
 // fileExtensions should all start with a period.
-func New(phpv *phpversion.PHPVersion, root string) Wrkspc {
+func New(phpv *phpversion.PHPVersion, root string, stubs string) Wrkspc {
 	normalParser := parsing.New(phpv)
 	// TODO: not ideal, temporary
 	stubParser := parsing.New(phpversion.EightOne())
@@ -104,12 +103,9 @@ func New(phpv *phpversion.PHPVersion, root string) Wrkspc {
 	}()
 
 	return &wrkspc{
-		normalParser: normalParser,
-		stubParser:   stubParser,
-		roots: []string{
-			root,
-			filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs"),
-		},
+		normalParser:    normalParser,
+		stubParser:      stubParser,
+		roots:           []string{root, stubs},
 		fileExtensions:  Config().FileExtensions(),
 		ignoredDirNames: Config().IgnoredDirNames(),
 		files:           files,
@@ -364,8 +360,10 @@ func (w *wrkspc) shouldParse(d fs.DirEntry) (bool, error) {
 	return false, nil
 }
 
+var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
+
 func (w *wrkspc) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, stubsPath) {
+	if strings.HasPrefix(path, Config().StubsDir()) || strings.HasPrefix(path, stubsDir) {
 		return w.stubParser
 	}
 

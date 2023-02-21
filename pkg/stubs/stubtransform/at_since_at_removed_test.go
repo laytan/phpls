@@ -1,10 +1,11 @@
-package transformer_test
+package stubtransform_test
 
 import (
 	"testing"
 
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/tools/phpstorm-stubs-versioner/pkg/transformer"
+	"github.com/laytan/elephp/pkg/stubs/stubtransform"
 )
 
 func TestAtSinceAtRemoved(t *testing.T) {
@@ -122,7 +123,7 @@ func TestAtSinceAtRemoved(t *testing.T) {
 		},
 	}
 
-	runScenarios(t, scenarios, func(p *phpversion.PHPVersion) transformer.Transformer {
-		return transformer.NewAtSinceAtRemoved(p, nil)
+	runScenarios(t, scenarios, func(p *phpversion.PHPVersion) ast.Visitor {
+		return stubtransform.NewAtSinceAtRemoved(p, nil)
 	})
 }

@@ -1,10 +1,11 @@
-package transformer_test
+package stubtransform_test
 
 import (
 	"testing"
 
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/tools/phpstorm-stubs-versioner/pkg/transformer"
+	"github.com/laytan/elephp/pkg/stubs/stubtransform"
 )
 
 func TestLanguageLevelTypeAware(t *testing.T) {
@@ -352,7 +353,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
 		},
 	}
 
-	runScenarios(t, scenarios, func(v *phpversion.PHPVersion) transformer.Transformer {
-		return transformer.NewLanguageLevelTypeAware(v, nil)
+	runScenarios(t, scenarios, func(v *phpversion.PHPVersion) ast.Visitor {
+		return stubtransform.NewLanguageLevelTypeAware(v, nil)
 	})
 }

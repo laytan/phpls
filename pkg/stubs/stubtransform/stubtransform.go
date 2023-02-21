@@ -1,4 +1,4 @@
-package transformer
+package stubtransform
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
@@ -46,18 +47,14 @@ var (
 	}
 )
 
-type Transformer interface {
-	Transform(ast ast.Vertex)
-}
-
 type Logger interface {
 	Printf(format string, args ...any)
 }
 
 // logger is allowed to be nil.
-func All(version *phpversion.PHPVersion, logger Logger) func() []Transformer {
-	return func() []Transformer {
-		return []Transformer{
+func All(version *phpversion.PHPVersion, logger Logger) func() []ast.Visitor {
+	return func() []ast.Visitor {
+		return []ast.Visitor{
 			NewAtSinceAtRemoved(version, logger),
 			NewElementAvailableAttribute(version, logger),
 			NewLanguageLevelTypeAware(version, logger),
@@ -71,6 +68,7 @@ type Walker struct {
 	StubsDir     string
 	OutDir       string
 	Version      *phpversion.PHPVersion
+	Progress     *atomic.Uint32
 }
 
 func NewWalker(
@@ -78,7 +76,7 @@ func NewWalker(
 	stubsDir string,
 	outDir string,
 	version *phpversion.PHPVersion,
-	transformers func() []Transformer,
+	transformers func() []ast.Visitor,
 ) *Walker {
 	return &Walker{
 		Transformers: &sync.Pool{
@@ -93,7 +91,7 @@ func NewWalker(
 	}
 }
 
-func (w *Walker) Go() error {
+func (w *Walker) Walk() error {
 	g := errgroup.Group{}
 	g.SetLimit(MaxConcurrency)
 
@@ -128,7 +126,11 @@ func (w *Walker) Go() error {
 		}
 
 		g.Go(func() error {
-			transformers := w.Transformers.Get().([]Transformer)
+			if w.Progress != nil {
+				defer w.Progress.Add(1)
+			}
+
+			transformers := w.Transformers.Get().([]ast.Visitor)
 			if err := TransformFile(w.Logger, transformers, path, finalPath); err != nil {
 				return fmt.Errorf("transforming %s: %w", path, err)
 			}
@@ -148,7 +150,7 @@ func (w *Walker) Go() error {
 	return nil
 }
 
-func TransformFile(logger Logger, transformers []Transformer, path string, finalPath string) error {
+func TransformFile(logger Logger, transformers []ast.Visitor, path string, finalPath string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", path, err)
@@ -170,7 +172,7 @@ func TransformFile(logger Logger, transformers []Transformer, path string, final
 	}
 
 	for _, transformer := range transformers {
-		transformer.Transform(ast)
+		ast.Accept(transformer)
 	}
 
 	file, err := os.Create(finalPath)

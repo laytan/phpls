@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	stubsRoot  = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
+	stubsDir   = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 	stdlibRoot = filepath.Join(
 		pathutils.Root(),
 		"internal",
@@ -77,7 +77,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  797,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "standard", "standard_8.php"),
+				Path: filepath.Join(stubsDir, "standard", "standard_8.php"),
 			},
 		},
 		"fqn": {
@@ -89,7 +89,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  170,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "date", "date_c.php"),
+				Path: filepath.Join(stubsDir, "date", "date_c.php"),
 			},
 		},
 		"name": {
@@ -101,7 +101,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  7,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "swoole", "Swoole", "WebSocket", "Server.php"),
+				Path: filepath.Join(stubsDir, "swoole", "Swoole", "WebSocket", "Server.php"),
 			},
 		},
 		"name_alias": {
@@ -113,7 +113,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  7,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "swoole", "Swoole", "Process.php"),
+				Path: filepath.Join(stubsDir, "swoole", "Swoole", "Process.php"),
 			},
 		},
 		"implements_global": {
@@ -125,7 +125,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  13,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "date", "date_c.php"),
+				Path: filepath.Join(stubsDir, "date", "date_c.php"),
 			},
 		},
 		"extends_multiple_namespaces_in_one_file": {
@@ -137,7 +137,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  713,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "http", "http3.php"),
+				Path: filepath.Join(stubsDir, "http", "http3.php"),
 			},
 		},
 		"param_function_call": {
@@ -149,7 +149,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  897,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "standard", "standard_1.php"),
+				Path: filepath.Join(stubsDir, "standard", "standard_1.php"),
 			},
 		},
 		"constant_fetch": {
@@ -161,7 +161,7 @@ func TestStdlibDefinitions(t *testing.T) {
 			out: &position.Position{
 				Row:  209,
 				Col:  1,
-				Path: filepath.Join(stubsRoot, "Core", "Core_d.php"),
+				Path: filepath.Join(stubsDir, "Core", "Core_d.php"),
 			},
 		},
 	}
@@ -263,7 +263,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 func setup(root string, phpv *phpversion.PHPVersion) *project.Project {
 	do.OverrideValue(nil, config.Default())
 	do.OverrideValue(nil, index.New(phpv))
-	do.OverrideValue(nil, wrkspc.New(phpv, root))
+	do.OverrideValue(nil, wrkspc.New(phpv, root, stubsDir))
 	do.OverrideValue(nil, typer.New())
 
 	return project.New()

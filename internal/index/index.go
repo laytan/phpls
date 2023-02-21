@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
@@ -25,9 +26,8 @@ const (
 var (
 	ErrNotFound = fmt.Errorf(errNotFoundFmt, "", "")
 	ErrParse    = fmt.Errorf(errParseFmt, "", nil)
+	Config      = func() config.Config { return do.MustInvoke[config.Config](nil) }
 )
-
-var stubsPath = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 type Index interface {
 	Index(path string, content string) error
@@ -193,8 +193,10 @@ func (i *index) Delete(path string) error {
 	return nil
 }
 
+var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
+
 func (i *index) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, stubsPath) {
+	if strings.HasPrefix(path, Config().StubsDir()) || strings.HasPrefix(path, stubsDir) {
 		return i.stubParser
 	}
 

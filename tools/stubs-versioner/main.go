@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/tools/phpstorm-stubs-versioner/pkg/transformer"
+	"github.com/laytan/elephp/pkg/stubs/stubtransform"
 )
 
 const (
@@ -30,7 +30,7 @@ func main() {
 	flag.StringVar(
 		&out,
 		"out",
-		"./versioned-phpstorm-stubs",
+		"./versioned-stubs",
 		"Path to use as output",
 	)
 	flag.StringVar(
@@ -87,8 +87,8 @@ func main() {
 
 	l := &logger{}
 
-	w := transformer.NewWalker(l, in, out, phpv, transformer.All(phpv, l))
-	err = w.Go()
+	w := stubtransform.NewWalker(l, in, out, phpv, stubtransform.All(phpv, l))
+	err = w.Walk()
 	if err != nil {
 		panic(err)
 	}

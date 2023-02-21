@@ -1,6 +1,6 @@
 run:
     tests: true
-    go: '1.18'
+    go: '1.19'
 
 linters:
     disable-all: true

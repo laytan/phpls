@@ -36,6 +36,9 @@ jobs:
     - name: Install richgo
       run: go install github.com/kyoh86/richgo@v0.3.10
 
+    - name: Generate
+      run: go generate ./...
+
     - name: Test
       run: richgo test -cover -race -shuffle=on -timeout=60s -v -tags what ./...
       env:

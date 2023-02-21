@@ -1,4 +1,4 @@
-package visitor
+package stubtransform
 
 import (
 	"bytes"
@@ -11,7 +11,8 @@ import (
 	"github.com/laytan/elephp/pkg/phpversion"
 )
 
-// AtSinceAtRemoved removes nodes that are @since > or @removed <= the given version.
+// AtSinceAtRemoved removes nodes that are
+// @since > or @removed <= the given version in the PHP core stubs.
 type AtSinceAtRemoved struct {
 	visitor.Null
 	version *phpversion.PHPVersion

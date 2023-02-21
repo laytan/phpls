@@ -1,4 +1,4 @@
-package visitor
+package stubtransform
 
 import (
 	"bytes"
@@ -13,6 +13,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// ElementAvailableAttribute removes nodes with the PhpStormStubsElementAvailable
+// attribute that does not match the given version.
 type ElementAvailableAttribute struct {
 	visitor.Null
 	version   *phpversion.PHPVersion

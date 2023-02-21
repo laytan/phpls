@@ -1,4 +1,4 @@
-package visitor
+package stubtransform
 
 import (
 	"bytes"
