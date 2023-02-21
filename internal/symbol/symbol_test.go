@@ -82,7 +82,10 @@ func setup(root string, phpv *phpversion.PHPVersion) error {
 	i := index.New(phpv)
 	do.OverrideValue(nil, config.Default())
 	do.OverrideValue(nil, i)
-	do.OverrideValue(nil, wrkspc.New(phpv, root))
+	do.OverrideValue(
+		nil,
+		wrkspc.New(phpv, root, filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")),
+	)
 	do.OverrideValue(nil, typer.New())
 
 	p := project.New()

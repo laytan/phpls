@@ -23,6 +23,7 @@ require (
 )
 
 require (
+	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect

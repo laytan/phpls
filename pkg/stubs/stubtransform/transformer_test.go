@@ -1,4 +1,4 @@
-package transformer_test
+package stubtransform_test
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
 	"github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/parser"
@@ -15,7 +16,7 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/strutil"
-	"github.com/laytan/elephp/tools/phpstorm-stubs-versioner/pkg/transformer"
+	"github.com/laytan/elephp/pkg/stubs/stubtransform"
 )
 
 type scenario struct {
@@ -28,7 +29,7 @@ type scenario struct {
 func runScenarios(
 	t *testing.T,
 	scenarios []scenario,
-	createTransformer func(*phpversion.PHPVersion) transformer.Transformer,
+	createTransformer func(*phpversion.PHPVersion) ast.Visitor,
 ) {
 	t.Helper()
 
@@ -55,7 +56,7 @@ func runScenarios(
 			}
 
 			trans := createTransformer(phpv)
-			trans.Transform(ast)
+			ast.Accept(trans)
 
 			out := bytes.NewBufferString("")
 			p := printer.NewPrinter(out)
@@ -83,7 +84,7 @@ func (l *logger) Printf(format string, args ...any) {
 }
 
 func BenchmarkTransformer(b *testing.B) {
-	stubsDir := filepath.Join(pathutils.Root(), "..", "..", "third_party", "phpstorm-stubs")
+	stubsDir := filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 	outDir := filepath.Join(os.TempDir(), "elephp-stub-benchmark")
 
 	l := &logger{b: b}
@@ -102,8 +103,14 @@ func BenchmarkTransformer(b *testing.B) {
 		func() {
 			defer clean()
 
-			w := transformer.NewWalker(l, stubsDir, outDir, version, transformer.All(version, nil))
-			err := w.Go()
+			w := stubtransform.NewWalker(
+				l,
+				stubsDir,
+				outDir,
+				version,
+				stubtransform.All(version, nil),
+			)
+			err := w.Walk()
 			if err != nil {
 				b.Error(err)
 			}

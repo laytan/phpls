@@ -18,12 +18,9 @@ func BenchmarkWalk(b *testing.B) {
 
 	do.OverrideValue(nil, config.Default())
 
+	stubs := filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 	// NOTE: manually change this to some bigger projects when benching.
-	do.OverrideValue(nil, wrkspc.New(phpversion.EightOne(), filepath.Join(
-		pathutils.Root(),
-		"third_party",
-		"phpstorm-stubs",
-	)))
+	do.OverrideValue(nil, wrkspc.New(phpversion.EightOne(), stubs, stubs))
 
 	for i := 0; i < b.N; i++ {
 		filesChan := make(chan *wrkspc.ParsedFile)

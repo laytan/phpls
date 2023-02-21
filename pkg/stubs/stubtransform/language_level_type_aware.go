@@ -1,4 +1,4 @@
-package visitor
+package stubtransform
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// LanguageLevelTypeAware applies the types in the LanguageLevelTypeAware args.
 type LanguageLevelTypeAware struct {
 	visitor.Null
 	version   *phpversion.PHPVersion

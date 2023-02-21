@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -14,19 +15,11 @@ import (
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/lsperrors"
-	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/processwatch"
+	"github.com/laytan/elephp/pkg/stubs"
 	"github.com/laytan/elephp/pkg/typer"
 	"github.com/samber/do"
 	"golang.org/x/exp/slices"
-)
-
-const (
-	indexingProgressToken = "indexing"
-	// Time between progress updates.
-	indexingProgressInterval = 100 * time.Millisecond
-	// The duration that the last progress message is shown, before end is sent.
-	indexingDecayTime = 2 * time.Second
 )
 
 // Entrypoint, must be requested first by the client.
@@ -73,9 +66,18 @@ func (s *Server) Initialize(
 		)
 	}
 
-	proj, err := s.createProject()
+	stubsDir, err := s.initStubs(ctx)
 	if err != nil {
-		return nil, err
+		return nil, lsperrors.ErrRequestFailed(
+			fmt.Errorf("Failed initializing stubs: %w", err).Error(),
+		)
+	}
+
+	proj, err := s.createProject(stubsDir)
+	if err != nil {
+		return nil, lsperrors.ErrRequestFailed(
+			fmt.Errorf("Failed initializing project: %w", err).Error(),
+		)
 	}
 
 	s.project = proj
@@ -156,133 +158,60 @@ func (s *Server) index() {
 	ctx := context.Background()
 
 	done := &atomic.Uint64{}
-
 	total := &atomic.Uint64{}
-	var finalTotal uint64
+	var finalTotal float64
 
-	totalDone := false
-	totalDoneChan := make(chan bool, 1)
+	totalDoneChan := make(chan bool)
 	go func() {
 		<-totalDoneChan
-
-		totalDone = true
-		finalTotal = total.Load()
+		finalTotal = float64(total.Load())
 	}()
 
-	start := time.Now()
-
-	message := func() (string, int) {
-		doneAmt := done.Load()
-		totalAmt := finalTotal
-		if !totalDone {
-			totalAmt = total.Load()
+	getTotal := func() float64 {
+		if finalTotal != 0 {
+			return finalTotal
 		}
 
-		duration := time.Since(start).Round(time.Millisecond)
-
-		if totalDone {
-			percentage := int(float64(doneAmt) / float64(totalAmt) * 100)
-
-			return fmt.Sprintf(
-				"Indexed %d / %d (%d%%) source files in %s",
-				doneAmt,
-				totalAmt,
-				percentage,
-				duration,
-			), percentage
-		}
-
-		return fmt.Sprintf("Indexed %d / ~%d source files in %s", doneAmt, totalAmt, duration), 0
+		return float64(total.Load())
 	}
 
-	ticker := time.NewTicker(indexingProgressInterval)
-	doneChan := make(chan bool, 1)
-	go func() {
-		msg, _ := message()
-
-		if err := s.client.Progress(ctx, &protocol.ProgressParams{
-			Token: indexingProgressToken,
-			Value: progress{
-				Kind:       progressKindBegin,
-				Title:      "Indexing project",
-				Message:    msg,
-				Percentage: 0,
-			},
-		}); err != nil {
-			log.Println(err)
-		}
-
-		for {
-			select {
-			case <-doneChan:
-				msg, _ := message()
-
-				if err := s.client.Progress(ctx, &protocol.ProgressParams{
-					Token: indexingProgressToken,
-					Value: progress{
-						Kind:       progressKindReport,
-						Message:    msg,
-						Percentage: 100,
-					},
-				}); err != nil {
-					log.Println(err)
-				}
-
-				time.Sleep(indexingDecayTime)
-
-				if err := s.client.Progress(ctx, &protocol.ProgressParams{
-					Token: indexingProgressToken,
-					Value: progress{
-						Kind: progressKindEnd,
-					},
-				}); err != nil {
-					log.Println(err)
-				}
-
-				return
-
-			case <-ticker.C:
-				msg, percentage := message()
-
-				if err := s.client.Progress(ctx, &protocol.ProgressParams{
-					Token: indexingProgressToken,
-					Value: progress{
-						Kind:       progressKindReport,
-						Message:    msg,
-						Percentage: percentage,
-					},
-				}); err != nil {
-					log.Println(err)
-				}
-			}
-		}
-	}()
-
-	err := s.project.Parse(done, total, totalDoneChan)
+	stop, err := s.progress.Track(
+		ctx,
+		func() float64 { return float64(done.Load()) },
+		getTotal,
+		"indexing project",
+		time.Millisecond*100,
+	)
 	if err != nil {
-		s.showAndLogErr(ctx, protocol.Warning, err)
+		s.showAndLogErr(ctx, protocol.Error, err)
+		return
 	}
 
-	ticker.Stop()
+	err = s.project.Parse(done, total, totalDoneChan)
+	if err != nil {
+		if err := stop(err); err != nil {
+			s.showAndLogErr(ctx, protocol.Error, fmt.Errorf("stopping progress: %w", err))
+			return
+		}
 
-	doneChan <- true
-	close(doneChan)
+		s.showAndLogErr(ctx, protocol.Info, err)
+	}
 
-	m, _ := message()
-	log.Println(m)
+	if err := stop(nil); err != nil {
+		s.showAndLogErr(ctx, protocol.Error, err)
+	}
 }
 
-func (s *Server) createProject() (*project.Project, error) {
-	phpv, err := phpversion.Get()
+func (s *Server) createProject(stubsDir string) (*project.Project, error) {
+	phpv, err := Config().PHPVersion()
 	if err != nil {
-		log.Println(err)
-		return nil, lsperrors.ErrRequestFailed("LSP Server " + err.Error())
+		return nil, fmt.Errorf("creating project: %w", err)
 	}
 
 	log.Printf("Detected php version: %s\n", phpv.String())
 
 	i := index.New(phpv)
-	w := wrkspc.New(phpv, string(s.root))
+	w := wrkspc.New(phpv, string(s.root), stubsDir)
 	t := typer.New()
 
 	do.ProvideValue(nil, i)
@@ -290,4 +219,49 @@ func (s *Server) createProject() (*project.Project, error) {
 	do.ProvideValue(nil, t)
 
 	return project.New(), nil
+}
+
+func (s *Server) initStubs(ctx context.Context) (string, error) {
+	phpv, err := Config().PHPVersion()
+	if err != nil {
+		return "", fmt.Errorf("initializing stubs, getting php version: %w", err)
+	}
+
+	stubsDir, err := stubs.Path(Config().StubsDir(), phpv)
+	if err == nil {
+		return stubsDir, nil
+	}
+
+	if !errors.Is(err, stubs.ErrNotExists) {
+		return "", fmt.Errorf("initializing stubs, getting stubs path: %w", err)
+	}
+
+	done := &atomic.Uint32{}
+	stop, err := s.progress.Track(
+		ctx,
+		func() float64 { return float64(done.Load()) },
+		func() float64 { return stubs.TotalStubs },
+		fmt.Sprintf("generating stubs for PHP %s", phpv),
+		time.Millisecond*50,
+	)
+	if err != nil {
+		return "", fmt.Errorf("started tracking stub progress: %w", err)
+	}
+
+	stubsDir, err = stubs.Generate(Config().StubsDir(), phpv, done)
+
+	if err != nil {
+		err = fmt.Errorf("generating stubs: %w", err)
+		if stopErr := stop(err); stopErr != nil {
+			return "", fmt.Errorf("stopping progress: %w: %w", stopErr, err)
+		}
+
+		return "", err
+	}
+
+	if err = stop(nil); err != nil {
+		return "", fmt.Errorf("stopping progress: %w", err)
+	}
+
+	return stubsDir, nil
 }

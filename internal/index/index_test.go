@@ -37,12 +37,10 @@ func BenchmarkIndex(b *testing.B) {
 	do.OverrideValue(nil, index.New(phpversion.EightOne()))
 	do.OverrideValue(nil, config.Default())
 
+	stubsDir := filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
+
 	// NOTE: manually change this to some bigger projects for benching.
-	do.OverrideValue(nil, wrkspc.New(phpversion.EightOne(), filepath.Join(
-		pathutils.Root(),
-		"third_party",
-		"phpstorm-stubs",
-	)))
+	do.OverrideValue(nil, wrkspc.New(phpversion.EightOne(), stubsDir, stubsDir))
 
 	p := project.New()
 

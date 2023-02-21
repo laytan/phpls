@@ -10,28 +10,26 @@ import (
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
+	"github.com/laytan/elephp/pkg/lsprogress"
 	"github.com/samber/do"
 )
 
 var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
 
 func NewServer(client protocol.ClientCloser) *Server {
-	return &Server{client: client}
+	return &Server{client: client, progress: lsprogress.NewTracker(client)}
 }
 
 type Server struct {
 	client protocol.ClientCloser
-
 	// Until this is true, the server should only allow 'initialize' and 'initialized' requests.
 	isInitialized bool
-
 	// When this is true, the server should only allow 'exit' requests.
 	// When the 'exit' request is sent, the server can exit completely.
 	isShuttingDown bool
-
-	root string
-
-	project *project.Project
+	root           string
+	project        *project.Project
+	progress       *lsprogress.Tracker
 }
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call
