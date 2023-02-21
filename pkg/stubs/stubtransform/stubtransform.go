@@ -65,10 +65,11 @@ func All(version *phpversion.PHPVersion, logger Logger) func() []ast.Visitor {
 type Walker struct {
 	Transformers *sync.Pool
 	Logger       Logger
-	StubsDir     string
-	OutDir       string
 	Version      *phpversion.PHPVersion
 	Progress     *atomic.Uint32
+	StubsFS      fs.FS
+	StubsDir     string
+	OutDir       string
 }
 
 func NewWalker(
@@ -78,6 +79,11 @@ func NewWalker(
 	version *phpversion.PHPVersion,
 	transformers func() []ast.Visitor,
 ) *Walker {
+	// fs.FS does not allow absolute paths.
+	if stubsDir[0] == filepath.Separator {
+		stubsDir = stubsDir[1:]
+	}
+
 	return &Walker{
 		Transformers: &sync.Pool{
 			New: func() any {
@@ -85,9 +91,10 @@ func NewWalker(
 			},
 		},
 		Logger:   logger,
+		Version:  version,
+		StubsFS:  os.DirFS("/"),
 		StubsDir: stubsDir,
 		OutDir:   outDir,
-		Version:  version,
 	}
 }
 
@@ -95,9 +102,9 @@ func (w *Walker) Walk() error {
 	g := errgroup.Group{}
 	g.SetLimit(MaxConcurrency)
 
-	if err := filepath.WalkDir(w.StubsDir, func(path string, d fs.DirEntry, err error) error {
+	if err := fs.WalkDir(w.StubsFS, w.StubsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("walkdir error: %w", err)
 		}
 
 		relPath := strings.TrimPrefix(path, w.StubsDir)
@@ -131,7 +138,7 @@ func (w *Walker) Walk() error {
 			}
 
 			transformers := w.Transformers.Get().([]ast.Visitor)
-			if err := TransformFile(w.Logger, transformers, path, finalPath); err != nil {
+			if err := w.TransformFile(transformers, path, finalPath); err != nil {
 				return fmt.Errorf("transforming %s: %w", path, err)
 			}
 
@@ -150,8 +157,8 @@ func (w *Walker) Walk() error {
 	return nil
 }
 
-func TransformFile(logger Logger, transformers []ast.Visitor, path string, finalPath string) error {
-	content, err := os.ReadFile(path)
+func (w *Walker) TransformFile(transformers []ast.Visitor, path string, finalPath string) error {
+	content, err := fs.ReadFile(w.StubsFS, path)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
@@ -159,7 +166,7 @@ func TransformFile(logger Logger, transformers []ast.Visitor, path string, final
 	ast, err := parser.Parse(content, conf.Config{
 		Version: parserVersion,
 		ErrorHandlerFunc: func(e *errors.Error) {
-			logger.Printf(
+			w.Logger.Printf(
 				"Error parsing into AST, path: %s, message: %s, line: %d",
 				path,
 				e.Msg,
