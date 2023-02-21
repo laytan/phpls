@@ -186,8 +186,13 @@ func TransformFile(logger Logger, transformers []ast.Visitor, path string, final
 	// f := formatter.NewFormatter()
 	// ast.Accept(f)
 
-	p := printer.NewPrinter(bufio.NewWriter(file))
+	writer := bufio.NewWriter(file)
+	p := printer.NewPrinter(writer)
 	ast.Accept(p)
+	err = writer.Flush()
+	if err != nil {
+		return fmt.Errorf("writing remaining buffer: %w", err)
+	}
 
 	return nil
 }
