@@ -16,6 +16,7 @@ import (
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/cache"
 	"github.com/laytan/elephp/pkg/parsing"
+	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/samber/do"
 	"golang.org/x/sync/errgroup"
@@ -359,8 +360,10 @@ func (w *wrkspc) shouldParse(d fs.DirEntry) (bool, error) {
 	return false, nil
 }
 
+var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
+
 func (w *wrkspc) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, Config().StubsDir()) {
+	if strings.HasPrefix(path, Config().StubsDir()) || strings.HasPrefix(path, stubsDir) {
 		return w.stubParser
 	}
 

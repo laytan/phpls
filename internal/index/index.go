@@ -3,6 +3,7 @@ package index
 import (
 	"fmt"
 	"log"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/parsing"
+	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/symboltrie"
@@ -191,8 +193,10 @@ func (i *index) Delete(path string) error {
 	return nil
 }
 
+var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
+
 func (i *index) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, Config().StubsDir()) {
+	if strings.HasPrefix(path, Config().StubsDir()) || strings.HasPrefix(path, stubsDir) {
 		return i.stubParser
 	}
 
