@@ -7,18 +7,15 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/stubs/stubtransform"
+	thirdparty "github.com/laytan/elephp/third_party"
 )
 
 // Generate `total.go`.
 //go:generate go run total_gen.go
 
 var ErrNotExists = os.ErrNotExist
-
-// TODO: embed the stubs in the binary.
-var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 // Path returns the path to the root of the stubs directory for the given version.
 // Returns ErrNotExists if the directory does not exists.
@@ -45,13 +42,14 @@ func Generate(
 	stubsPath := filepath.Join(root, version.String())
 	w := stubtransform.NewWalker(
 		log.Default(),
-		stubsDir,
+		".",
 		root,
 		version,
 		stubtransform.All(version, nil),
 	)
 
 	w.Progress = progress
+	w.StubsFS = thirdparty.Stubs
 
 	err := w.Walk()
 	if err != nil {
