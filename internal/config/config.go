@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/kirsle/configdir"
@@ -59,7 +60,10 @@ type lsConfig struct {
 	opts opts
 	Args []string
 
-	phpVersion *phpversion.PHPVersion
+	phpVersion   *phpversion.PHPVersion
+	phpVersionMu sync.Mutex
+
+	stubsDirMu sync.Mutex
 }
 
 func (c *lsConfig) Initialize() (shownHelp bool, err error) {
@@ -149,6 +153,9 @@ func (c *lsConfig) IgnoredDirNames() []string {
 }
 
 func (c *lsConfig) StubsDir() string {
+	c.stubsDirMu.Lock()
+	defer c.stubsDirMu.Unlock()
+
 	if c.opts.StubsDir == "" {
 		c.opts.StubsDir = configdir.LocalCache("elephp", c.Version(), "stubs")
 	}
@@ -157,14 +164,17 @@ func (c *lsConfig) StubsDir() string {
 }
 
 func (c *lsConfig) PHPVersion() (*phpversion.PHPVersion, error) {
+	c.phpVersionMu.Lock()
+	defer c.phpVersionMu.Unlock()
+
 	if c.phpVersion != nil {
 		return c.phpVersion, nil
 	}
 
-	if c.opts.PHPVersion == "" {
-		v, err := phpversion.Get()
-		if err != nil {
-			return nil, fmt.Errorf("retrieving current PHP version: %w", err)
+	if c.opts.PHPVersion != "" {
+		v, ok := phpversion.FromString(c.opts.PHPVersion)
+		if !ok {
+			return nil, fmt.Errorf("unable to parse config php version: %s", c.opts.PHPVersion)
 		}
 
 		c.phpVersion = v
@@ -173,8 +183,9 @@ func (c *lsConfig) PHPVersion() (*phpversion.PHPVersion, error) {
 
 	v, err := phpversion.Get()
 	if err != nil {
-		return nil, fmt.Errorf("getting current php version: %w", err)
+		return nil, fmt.Errorf("retrieving current PHP version: %w", err)
 	}
 
+	c.phpVersion = v
 	return v, nil
 }
