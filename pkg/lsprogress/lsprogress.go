@@ -124,7 +124,7 @@ func (t *Tracker) Track(
 		if reportErr != nil {
 			err := progress.End(ctx, reportErr.Error())
 			if err != nil {
-				return fmt.Errorf("errors reporting and ending progress: %w, %w", err, reportErr)
+				return fmt.Errorf("multiple errors reporting and ending progress: %w", err)
 			}
 
 			return fmt.Errorf("reporting progress: %w", reportErr)

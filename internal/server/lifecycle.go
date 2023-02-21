@@ -253,7 +253,7 @@ func (s *Server) initStubs(ctx context.Context) (string, error) {
 	if err != nil {
 		err = fmt.Errorf("generating stubs: %w", err)
 		if stopErr := stop(err); stopErr != nil {
-			return "", fmt.Errorf("stopping progress: %w: %w", stopErr, err)
+			return "", fmt.Errorf("multiple errors stopping progress: %w", stopErr)
 		}
 
 		return "", err
