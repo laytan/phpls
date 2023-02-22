@@ -34,7 +34,7 @@ func (s *Server) Completion(
 	items := make([]protocol.CompletionItem, 0, len(results))
 	for _, res := range results {
 		item := protocol.CompletionItem{
-			Label: res.Symbol.Identifier(),
+			Label: res.Identifier,
 			Data:  string(pathData),
 		}
 
@@ -43,7 +43,7 @@ func (s *Server) Completion(
 			continue
 		}
 
-		switch res.Symbol.NodeKind() {
+		switch res.Kind {
 		case ir.KindFunctionStmt:
 			item.Kind = protocol.FunctionCompletion
 		case ir.KindClassStmt:
@@ -56,7 +56,7 @@ func (s *Server) Completion(
 		default:
 		}
 
-		item.Detail = fmt.Sprintf(`%s\%s`, res.FQN.Namespace(), res.Symbol.Identifier())
+		item.Detail = fmt.Sprintf(`%s\%s`, res.FQN.Namespace(), res.Identifier)
 
 		// NOTE: adding an additional text edit, so the client shows it in the UI.
 		// NOTE: the actual text edit is added in the Resolve method.

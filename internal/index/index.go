@@ -13,7 +13,6 @@ import (
 	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/samber/do"
 )
@@ -48,20 +47,6 @@ type Index interface {
 	// Giving this no kinds will return any kind.
 	// A max of 0 or passing ir.KindRoot will return everything.
 	FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*INode
-}
-
-type INode struct {
-	FQN    *fqn.FQN
-	Path   string
-	Symbol symbol.Symbol
-}
-
-func NewINode(fqns *fqn.FQN, path string, symbol symbol.Symbol) *INode {
-	return &INode{
-		FQN:    fqns,
-		Path:   path,
-		Symbol: symbol,
-	}
 }
 
 type index struct {
@@ -143,7 +128,7 @@ func (i *index) FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*INode
 
 	values := make([]*INode, 0, len(results))
 	for _, result := range results {
-		if result.Symbol.MatchesKind(kind) {
+		if result.MatchesKind(kind...) {
 			values = append(values, result)
 		}
 	}

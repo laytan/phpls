@@ -9,7 +9,6 @@ import (
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/pkg/phpdoxer"
-	oldsym "github.com/laytan/elephp/pkg/symbol"
 )
 
 type CommentsProvider struct{}
@@ -105,11 +104,10 @@ func (p *CommentsProvider) defineInheritDoc(
 
 		inhMeth := inhCls.FindMethod(symbol.FilterOverwrittenBy(meth))
 		if inhMeth != nil {
-			s := oldsym.NewMethod(inhMeth.Node())
-
 			return []*definition.Definition{{
-				Path: inhCls.Path(),
-				Node: s,
+				Path:       inhCls.Path(),
+				Position:   inhMeth.Node().Position,
+				Identifier: inhMeth.Name(),
 			}}, nil
 		}
 	}

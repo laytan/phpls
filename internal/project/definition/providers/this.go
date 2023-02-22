@@ -4,7 +4,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodeident"
 )
 
 // ThisProvider resolves the definition of the current class scope for '$this'
@@ -31,8 +31,10 @@ func (p *ThisProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error
 		return nil, definition.ErrNoDefinitionFound
 	}
 
+	cls := ctx.ClassScope()
 	return []*definition.Definition{{
-		Path: ctx.Start().Path,
-		Node: symbol.New(ctx.ClassScope()),
+		Path:       ctx.Start().Path,
+		Position:   ir.GetPosition(cls),
+		Identifier: nodeident.Get(cls),
 	}}, nil
 }

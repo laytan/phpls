@@ -33,7 +33,8 @@ func (p *UseProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error)
 	}
 
 	return []*definition.Definition{{
-		Path: res.Path,
-		Node: res.Symbol,
+		Path:       res.Path,
+		Position:   res.Position,
+		Identifier: res.Identifier,
 	}}, nil
 }
