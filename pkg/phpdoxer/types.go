@@ -22,7 +22,7 @@ type TypeKind uint
 
 const (
 	KindMixed TypeKind = iota
-    KindUnknownType
+	KindUnknownType
 	KindNull
 	KindClassLike
 	KindArray
@@ -70,16 +70,16 @@ func (t *TypeMixed) Kind() TypeKind {
 	return KindMixed
 }
 
-type TypeUnknown struct{
-    Value string
+type TypeUnknown struct {
+	Value string
 }
 
 func (t *TypeUnknown) String() string {
-    return t.Value
+	return t.Value
 }
 
 func (t *TypeUnknown) Kind() TypeKind {
-    return KindUnknownType
+	return KindUnknownType
 }
 
 type TypeNull struct{}
