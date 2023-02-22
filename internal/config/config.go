@@ -17,6 +17,14 @@ var ErrIncorrectConnTypeAmt = errors.New(
 	"Elephp requires exactly one connection type to be selected",
 )
 
+const Usage = `<command> [-options]
+
+Available commands:
+
+empty   Run the language server
+logs    Output the directory where logs are stored
+stubs   Output the directory where generated stubs are stored`
+
 func New() Config {
 	return &lsConfig{Args: os.Args}
 }
@@ -37,6 +45,7 @@ func Default() Config {
 			FileExtensions:  []string{"php"},
 			IgnoredDirNames: []string{".git", "node_modules"},
 			StubsDir:        "",
+			LogsDir:         "",
 			PHPVersion:      "",
 		},
 	}
@@ -53,6 +62,7 @@ type Config interface {
 	FileExtensions() []string
 	IgnoredDirNames() []string
 	StubsDir() string
+	LogsDir() string
 	PHPVersion() (*phpversion.PHPVersion, error)
 }
 
@@ -64,24 +74,22 @@ type lsConfig struct {
 	phpVersionMu sync.Mutex
 
 	stubsDirMu sync.Mutex
+	logsDirMu  sync.Mutex
 }
 
-func (c *lsConfig) Initialize() (shownHelp bool, err error) {
-	_, err = flags.ParseArgs(&c.opts, c.Args)
-	if err == nil {
-		return false, nil
+func (c *lsConfig) Initialize() (disregardErr bool, err error) {
+	parser := flags.NewParser(&c.opts, flags.Default)
+	parser.Usage = Usage
+	_, err = parser.ParseArgs(c.Args)
+	if err != nil {
+		var specificErr *flags.Error
+		errors.As(err, &specificErr)
+		helpShown := specificErr != nil && specificErr.Type == flags.ErrHelp
+
+		return helpShown, fmt.Errorf("parsing arguments: %w", err)
 	}
 
-	var specificErr *flags.Error
-	if !errors.As(err, &specificErr) {
-		return false, fmt.Errorf("unexpected error parsing flags: %w", err)
-	}
-
-	if specificErr.Type == flags.ErrHelp {
-		return true, nil
-	}
-
-	return false, fmt.Errorf("Could not initialize config: %w", specificErr)
+	return false, nil
 }
 
 func (c *lsConfig) ClientPid() (uint, bool) {
@@ -157,10 +165,21 @@ func (c *lsConfig) StubsDir() string {
 	defer c.stubsDirMu.Unlock()
 
 	if c.opts.StubsDir == "" {
-		c.opts.StubsDir = configdir.LocalCache("elephp", c.Version(), "stubs")
+		c.opts.StubsDir = configdir.LocalCache(c.Name(), c.Version(), "stubs")
 	}
 
 	return c.opts.StubsDir
+}
+
+func (c *lsConfig) LogsDir() string {
+	c.logsDirMu.Lock()
+	defer c.logsDirMu.Unlock()
+
+	if c.opts.LogsDir == "" {
+		c.opts.LogsDir = configdir.LocalCache(c.Name(), c.Version(), "logs")
+	}
+
+	return c.opts.LogsDir
 }
 
 func (c *lsConfig) PHPVersion() (*phpversion.PHPVersion, error) {

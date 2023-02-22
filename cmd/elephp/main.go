@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/arl/statsviz"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
@@ -15,7 +14,6 @@ import (
 	"github.com/laytan/elephp/internal/logging"
 	"github.com/laytan/elephp/internal/server"
 	"github.com/laytan/elephp/pkg/connection"
-	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/processwatch"
 	"github.com/samber/do"
 
@@ -24,29 +22,50 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "logs":
+			defaultConf := config.Default()
+			_, _ = fmt.Println(defaultConf.LogsDir())
+			return
+		case "stubs":
+			defaultConf := config.Default()
+			_, _ = fmt.Println(defaultConf.StubsDir())
+			return
+		}
+	}
+
 	conf := config.New()
 	do.ProvideValue(nil, conf)
 
 	disregardErr, err := conf.Initialize()
 	if disregardErr {
-		os.Exit(1)
+		_, _ = fmt.Println(err)
+		return
 	}
 
 	if err != nil {
-		panic(err)
+		_, _ = fmt.Println(err)
+		return
 	}
 
-	stop := logging.Configure(filepath.Join(pathutils.Root(), "logs"))
+	stop := logging.Configure(conf.LogsDir())
 	defer stop()
+
+	_, _ = fmt.Printf(
+		"Output will be going into the logs file at \"%s\" from now on",
+		logging.LogsPath(conf.LogsDir()),
+	)
 
 	connType, err := conf.ConnType()
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
+		return
 	}
 
 	if pid, isset := conf.ClientPid(); isset {
 		processwatch.NewExiter(pid)
-		log.Printf("Monitoring process ID: %d\n", pid)
+		log.Printf("Monitoring process ID: %d", pid)
 	}
 
 	if conf.UseStatsviz() {

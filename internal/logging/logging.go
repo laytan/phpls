@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,17 +19,22 @@ const (
 	dateLayout = "2006-01-02"
 	fileType   = ".log"
 
+	dirPerms  = 0o755
 	filePerms = 0o666
 )
 
 var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
 
 func Configure(root string) (stop func()) {
-	logsPath := getLogsPath(root)
+	logsPath := LogsPath(root)
+
+	if err := os.MkdirAll(root, dirPerms); err != nil {
+		panic(fmt.Errorf("creating logs directory %s: %w", root, err))
+	}
 
 	f, err := os.OpenFile(logsPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, filePerms)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("opening log file %s: %w", logsPath, err))
 	}
 
 	log.SetOutput(f)
@@ -38,12 +44,12 @@ func Configure(root string) (stop func()) {
 
 	return func() {
 		if err := f.Close(); err != nil {
-			panic(err)
+			panic(fmt.Errorf("closing logs file: %w", err))
 		}
 	}
 }
 
-func getLogsPath(root string) string {
+func LogsPath(root string) string {
 	name := Config().Name()
 
 	filename := name + "-" + time.Now().Format(dateLayout) + fileType
