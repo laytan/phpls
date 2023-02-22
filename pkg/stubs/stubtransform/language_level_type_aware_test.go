@@ -351,10 +351,10 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             }
             `,
 		},
-        {
-            name: "weird",
-            version: "8.1.15",
-            input: `
+		{
+			name:    "weird",
+			version: "8.1.15",
+			input: `
             <?php
             use \JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
 
@@ -377,7 +377,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
                 #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags = null
             ) {}
             `,
-            expected: `
+			expected: `
             <?php
             use \JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
 
@@ -401,7 +401,7 @@ func TestLanguageLevelTypeAware(t *testing.T) {
                 $flags = null
             ) {}
             `,
-        },
+		},
 	}
 
 	runScenarios(t, scenarios, func(v *phpversion.PHPVersion) ast.Visitor {
