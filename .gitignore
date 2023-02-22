@@ -1,5 +1,2 @@
 /elephp
 /unsafenil.so
-/logs/*
-!/logs/.gitkeep
-/versioned-phpstorm-stubs
