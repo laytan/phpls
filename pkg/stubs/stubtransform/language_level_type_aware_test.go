@@ -351,6 +351,57 @@ func TestLanguageLevelTypeAware(t *testing.T) {
             }
             `,
 		},
+        {
+            name: "weird",
+            version: "8.1.15",
+            input: `
+            <?php
+            use \JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
+
+            /**
+             * (PHP 5 &gt;= 5.2.0, PECL zip &gt;= 1.1.0)<br/>
+             * Get the details of an entry defined by its index.
+             * @link https://php.net/manual/en/ziparchive.statindex.php
+             * @param int $index <p>
+             * Index of the entry
+             * </p>
+             * @param int $flags [optional] <p>
+             * <b>ZipArchive::FL_UNCHANGED</b> may be ORed to it to request
+             * information about the original file in the archive,
+             * ignoring any changes made.
+             * </p>
+             * @return array{name: string, index: int, crc: int, size: int, mtime: int, comp_size: int, comp_method: int, encryption_method: int}|false an array containing the entry details or <b>FALSE</b> on failure.
+             */
+            function statIndex(
+                #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $index,
+                #[LanguageLevelTypeAware(['8.0' => 'int'], default: '')] $flags = null
+            ) {}
+            `,
+            expected: `
+            <?php
+            use \JetBrains\PhpStorm\Internal\LanguageLevelTypeAware;
+
+            /**
+             * (PHP 5 &gt;= 5.2.0, PECL zip &gt;= 1.1.0)<br/>
+             * Get the details of an entry defined by its index.
+             *
+             * @link https://php.net/manual/en/ziparchive.statindex.php
+             * @param int $index <p>
+             * Index of the entry
+             * </p>
+             * @param int $flags [optional] <p>
+             * <b>ZipArchive::FL_UNCHANGED</b> may be ORed to it to request
+             * information about the original file in the archive,
+             * ignoring any changes made.
+             * </p>
+             * @return array{name: string, index: int, crc: int, size: int, mtime: int, comp_size: int, comp_method: int, encryption_method: int}|false an array containing the entry details or <b>FALSE</b> on failure.
+             */
+            function statIndex(
+                $index,
+                $flags = null
+            ) {}
+            `,
+        },
 	}
 
 	runScenarios(t, scenarios, func(v *phpversion.PHPVersion) ast.Visitor {
