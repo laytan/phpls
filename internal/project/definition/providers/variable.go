@@ -4,7 +4,7 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
@@ -30,7 +30,8 @@ func (p *VariableProvider) Define(ctx *context.Ctx) ([]*definition.Definition, e
 	}
 
 	return []*definition.Definition{{
-		Path: ctx.Start().Path,
-		Node: symbol.NewAssignment(t.Assignment),
+		Path:       ctx.Start().Path,
+		Position:   t.Assignment.Position,
+		Identifier: nodeident.Get(t.Assignment),
 	}}, nil
 }

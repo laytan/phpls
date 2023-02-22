@@ -1,9 +1,11 @@
 package index
 
 import (
+	"log"
+
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/symbol"
+	"github.com/laytan/elephp/pkg/nodeident"
 )
 
 type INodeTraverser struct {
@@ -26,17 +28,38 @@ func (t *INodeTraverser) EnterNode(node ir.Node) bool {
 		return true
 
 	case *ir.FunctionStmt, *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
-		sym := symbol.New(node)
-		fqn := fqn.New(t.currentNamespace + sym.Identifier())
-		t.nodes <- NewINode(fqn, t.currentPath, sym)
+		fqn := fqn.New(t.currentNamespace + nodeident.Get(node))
+		t.nodes <- NewINode(fqn, t.currentPath, node)
 
 		return false
 
 	case *ir.FunctionCallExpr:
+		// Index a function call to define() as a constant.
+
 		if fn, ok := typedNode.Function.(*ir.Name); ok && fn.Value == "define" {
-			sym := symbol.NewGlobalConstant(typedNode)
-			fqn := fqn.New("\\" + sym.Identifier())
-			t.nodes <- NewINode(fqn, t.currentPath, sym)
+			if len(typedNode.Args) == 0 {
+				return false
+			}
+
+			firstArg, ok := typedNode.Args[0].(*ir.Argument)
+			if !ok {
+				return false
+			}
+
+			ident, ok := firstArg.Expr.(*ir.String)
+			if !ok {
+				log.Println("found define call without a string argument")
+				return false
+			}
+
+			fqn := fqn.New("\\" + ident.Value)
+			t.nodes <- &INode{
+				FQN:        fqn,
+				Path:       t.currentPath,
+				Position:   typedNode.Position,
+				Identifier: ident.Value,
+				Kind:       ir.KindConstantStmt,
+			}
 		}
 
 		return false

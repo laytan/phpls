@@ -70,5 +70,5 @@ func (p *Project) Definition(pos *position.Position) ([]*position.Position, erro
 
 func defPosition(def *definition.Definition) *position.Position {
 	content := wrkspc.FromContainer().FContentOf(def.Path)
-	return position.FromIRPosition(def.Path, content, def.Node.Position().StartPos)
+	return position.FromIRPosition(def.Path, content, def.Position.StartPos)
 }

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/VKCOM/php-parser/pkg/position"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/pkg/symbol"
 )
 
 const (
@@ -22,14 +22,16 @@ var (
 )
 
 type Definition struct {
-	Path string
-	Node symbol.Symbol
+	Path       string
+	Position   *position.Position
+	Identifier string
 }
 
 func IndexNodeToDef(node *index.INode) *Definition {
 	return &Definition{
-		Path: node.Path,
-		Node: node.Symbol,
+		Path:       node.Path,
+		Position:   node.Position,
+		Identifier: node.Identifier,
 	}
 }
 

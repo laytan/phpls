@@ -18,7 +18,6 @@ import (
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/set"
-	oldsym "github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 	"golang.org/x/exp/slices"
 )
@@ -52,7 +51,7 @@ func NewResolver(root rooter, node ir.Node) *Throws {
 
 func NewResolverFromIndex(n *index.INode) *Throws {
 	rooter := wrkspc.NewRooter(n.Path)
-	return NewResolver(rooter, oldsym.ToNode(rooter.Root(), n.Symbol))
+	return NewResolver(rooter, n.ToIRNode(rooter.Root()))
 }
 
 type Violation struct {

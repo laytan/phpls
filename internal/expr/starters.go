@@ -8,14 +8,13 @@ import (
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
-	newsym "github.com/laytan/elephp/internal/symbol"
+	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
-	"github.com/laytan/elephp/pkg/symbol"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/elephp/pkg/typer"
 )
@@ -61,9 +60,7 @@ func (p *variableResolver) Up(
 			Position: ir.GetPosition(scopes.Class),
 			Value:    nodeident.Get(scopes.Class),
 		}); ok {
-			n := symbol.ToNode(wrk.FIROf(node.Path), node.Symbol)
-
-			return &Resolved{Path: node.Path, Node: n},
+			return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.FIROf(node.Path))},
 				node.FQN,
 				phprivacy.PrivacyPrivate,
 				true
@@ -74,9 +71,7 @@ func (p *variableResolver) Up(
 
 	case "parent":
 		node := parentOf(scopes)
-		n := symbol.ToNode(wrk.FIROf(node.Path), node.Symbol)
-
-		return &Resolved{Path: node.Path, Node: n},
+		return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.FIROf(node.Path))},
 			node.FQN,
 			phprivacy.PrivacyProtected,
 			true
@@ -183,9 +178,7 @@ func (p *nameResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	n := symbol.ToNode(wrkspc.FromContainer().FIROf(res.Path), res.Symbol)
-
-	return &Resolved{Path: res.Path, Node: n},
+	return &Resolved{Path: res.Path, Node: res.ToIRNode(wrkspc.FromContainer().FIROf(res.Path))},
 		qualified,
 		privacy,
 		true
@@ -206,7 +199,7 @@ func (p *nameResolver) DeterminePrivacy(scopes *Scopes, fqn *fqn.FQN) (phprivacy
 		return phprivacy.PrivacyPrivate, nil
 	}
 
-	cls, err := newsym.NewClassLikeFromFQN(wrkspc.NewRooter(scopes.Path, scopes.Root), scopeFqn)
+	cls, err := symbol.NewClassLikeFromFQN(wrkspc.NewRooter(scopes.Path, scopes.Root), scopeFqn)
 	if err != nil {
 		return 0, fmt.Errorf("[nameResolver.DeterminePrivacy]: %w", err)
 	}
@@ -259,7 +252,7 @@ func (p *functionResolver) Up(
 	}
 
 	typeOfFunc := func(n ir.Node) *fqn.FQN {
-		ret, _ := newsym.NewFunction(
+		ret, _ := symbol.NewFunction(
 			wrkspc.NewRooter(scopes.Path, scopes.Root),
 			n.(*ir.FunctionStmt),
 		).Returns()
@@ -292,8 +285,7 @@ func (p *functionResolver) Up(
 		Position: toResolve.Position,
 		Value:    toResolve.Identifier,
 	}); ok {
-		n := symbol.ToNode(wrkspc.FromContainer().FIROf(def.Path), def.Symbol)
-
+		n := def.ToIRNode(wrkspc.FromContainer().FIROf(def.Path))
 		return &Resolved{
 			Node: n,
 			Path: def.Path,
@@ -308,8 +300,7 @@ func (p *functionResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	n := symbol.ToNode(wrkspc.FromContainer().FIROf(def.Path), def.Symbol)
-
+	n := def.ToIRNode(wrkspc.FromContainer().FIROf(def.Path))
 	return &Resolved{
 		Node: n,
 		Path: def.Path,
@@ -357,9 +348,10 @@ func (newresolver *newResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		n := symbol.ToNode(wrkspc.FromContainer().FIROf(def.Path), def.Symbol)
-
-		return &Resolved{Path: def.Path, Node: n},
+		return &Resolved{
+				Path: def.Path,
+				Node: def.ToIRNode(wrkspc.FromContainer().FIROf(def.Path)),
+			},
 			qualified,
 			phprivacy.PrivacyPublic,
 			true
