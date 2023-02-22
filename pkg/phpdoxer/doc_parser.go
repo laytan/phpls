@@ -126,6 +126,9 @@ func parseGroup(g *group) (Node, error) {
 	case "return":
 		typeStr, description := splitTypeAndRest(value)
 		typeNode, _ := ParseType(typeStr)
+		if typeNode == nil {
+			typeNode = &TypeUnknown{Value: typeStr}
+		}
 
 		result = &NodeReturn{
 			Type:        typeNode,
@@ -136,6 +139,9 @@ func parseGroup(g *group) (Node, error) {
 	case "var":
 		typeStr, description := splitTypeAndRest(value)
 		typeNode, _ := ParseType(typeStr)
+		if typeNode == nil {
+			typeNode = &TypeUnknown{Value: typeStr}
+		}
 
 		result = &NodeVar{
 			Type:        typeNode,
@@ -209,6 +215,9 @@ func parseGroup(g *group) (Node, error) {
 		typeStr, description := splitTypeAndRest(value)
 
 		typeNode, _ := ParseType(typeStr)
+		if typeNode == nil {
+			typeNode = &TypeUnknown{Value: typeStr}
+		}
 
 		result = &NodeThrows{
 			Type:        typeNode,
