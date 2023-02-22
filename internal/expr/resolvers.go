@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -349,7 +350,10 @@ func resolveMethod(
 		Path: cls.Path(),
 	}
 
-	res := m.ReturnsClass(cls.GetFQN())
+	res, err := m.ReturnsClass()
+	if err != nil && !errors.Is(err, symbol.ErrNoReturn) {
+		log.Println(fmt.Errorf("resolving method %s return: %w", m.Name(), err))
+	}
 	if len(res) > 0 {
 		return resolvement, fqn.New(res[0].Name)
 	}

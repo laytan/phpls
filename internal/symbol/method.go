@@ -9,6 +9,7 @@ type Method struct {
 	*modified
 	*canReturn
 	*doxed
+	*parametized
 
 	node *ir.ClassMethodStmt
 }
@@ -24,7 +25,12 @@ func NewMethod(root rooter, node *ir.ClassMethodStmt) *Method {
 			node:   node,
 		},
 		doxed: doxed,
-		node:  node,
+		parametized: &parametized{
+			doxed:  doxed,
+			rooter: root,
+			node:   node,
+		},
+		node: node,
 	}
 }
 

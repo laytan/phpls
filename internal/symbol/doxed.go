@@ -109,3 +109,33 @@ func (d *doxed) FindThrows() []*phpdoxer.NodeThrows {
 func (d *doxed) RawDocs() string {
 	return strings.Join(typer.NodeComments(d.node), "\n")
 }
+
+// TypeHintToDocType Turns a type hint node, from for example ir.FunctionStmt.ReturnType into the
+// equivalent phpdoxer.Type.
+func TypeHintToDocType(node ir.Node) (phpdoxer.Type, error) {
+	var isNullable bool
+	if nullable, ok := node.(*ir.Nullable); ok {
+		node = nullable.Expr
+		isNullable = true
+	}
+
+	name, ok := node.(*ir.Name)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%T is unsupported for a return type hint, expecting *ir.Name or *ir.Nullable",
+			node,
+		)
+	}
+
+	toParse := name.Value
+	if isNullable {
+		toParse = "null|" + toParse
+	}
+
+	t, err := phpdoxer.ParseType(toParse)
+	if err != nil {
+		return nil, fmt.Errorf(`parsing type hint into doc type "%s": %w`, name.Value, err)
+	}
+
+	return t, nil
+}

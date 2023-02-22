@@ -7,6 +7,7 @@ import (
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
@@ -103,6 +104,10 @@ func NewClassLikeFromFQN(r rooter, qualified *fqn.FQN) (*ClassLike, error) {
 
 func (c *ClassLike) Kind() ir.NodeKind {
 	return ir.GetNodeKind(c.node)
+}
+
+func (c *ClassLike) Name() string {
+	return nodeident.Get(c.node)
 }
 
 type inheritor struct {

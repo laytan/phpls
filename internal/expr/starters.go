@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -113,19 +114,26 @@ func (p *variableResolver) Up(
 			}
 
 		case *ir.Parameter:
-			if t := typ.Param(scopes.Root, scopes.Block, typedScope); t != nil {
-				if tc, ok := t.(*phpdoxer.TypeClassLike); ok {
-					qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
-						Position: ir.GetPosition(scopes.Block),
-						Value:    tc.Name,
-					})
-
-					return &Resolved{Node: ta.Assignment, Path: scopes.Path},
-						qualified,
-						phprivacy.PrivacyPublic,
-						true
+			rooter := wrkspc.NewRooter(scopes.Path, scopes.Root)
+			param := symbol.NewParameter(rooter, scopes.Block, typedScope)
+			typ, err := param.TypeClass()
+			if err != nil {
+				if errors.Is(err, symbol.ErrNoParam) {
+					break
 				}
+
+				log.Println(fmt.Errorf("getting param %v typ: %w", typedScope, err))
 			}
+
+			if len(typ) == 0 {
+				break
+			}
+
+			// TODO: only using first typ, needs rewrite.
+			return &Resolved{
+				Node: ta.Assignment,
+				Path: scopes.Path,
+			}, fqn.New(typ[0].Name), phprivacy.PrivacyPublic, true
 
 		default:
 			log.Printf("TODO: resolve variable out of type %T", ta.Scope)
@@ -252,10 +260,14 @@ func (p *functionResolver) Up(
 	}
 
 	typeOfFunc := func(n ir.Node) *fqn.FQN {
-		ret, _ := symbol.NewFunction(
+		ret, _, err := symbol.NewFunction(
 			wrkspc.NewRooter(scopes.Path, scopes.Root),
 			n.(*ir.FunctionStmt),
 		).Returns()
+
+		if err != nil && !errors.Is(err, symbol.ErrNoReturn) {
+			log.Println(fmt.Errorf("getting return type of %v: %w", n, err))
+		}
 
 		if retCls, ok := ret.(*phpdoxer.TypeClassLike); ok {
 			return fqner.FullyQualifyName(scopes.Root, &ir.Name{

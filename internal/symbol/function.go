@@ -12,6 +12,7 @@ import (
 type Function struct {
 	*canReturn
 	*doxed
+	*parametized
 
 	node *ir.FunctionStmt
 }
@@ -23,6 +24,11 @@ func NewFunction(root rooter, node *ir.FunctionStmt) *Function {
 		canReturn: &canReturn{
 			doxed:  doxed,
 			rooter: root,
+			node:   node,
+		},
+		parametized: &parametized{
+			rooter: root,
+			doxed:  doxed,
 			node:   node,
 		},
 		doxed: doxed,

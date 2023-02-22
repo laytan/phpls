@@ -1,7 +1,6 @@
 package typer
 
 import (
-	"errors"
 	"fmt"
 	"log"
 
@@ -15,20 +14,12 @@ import (
 // Typer is responsible of using ir and phpdoxer to retrieve/resolve types
 // from phpdoc or type hints of a node.
 type Typer interface {
-	// Call with either a ir.ClassMethodStmt or ir.FunctionStmt.
-	Param(root *ir.Root, funcOrMeth ir.Node, param *ir.Parameter) phpdoxer.Type
-
 	// Scope should be the method/function the variable is used in, if it is used
 	// globally, this can be left nil.
 	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) phpdoxer.Type
 
 	Property(root *ir.Root, propertyList *ir.PropertyListStmt) phpdoxer.Type
 }
-
-var (
-	ErrUnsupportedFuncOrMethod = errors.New("Unsupported function or method node")
-	ErrUnexpectedNodeType      = errors.New("Node type unexpected")
-)
 
 type typer struct{}
 

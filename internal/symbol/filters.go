@@ -10,6 +10,10 @@ type Named interface {
 	Name() string
 }
 
+type named interface {
+	Named
+}
+
 func FilterName[T Named](name string) FilterFunc[T] {
 	return func(v T) bool {
 		return v.Name() == name
