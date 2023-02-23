@@ -40,7 +40,7 @@ func (r *canReturn) Returns() (phpdoxer.Type, *ClassLike, error) {
 			return rh, cls, nil
 		}
 
-		return rh, nil, nil
+        return rh, nil, nil //nolint:unsafenil // First return is the result, rest is documented.
 	}
 
 	rc, cls, err := r.returnsComment()
@@ -172,6 +172,6 @@ func (r *canReturn) class() (*ClassLike, error) {
 
 		return cls, nil
 	default:
-		return nil, nil
+		return nil, ErrNotAMethod
 	}
 }

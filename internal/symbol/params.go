@@ -15,7 +15,7 @@ import (
 
 var (
 	ErrNoParam    = errors.New("parameter has no type")
-	ErrNotAMethod = errors.New("parameter does not live on a method")
+	ErrNotAMethod = errors.New("does not live on a method")
 )
 
 type Parameter struct {
@@ -56,7 +56,7 @@ func (p *Parameter) Type() (phpdoxer.Type, *ClassLike, error) {
 			return typ, cls, nil
 		}
 
-		return typ, nil, nil
+		return typ, nil, nil //nolint:unsafenil // First return is the result, rest is documented.
 	}
 
 	if !isMethod {
