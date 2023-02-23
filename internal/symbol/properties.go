@@ -22,7 +22,7 @@ func (c *ClassLike) PropertiesIter() PropertiesIterFunc {
 			return nil, true, nil
 		}
 
-		p = NewProperty(pt.Properties[i])
+		p = NewProperty(c, pt.Properties[i])
 		i++
 		return p, false, nil
 	}

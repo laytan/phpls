@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
-	"github.com/laytan/elephp/pkg/typer"
 )
 
 type DocFilter func(phpdoxer.Node) bool
@@ -36,7 +36,7 @@ func (d *doxed) Docs() []phpdoxer.Node {
 		return d.docNodeCache
 	}
 
-	cmnts := typer.NodeComments(d.node)
+	cmnts := NodeComments(d.node)
 	nodes := make([]phpdoxer.Node, 0, len(cmnts))
 	for _, cmnt := range cmnts {
 		cmntNodes, err := phpdoxer.ParseDoc(cmnt)
@@ -107,7 +107,7 @@ func (d *doxed) FindThrows() []*phpdoxer.NodeThrows {
 }
 
 func (d *doxed) RawDocs() string {
-	return strings.Join(typer.NodeComments(d.node), "\n")
+	return strings.Join(NodeComments(d.node), "\n")
 }
 
 // TypeHintToDocType Turns a type hint node, from for example ir.FunctionStmt.ReturnType into the
@@ -138,4 +138,50 @@ func TypeHintToDocType(node ir.Node) (phpdoxer.Type, error) {
 	}
 
 	return t, nil
+}
+
+func NodeComments(node ir.Node) []string {
+	switch typedNode := node.(type) {
+	case *ir.FunctionStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ArrowFunctionExpr:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClosureExpr:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassConstListStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassMethodStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.ClassStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.InterfaceStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.PropertyListStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.TraitStmt:
+		return []string{typedNode.Doc.Raw}
+
+	case *ir.FunctionCallExpr:
+		return NodeComments(typedNode.Function)
+
+	default:
+		docs := []string{}
+		node.IterateTokens(func(t *token.Token) bool {
+			if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
+				return true
+			}
+
+			docs = append(docs, string(t.Value))
+			return true
+		})
+		return docs
+	}
 }

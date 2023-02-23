@@ -40,7 +40,7 @@ func (r *canReturn) Returns() (phpdoxer.Type, *ClassLike, error) {
 			return rh, cls, nil
 		}
 
-        return rh, nil, nil //nolint:unsafenil // First return is the result, rest is documented.
+		return rh, nil, nil //nolint:unsafenil // First return is the result, rest is documented.
 	}
 
 	rc, cls, err := r.returnsComment()
@@ -101,8 +101,7 @@ func (r *canReturn) returnsComment() (phpdoxer.Type, *ClassLike, error) {
 	iter := cls.InheritsIter()
 	for inhCls, done, err := iter(); !done; inhCls, done, err = iter() {
 		if err != nil {
-			log.Println(fmt.Errorf("err in inherits iter: %w", err))
-			continue
+			return nil, nil, fmt.Errorf("inherits of classlike %s: %w", cls.Name(), err)
 		}
 
 		inhMeth := inhCls.FindMethod(FilterOverwrittenBy(meth))

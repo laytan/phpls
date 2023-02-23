@@ -7,11 +7,11 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/noverify/src/ir/irfmt"
+	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/throws"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
 )
 
 func (p *Project) Hover(currpos *position.Position) string {
@@ -159,7 +159,7 @@ func cleanBrackets(signature string) string {
 }
 
 func cleanedNodeComments(node ir.Node) string {
-	cmnts := typer.NodeComments(node)
+	cmnts := symbol.NodeComments(node)
 	return strings.Join(cmnts, "\n")
 }
 

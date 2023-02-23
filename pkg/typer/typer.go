@@ -1,9 +1,6 @@
 package typer
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/fqn"
@@ -17,8 +14,6 @@ type Typer interface {
 	// Scope should be the method/function the variable is used in, if it is used
 	// globally, this can be left nil.
 	Variable(root *ir.Root, variable *ir.SimpleVar, scope ir.Node) phpdoxer.Type
-
-	Property(root *ir.Root, propertyList *ir.PropertyListStmt) phpdoxer.Type
 }
 
 type typer struct{}
@@ -29,55 +24,6 @@ func New() Typer {
 
 func FromContainer() Typer {
 	return do.MustInvoke[Typer](nil)
-}
-
-func parseTypeHint(node ir.Node) phpdoxer.Type {
-	retNode := returnTypeNode(node)
-	if retNode == nil {
-		return nil
-	}
-
-	var isNullable bool
-	if nullable, ok := retNode.(*ir.Nullable); ok {
-		retNode = nullable.Expr
-		isNullable = true
-	}
-
-	name, ok := retNode.(*ir.Name)
-	if !ok {
-		log.Printf(
-			"%T is unsupported for a return type hint, expecting *ir.Name or *ir.Nullable\n",
-			retNode,
-		)
-		return nil
-	}
-
-	toParse := name.Value
-	if isNullable {
-		toParse = "null|" + toParse
-	}
-
-	t, err := phpdoxer.ParseType(toParse)
-	if err != nil {
-		log.Println(fmt.Errorf(`Error parsing return type hint "%s": %w`, name.Value, err))
-	}
-
-	return t
-}
-
-func returnTypeNode(node ir.Node) ir.Node {
-	switch typedNode := node.(type) {
-	case *ir.FunctionStmt:
-		return typedNode.ReturnType
-	case *ir.ClassMethodStmt:
-		return typedNode.ReturnType
-	case *ir.Parameter:
-		return typedNode.VariableType
-	case *ir.PropertyListStmt:
-		return typedNode.Type
-	default:
-		return nil
-	}
 }
 
 func resolveFQN(root *ir.Root, block ir.Node, t phpdoxer.Type) phpdoxer.Type {

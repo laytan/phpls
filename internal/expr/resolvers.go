@@ -6,15 +6,12 @@ import (
 	"log"
 
 	"github.com/VKCOM/noverify/src/ir"
-	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
-	"github.com/laytan/elephp/pkg/typer"
 )
 
 var resolvers = map[Type]ClassResolver{
@@ -329,16 +326,21 @@ func resolveProp(
 		Path: cls.Path(),
 	}
 
-	res := typer.FromContainer().Property(cls.Root(), prop.Node())
-	clsRes, ok := res.(*phpdoxer.TypeClassLike)
-	if !ok {
+	typ, err := prop.ClsType()
+	if err != nil {
+		if !errors.Is(err, symbol.ErrNoPropertyType) {
+			log.Println(fmt.Errorf("resolving prop type: %w", err))
+		}
+
 		return resolvement, nil
 	}
 
-	return resolvement, fqner.FullyQualifyName(cls.Root(), &ir.Name{
-		Position: prop.Node().Position,
-		Value:    clsRes.Name,
-	})
+	if len(typ) == 0 {
+		return resolvement, nil
+	}
+
+	qualified := fqn.New(typ[0].Name)
+	return resolvement, qualified
 }
 
 func resolveMethod(

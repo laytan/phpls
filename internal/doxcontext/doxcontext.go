@@ -20,6 +20,7 @@ import (
 // - Intersection -> recursively unpacked
 //
 // Precedence, union & intersection can result in multiple classes, so a slice is returned.
+// TODO: return fqn.FQN's instead of typeclasslikes.
 func ApplyContext(
 	fqnt *fqn.Traverser,
 	currFqn *fqn.FQN,
