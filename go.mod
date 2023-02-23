@@ -17,7 +17,7 @@ require (
 	github.com/matryer/is v1.4.0
 	github.com/samber/do v1.6.0
 	github.com/shivamMg/trie v0.0.0
-	go.uber.org/goleak v1.2.0
+	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
 )
