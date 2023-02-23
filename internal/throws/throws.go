@@ -162,7 +162,6 @@ func (t *Throws) Throws() []*fqn.FQN {
 
 func (t *Throws) throws(firstCall bool) *set.Set[string] {
 	thrownSet := set.New[string]()
-	catchedSet := set.New[string]()
 
 	if !firstCall || !t.ignoreFirstFuncDoc {
 		switch t.node.(type) {
@@ -262,23 +261,6 @@ func (t *Throws) throws(firstCall bool) *set.Set[string] {
 			}
 			thrownSet = thrownSet.Union(blockThrows.throws(false))
 		}
-	}
-
-	// Delete every thrown class that is caught by a catch.
-	var toRemove []string
-	for throw := range thrownSet.Iterator() {
-		checker := t.catches(fqn.New(throw))
-
-		for catch := range catchedSet.Iterator() {
-			if checker(fqn.New(catch)) {
-				// Can't remove directly because we are iterating over it.
-				toRemove = append(toRemove, throw)
-			}
-		}
-	}
-
-	for _, v := range toRemove {
-		thrownSet.Remove(v)
 	}
 
 	return thrownSet
