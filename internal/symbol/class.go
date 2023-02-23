@@ -89,19 +89,19 @@ func NewClassLikeFromMethod(root *ir.Root, method *ir.ClassMethodStmt) (*ClassLi
 }
 
 func NewClassLikeFromProperty(root *ir.Root, property *ir.PropertyListStmt) (*ClassLike, error) {
-    napt := traversers.NewNodeAtPos(uint(property.Position.StartPos))
-    root.Walk(napt)
+	napt := traversers.NewNodeAtPos(uint(property.Position.StartPos))
+	root.Walk(napt)
 
-    for i := len(napt.Nodes) - 1; i >= 0; i-- {
+	for i := len(napt.Nodes) - 1; i >= 0; i-- {
 		switch node := napt.Nodes[i].(type) {
 		case *ir.ClassStmt:
 			return NewClassLikeFromName(root, nodeToName(node.ClassName))
 		case *ir.TraitStmt:
 			return NewClassLikeFromName(root, nodeToName(node.TraitName))
-        }
-    }
+		}
+	}
 
-    return nil, fmt.Errorf("finding surrounding class of property: not found")
+	return nil, fmt.Errorf("finding surrounding class of property: not found")
 }
 
 func NewClassLikeFromFQN(r rooter, qualified *fqn.FQN) (*ClassLike, error) {
