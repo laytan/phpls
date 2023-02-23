@@ -57,3 +57,20 @@ function test_throws_9() {
     } catch (\Exception $e) {
     }
 }
+
+function test_throws_10() {
+    try {
+    } catch (\Exception $e) {
+        throw new \Exception("Hello World!");
+    }
+}
+
+function test_throws_11() {
+    try {
+    } catch(\InvalidArgumentException $e) {
+    } catch(\Throwable $e) {
+        throw new \InvalidArgumentException();
+    } finally {
+        throw new \Exception();
+    }
+}

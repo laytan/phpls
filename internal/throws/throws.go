@@ -179,25 +179,61 @@ func (t *Throws) throws(firstCall bool) *set.Set[string] {
 	for _, result := range traverser.Result {
 		switch typedRes := result.(type) {
 		case *ir.TryStmt:
+			tryThrows := set.New[string]()
+
 			blockThrows := &Throws{
 				rooter: t.rooter,
 				doxed:  symbol.NewDoxed(result),
 				node:   result,
 			}
-			thrownSet = thrownSet.Union(blockThrows.throws(false))
+			tryThrows = tryThrows.Union(blockThrows.throws(false))
 
-		case *ir.CatchStmt:
-			fqnt := fqn.NewTraverser()
-			t.Root().Walk(fqnt)
+			// Go through each catch, first remove all the things
+			// that are caught by the types.
+			// Then add all the things that are thrown in the catch, to the tryThrows.
+			// At the end, add all that is thrown in the finally to tryThrows.
 
-			for _, catch := range typedRes.Types {
-				switch typed := catch.(type) {
-				case *ir.Name:
-					catchedSet.Add(fqnt.ResultFor(typed).String())
-				default:
-					log.Printf("[throws.Throws]: Catch statement type has unexpected type: %v", typed)
+			for i := range typedRes.Catches {
+				catch := typedRes.Catches[i].(*ir.CatchStmt)
+
+				fqnt := fqn.NewTraverser()
+				t.Root().Walk(fqnt)
+
+				var toRemove []string
+				for tryThrow := range tryThrows.Iterator() {
+					checker := t.catches(fqn.New(tryThrow))
+
+					for j := range catch.Types {
+						catchedType := catch.Types[j].(*ir.Name)
+						qualified := fqnt.ResultFor(catchedType)
+
+						if checker(qualified) {
+							toRemove = append(toRemove, tryThrow)
+						}
+					}
 				}
+				for _, rm := range toRemove {
+					tryThrows.Remove(rm)
+				}
+
+				catchThrows := &Throws{
+					rooter: t.rooter,
+					doxed:  symbol.NewDoxed(catch),
+					node:   catch,
+				}
+				tryThrows = tryThrows.Union(catchThrows.throws(false))
 			}
+
+			if typedRes.Finally != nil {
+				finallyThrows := &Throws{
+					rooter: t.rooter,
+					doxed:  symbol.NewDoxed(typedRes.Finally),
+					node:   typedRes.Finally,
+				}
+				tryThrows = tryThrows.Union(finallyThrows.throws(false))
+			}
+
+			thrownSet = thrownSet.Union(tryThrows)
 
 		case *ir.ThrowStmt:
 			resolvedRoot, resolvement, err := t.resolve(typedRes.Expr)
@@ -357,6 +393,8 @@ type throwsTraverser struct {
 	visitedFirst bool
 }
 
+var _ ir.Visitor = &throwsTraverser{}
+
 func newThrowsTraverser() *throwsTraverser {
 	return &throwsTraverser{
 		Result: []ir.Node{},
@@ -370,7 +408,7 @@ func (t *throwsTraverser) EnterNode(node ir.Node) bool {
 	}
 
 	switch node.(type) {
-	case *ir.TryStmt, *ir.FunctionCallExpr, *ir.CatchStmt, *ir.ThrowStmt:
+	case *ir.TryStmt, *ir.FunctionCallExpr, *ir.ThrowStmt:
 		t.Result = append(t.Result, node)
 		return false
 

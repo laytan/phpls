@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
@@ -145,8 +144,29 @@ func TestThrows(t *testing.T) {
 		is.True(ok)
 
 		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		what.Is(throws)
 		is.Equal(len(throws), 0)
+	})
+
+	t.Run("throw inside catch", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+
+		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_10"))
+		is.True(ok)
+
+		throws := throws.NewResolverFromIndex(funcCall).Throws()
+		is.Equal(len(throws), 1)
+	})
+
+	t.Run("catch before throw", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+
+		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_11"))
+		is.True(ok)
+
+		throws := throws.NewResolverFromIndex(funcCall).Throws()
+		is.Equal(len(throws), 2)
 	})
 }
 
