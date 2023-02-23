@@ -15,7 +15,6 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/laytan/elephp/pkg/typer"
 	"github.com/matryer/is"
 	"github.com/samber/do"
 	"go.uber.org/goleak"
@@ -264,7 +263,6 @@ func setup(root string, phpv *phpversion.PHPVersion) *project.Project {
 	do.OverrideValue(nil, config.Default())
 	do.OverrideValue(nil, index.New(phpv))
 	do.OverrideValue(nil, wrkspc.New(phpv, root, stubsDir))
-	do.OverrideValue(nil, typer.New())
 
 	return project.New()
 }

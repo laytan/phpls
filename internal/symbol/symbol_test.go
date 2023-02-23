@@ -15,7 +15,6 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/typer"
 	"github.com/matryer/is"
 	"github.com/samber/do"
 	"go.uber.org/goleak"
@@ -86,7 +85,6 @@ func setup(root string, phpv *phpversion.PHPVersion) error {
 		nil,
 		wrkspc.New(phpv, root, filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")),
 	)
-	do.OverrideValue(nil, typer.New())
 
 	p := project.New()
 	if err := p.ParseWithoutProgress(); err != nil {

@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"log"
 
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/ie"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
 )
 
 var starters = map[Type]StartResolver{
@@ -48,7 +47,6 @@ func (p *variableResolver) Up(
 	scopes *Scopes,
 	toResolve *DownResolvement,
 ) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
-	typ := typer.FromContainer()
 	wrk := wrkspc.FromContainer()
 
 	if toResolve.ExprType != TypeVariable {
@@ -90,21 +88,27 @@ func (p *variableResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		if docType := typ.Variable(scopes.Root, ta.Assignment, scopes.Block); docType != nil {
-			if clsDocType, ok := docType.(*phpdoxer.TypeClassLike); ok {
-				qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
-					Position: ta.Assignment.Position,
-					Value:    clsDocType.Name,
-				})
+		cls, _ := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
+			Position: ir.GetPosition(scopes.Class),
+			Value:    nodeident.Get(scopes.Class),
+		})
 
-				return &Resolved{Path: scopes.Path, Node: ta.Assignment},
-					qualified,
-					phprivacy.PrivacyPublic,
-					true
-			}
-
-			what.Happens("@var doc is not a class-like type")
+		varSym := symbol.NewVariable(wrkspc.NewRooter(scopes.Path, scopes.Root), ta.Assignment)
+		typ, err := varSym.TypeCls(
+			ie.IfElseFunc(cls == nil, nil, func() *fqn.FQN { return cls.FQN }),
+		)
+		if err != nil && !errors.Is(err, symbol.ErrNoVarType) {
+			log.Println(fmt.Errorf("retrieving variable type: %w", err))
 			return nil, nil, 0, false
+		}
+
+		if len(typ) > 0 {
+			return &Resolved{
+					Path: scopes.Path,
+					Node: ta.Assignment,
+				}, fqn.New(
+					typ[0].Name,
+				), phprivacy.PrivacyPublic, true
 		}
 
 		switch typedScope := ta.Scope.(type) {

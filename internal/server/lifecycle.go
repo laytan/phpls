@@ -17,7 +17,6 @@ import (
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/processwatch"
 	"github.com/laytan/elephp/pkg/stubs"
-	"github.com/laytan/elephp/pkg/typer"
 	"github.com/samber/do"
 	"golang.org/x/exp/slices"
 )
@@ -212,11 +211,8 @@ func (s *Server) createProject(stubsDir string) (*project.Project, error) {
 
 	i := index.New(phpv)
 	w := wrkspc.New(phpv, string(s.root), stubsDir)
-	t := typer.New()
-
 	do.ProvideValue(nil, i)
 	do.ProvideValue(nil, w)
-	do.ProvideValue(nil, t)
 
 	return project.New(), nil
 }
