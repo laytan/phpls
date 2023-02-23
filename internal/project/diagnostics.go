@@ -2,8 +2,10 @@ package project
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/throws"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/phplint"
@@ -11,6 +13,10 @@ import (
 )
 
 func (p *Project) Diagnose(path string, content string) (issues []Issue, changed bool, err error) {
+	if strings.HasPrefix(path, config.FromContainer().StubsDir()) {
+		return
+	}
+
 	var phpIssues []*phplint.Issue
 	var throwIssues []*throws.Violation
 
