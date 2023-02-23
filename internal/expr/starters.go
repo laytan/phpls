@@ -1,22 +1,22 @@
 package expr
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
-	"appliedgo.net/what"
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/ie"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/elephp/pkg/typer"
 )
 
 var starters = map[Type]StartResolver{
@@ -47,7 +47,6 @@ func (p *variableResolver) Up(
 	scopes *Scopes,
 	toResolve *DownResolvement,
 ) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
-	typ := typer.FromContainer()
 	wrk := wrkspc.FromContainer()
 
 	if toResolve.ExprType != TypeVariable {
@@ -89,21 +88,27 @@ func (p *variableResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		if docType := typ.Variable(scopes.Root, ta.Assignment, scopes.Block); docType != nil {
-			if clsDocType, ok := docType.(*phpdoxer.TypeClassLike); ok {
-				qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
-					Position: ta.Assignment.Position,
-					Value:    clsDocType.Name,
-				})
+		cls, _ := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
+			Position: ir.GetPosition(scopes.Class),
+			Value:    nodeident.Get(scopes.Class),
+		})
 
-				return &Resolved{Path: scopes.Path, Node: ta.Assignment},
-					qualified,
-					phprivacy.PrivacyPublic,
-					true
-			}
-
-			what.Happens("@var doc is not a class-like type")
+		varSym := symbol.NewVariable(wrkspc.NewRooter(scopes.Path, scopes.Root), ta.Assignment)
+		typ, err := varSym.TypeCls(
+			ie.IfElseFunc(cls == nil, nil, func() *fqn.FQN { return cls.FQN }),
+		)
+		if err != nil && !errors.Is(err, symbol.ErrNoVarType) {
+			log.Println(fmt.Errorf("retrieving variable type: %w", err))
 			return nil, nil, 0, false
+		}
+
+		if len(typ) > 0 {
+			return &Resolved{
+					Path: scopes.Path,
+					Node: ta.Assignment,
+				}, fqn.New(
+					typ[0].Name,
+				), phprivacy.PrivacyPublic, true
 		}
 
 		switch typedScope := ta.Scope.(type) {
@@ -113,19 +118,26 @@ func (p *variableResolver) Up(
 			}
 
 		case *ir.Parameter:
-			if t := typ.Param(scopes.Root, scopes.Block, typedScope); t != nil {
-				if tc, ok := t.(*phpdoxer.TypeClassLike); ok {
-					qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
-						Position: ir.GetPosition(scopes.Block),
-						Value:    tc.Name,
-					})
-
-					return &Resolved{Node: ta.Assignment, Path: scopes.Path},
-						qualified,
-						phprivacy.PrivacyPublic,
-						true
+			rooter := wrkspc.NewRooter(scopes.Path, scopes.Root)
+			param := symbol.NewParameter(rooter, scopes.Block, typedScope)
+			typ, err := param.TypeClass()
+			if err != nil {
+				if errors.Is(err, symbol.ErrNoParam) {
+					break
 				}
+
+				log.Println(fmt.Errorf("getting param %v typ: %w", typedScope, err))
 			}
+
+			if len(typ) == 0 {
+				break
+			}
+
+			// TODO: only using first typ, needs rewrite.
+			return &Resolved{
+				Node: ta.Assignment,
+				Path: scopes.Path,
+			}, fqn.New(typ[0].Name), phprivacy.PrivacyPublic, true
 
 		default:
 			log.Printf("TODO: resolve variable out of type %T", ta.Scope)
@@ -252,10 +264,14 @@ func (p *functionResolver) Up(
 	}
 
 	typeOfFunc := func(n ir.Node) *fqn.FQN {
-		ret, _ := symbol.NewFunction(
+		ret, _, err := symbol.NewFunction(
 			wrkspc.NewRooter(scopes.Path, scopes.Root),
 			n.(*ir.FunctionStmt),
 		).Returns()
+
+		if err != nil && !errors.Is(err, symbol.ErrNoReturn) {
+			log.Println(fmt.Errorf("getting return type of %v: %w", n, err))
+		}
 
 		if retCls, ok := ret.(*phpdoxer.TypeClassLike); ok {
 			return fqner.FullyQualifyName(scopes.Root, &ir.Name{

@@ -7,6 +7,7 @@ import (
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/traversers"
 )
 
@@ -87,6 +88,22 @@ func NewClassLikeFromMethod(root *ir.Root, method *ir.ClassMethodStmt) (*ClassLi
 	)
 }
 
+func NewClassLikeFromProperty(root *ir.Root, property *ir.PropertyListStmt) (*ClassLike, error) {
+	napt := traversers.NewNodeAtPos(uint(property.Position.StartPos))
+	root.Walk(napt)
+
+	for i := len(napt.Nodes) - 1; i >= 0; i-- {
+		switch node := napt.Nodes[i].(type) {
+		case *ir.ClassStmt:
+			return NewClassLikeFromName(root, nodeToName(node.ClassName))
+		case *ir.TraitStmt:
+			return NewClassLikeFromName(root, nodeToName(node.TraitName))
+		}
+	}
+
+	return nil, fmt.Errorf("finding surrounding class of property: not found")
+}
+
 func NewClassLikeFromFQN(r rooter, qualified *fqn.FQN) (*ClassLike, error) {
 	trav := traversers.NewClassLike(qualified.Name())
 	r.Root().Walk(trav)
@@ -103,6 +120,10 @@ func NewClassLikeFromFQN(r rooter, qualified *fqn.FQN) (*ClassLike, error) {
 
 func (c *ClassLike) Kind() ir.NodeKind {
 	return ir.GetNodeKind(c.node)
+}
+
+func (c *ClassLike) Name() string {
+	return nodeident.Get(c.node)
 }
 
 type inheritor struct {

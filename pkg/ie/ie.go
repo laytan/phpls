@@ -23,3 +23,11 @@ func IfElseFunc[T any](check bool, ifV T, elseV func() T) T {
 
 	return elseV()
 }
+
+func IfFuncElseFunc[T any](check bool, ifV func() T, elseV func() T) T {
+	if check {
+		return ifV()
+	}
+
+	return elseV()
+}
