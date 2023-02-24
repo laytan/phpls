@@ -18,5 +18,9 @@ class TestExtended extends Test {
     public function testing() { // @t_in(throws_simple_parent, 5)
         parent::testing();
     }
+
+    public function iffed() { // @t_nodef(throws_infinite_recursion, 5)
+        return $this->iffed();
+    }
 }
 

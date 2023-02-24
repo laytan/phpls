@@ -157,15 +157,29 @@ func Diagnose(root rooter) (results []*Violation) {
 }
 
 func (t *Throws) Throws() []*fqn.FQN {
-	return functional.Map(t.throws(true).Slice(), fqn.New)
+	return functional.Map(t.throws(set.New[string]()).Slice(), fqn.New)
+}
+
+func (t *Throws) seenHash() string {
+	pos := ir.GetPosition(t.node)
+	return fmt.Sprintf("%d%d%d%d", pos.StartLine, pos.StartPos, pos.EndLine, pos.EndPos)
 }
 
 // PERF: we should have an incremental cache,
 // something like a map from a function or method to what it throws.
 // if we then have 2 different calls to a method we already have its throws.
 // might be able to keep the cache and invalidate when the file changes.
-func (t *Throws) throws(firstCall bool) *set.Set[string] {
+func (t *Throws) throws(seen *set.Set[string]) *set.Set[string] {
 	thrownSet := set.New[string]()
+
+	hash := t.seenHash()
+	if seen.Has(hash) {
+		return thrownSet
+	}
+
+	seen.Add(t.seenHash())
+
+	firstCall := seen.Size() == 0
 
 	if !firstCall || !t.ignoreFirstFuncDoc {
 		switch t.node.(type) {
@@ -189,7 +203,7 @@ func (t *Throws) throws(firstCall bool) *set.Set[string] {
 				doxed:  symbol.NewDoxed(result),
 				node:   result,
 			}
-			tryThrows = tryThrows.Union(blockThrows.throws(false))
+			tryThrows = tryThrows.Union(blockThrows.throws(seen))
 
 			// Go through each catch, first remove all the things
 			// that are caught by the types.
@@ -224,7 +238,7 @@ func (t *Throws) throws(firstCall bool) *set.Set[string] {
 					doxed:  symbol.NewDoxed(catch),
 					node:   catch,
 				}
-				tryThrows = tryThrows.Union(catchThrows.throws(false))
+				tryThrows = tryThrows.Union(catchThrows.throws(seen))
 			}
 
 			if typedRes.Finally != nil {
@@ -233,7 +247,7 @@ func (t *Throws) throws(firstCall bool) *set.Set[string] {
 					doxed:  symbol.NewDoxed(typedRes.Finally),
 					node:   typedRes.Finally,
 				}
-				tryThrows = tryThrows.Union(finallyThrows.throws(false))
+				tryThrows = tryThrows.Union(finallyThrows.throws(seen))
 			}
 
 			thrownSet = thrownSet.Union(tryThrows)
@@ -263,7 +277,7 @@ func (t *Throws) throws(firstCall bool) *set.Set[string] {
 				doxed:  symbol.NewDoxed(resolvement.Node),
 				node:   resolvement.Node,
 			}
-			thrownSet = thrownSet.Union(blockThrows.throws(false))
+			thrownSet = thrownSet.Union(blockThrows.throws(seen))
 		}
 	}
 
