@@ -74,10 +74,19 @@ func TestAnnotateThrows(t *testing.T) {
 					ctx, err := context.New(&scenario.In)
 					is.NoErr(err)
 
-					scope := ctx.Current()
-					scopeKind := ir.GetNodeKind(scope)
+					// Get the first method or function in the context.
+					var scope ir.Node
+					var scopeKind ir.NodeKind
+					for advanced := true; advanced; advanced = ctx.Advance() {
+						scope = ctx.Current()
+						scopeKind = ir.GetNodeKind(scope)
+						if scopeKind == ir.KindClassMethodStmt || scopeKind == ir.KindFunctionStmt {
+							break
+						}
+					}
+
 					if scopeKind != ir.KindClassMethodStmt && scopeKind != ir.KindFunctionStmt {
-						t.Errorf("in node is not a method or function: %v", scope)
+						t.Errorf("in node is not a method or function: %v", ctx)
 					}
 
 					rooter := wrkspc.NewRooter(scenario.In.Path)

@@ -160,6 +160,10 @@ func (t *Throws) Throws() []*fqn.FQN {
 	return functional.Map(t.throws(true).Slice(), fqn.New)
 }
 
+// PERF: we should have an incremental cache,
+// something like a map from a function or method to what it throws.
+// if we then have 2 different calls to a method we already have its throws.
+// might be able to keep the cache and invalidate when the file changes.
 func (t *Throws) throws(firstCall bool) *set.Set[string] {
 	thrownSet := set.New[string]()
 
@@ -247,7 +251,7 @@ func (t *Throws) throws(firstCall bool) *set.Set[string] {
 			})
 			thrownSet.Add(key.String())
 
-		case *ir.FunctionCallExpr, *ir.MethodCallExpr:
+		case *ir.FunctionCallExpr, *ir.MethodCallExpr, *ir.StaticCallExpr:
 			resolvedRoot, resolvement, err := t.resolve(result)
 			if err != nil {
 				log.Println(fmt.Errorf("[throws.throws]: %w", err))
@@ -390,7 +394,7 @@ func (t *throwsTraverser) EnterNode(node ir.Node) bool {
 	}
 
 	switch node.(type) {
-	case *ir.TryStmt, *ir.FunctionCallExpr, *ir.ThrowStmt:
+	case *ir.TryStmt, *ir.FunctionCallExpr, *ir.ThrowStmt, *ir.MethodCallExpr, *ir.StaticCallExpr:
 		t.Result = append(t.Result, node)
 		return false
 

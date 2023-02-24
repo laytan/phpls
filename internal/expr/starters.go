@@ -48,11 +48,6 @@ func (p *variableResolver) Up(
 	toResolve *DownResolvement,
 ) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
 	wrk := wrkspc.FromContainer()
-
-	if toResolve.ExprType != TypeVariable {
-		return nil, nil, 0, false
-	}
-
 	switch toResolve.Identifier {
 	case "this", "self", "static":
 		if node, ok := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
@@ -76,6 +71,10 @@ func (p *variableResolver) Up(
 			true
 
 	default:
+		if toResolve.ExprType != TypeVariable {
+			return nil, nil, 0, false
+		}
+
 		t := traversers.NewVariable(toResolve.Identifier)
 		scopes.Block.Walk(t)
 		if t.Result == nil {

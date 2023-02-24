@@ -148,6 +148,18 @@ func (p *staticMethodResolver) Down(
 		return nil, nil, false
 	}
 
+	className := nodeident.Get(propNode.Class)
+
+	// Special case, parent::foo() calls are not static calls
+	// but they do look like them so they get here.
+	if className == "parent" {
+		return &DownResolvement{
+			ExprType:   TypeMethod,
+			Identifier: nodeident.Get(propNode),
+			Position:   propNode.Position,
+		}, propNode.Class, true
+	}
+
 	return &DownResolvement{
 		ExprType:   TypeStaticMethod,
 		Identifier: nodeident.Get(propNode),
