@@ -5,19 +5,26 @@ import (
 	"path/filepath"
 	"testing"
 
+	"appliedgo.net/what"
+	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/config"
+	"github.com/laytan/elephp/internal/context"
+	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/throws"
 	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/annotated"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/elephp/pkg/position"
 	"github.com/matryer/is"
 	"github.com/samber/do"
 	"go.uber.org/goleak"
-	"golang.org/x/exp/slices"
 )
 
 func TestMain(m *testing.M) {
@@ -28,146 +35,104 @@ func TestMain(m *testing.M) {
 	)
 }
 
-func TestThrows(t *testing.T) {
+func TestAnnotateThrows(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
 
-	err := setup(
-		filepath.Join(pathutils.Root(), "internal", "throws", "testdata"),
-		phpversion.EightOne(),
-	)
+	root := filepath.Join(pathutils.Root(), "internal", "throws", "testdata")
+
+	err := setup(root, phpversion.EightOne())
 	is.NoErr(err)
 
-	i := index.FromContainer()
+	scenarios := annotated.Aggregate(t, root)
+	for categoryName, category := range scenarios {
+		categoryName, category := categoryName, category
+		t.Run(categoryName, func(t *testing.T) {
+			t.Parallel()
 
-	t.Run("basic one throw using new", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
+			for name, scenario := range category {
+				name, scenario := name, scenario
+				t.Run(name, func(t *testing.T) {
+					t.Parallel()
+					is := is.New(t)
 
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws"))
-		is.True(ok)
+					if scenario.ShouldSkip {
+						t.SkipNow()
+					}
 
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 1)
-		is.Equal(throws[0].String(), "\\Exception")
-	})
+					if scenario.IsDump {
+						root, err := wrkspc.FromContainer().IROf(scenario.In.Path)
+						is.NoErr(err)
+						what.Is(root)
+						return
+					}
 
-	t.Run("throw in called function and in current function", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
+					if !scenario.IsNoDef && len(scenario.Out) == 0 {
+						t.Error("invalid test scenario, no out called")
+					}
 
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_2"))
-		is.True(ok)
+					ctx, err := context.New(&scenario.In)
+					is.NoErr(err)
 
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 2)
-		ts := functional.Map(throws, func(t *fqn.FQN) string { return t.String() })
-		is.True(slices.Contains(ts, "\\Exception"))
-		is.True(slices.Contains(ts, "\\Throwable"))
-	})
+					scope := ctx.Current()
+					scopeKind := ir.GetNodeKind(scope)
+					if scopeKind != ir.KindClassMethodStmt && scopeKind != ir.KindFunctionStmt {
+						t.Errorf("in node is not a method or function: %v", scope)
+					}
 
-	t.Run("basic catch of same exception class", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
+					rooter := wrkspc.NewRooter(scenario.In.Path)
+					resolver := throws.NewResolver(rooter, scope)
+					thrown := resolver.Throws()
 
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_3"))
-		is.True(ok)
+					expectedThrown := functional.Map(
+						scenario.Out,
+						func(pos *position.Position) *fqn.FQN {
+							ctx, err := context.New(pos)
+							is.NoErr(err)
 
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 0)
-	})
+							cls := ctx.Current()
+							if !nodescopes.IsClassLike(ir.GetNodeKind(cls)) {
+								t.Errorf("out node is not a class like node %v", cls)
+							}
 
-	t.Run("catch of parent class of exception", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
+							root, err := wrkspc.FromContainer().IROf(pos.Path)
+							is.NoErr(err)
 
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_4"))
-		is.True(ok)
+							fqn := fqner.FullyQualifyName(root, &ir.Name{
+								Position: ir.GetPosition(cls),
+								Value:    nodeident.Get(cls),
+							})
 
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 0)
-	})
+							return fqn
+						},
+					)
 
-	t.Run("try catch outside of throw scope", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
+					if scenario.IsNoDef {
+						if len(thrown) > 0 {
+							t.Errorf("expected no throws, got %v", thrown)
+						}
 
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_5"))
-		is.True(ok)
+						return
+					}
 
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 1)
-		is.Equal(throws[0].String(), "\\Exception")
-	})
+					if len(thrown) != len(expectedThrown) {
+						t.Errorf("throws %v but expected to throw %v", thrown, expectedThrown)
+					}
 
-	t.Run("@throws tag", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
+				Thrown:
+					for _, th := range thrown {
+						for _, tht := range expectedThrown {
+							if th.String() == tht.String() {
+								break Thrown
+							}
+						}
 
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_6"))
-		is.True(ok)
-
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 1)
-		is.Equal(throws[0].String(), "\\Throwable")
-	})
-
-	t.Run("@throws tag deep", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
-
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_7"))
-		is.True(ok)
-
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 1)
-		is.Equal(throws[0].String(), "\\Throwable")
-	})
-
-	t.Run("duplicate throw statements", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
-
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_8"))
-		is.True(ok)
-
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 1)
-		is.Equal(throws[0].String(), "\\InvalidArgumentException")
-	})
-
-	t.Run("try 2 statements catch with 1", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
-
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_9"))
-		is.True(ok)
-
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 0)
-	})
-
-	t.Run("throw inside catch", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
-
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_10"))
-		is.True(ok)
-
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 1)
-	})
-
-	t.Run("catch before throw", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
-
-		funcCall, ok := i.Find(fqn.New("\\Throws\\TestData\\test_throws_11"))
-		is.True(ok)
-
-		throws := throws.NewResolverFromIndex(funcCall).Throws()
-		is.Equal(len(throws), 2)
-	})
+						t.Errorf("throws %v, but the thrown FQN %v was not part of the expected throws %v", thrown, th, expectedThrown)
+					}
+				})
+			}
+		})
+	}
 }
 
 func setup(root string, phpv *phpversion.PHPVersion) error {
