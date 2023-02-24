@@ -14,16 +14,16 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
 	github.com/jessevdk/go-flags v1.5.0
+	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
 	github.com/matryer/is v1.4.0
 	github.com/samber/do v1.6.0
 	github.com/shivamMg/trie v0.0.0
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
-	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
+	golang.org/x/sync v0.1.0
 )
 
 require (
-	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
