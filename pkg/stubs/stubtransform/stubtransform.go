@@ -10,12 +10,13 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
 	"github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
-	"github.com/VKCOM/php-parser/pkg/visitor/printer"
+	"github.com/laytan/elephp/pkg/irfmt"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"golang.org/x/sync/errgroup"
 )
@@ -194,8 +195,8 @@ func (w *Walker) TransformFile(transformers []ast.Visitor, path string, finalPat
 	// ast.Accept(f)
 
 	writer := bufio.NewWriter(file)
-	p := printer.NewPrinter(writer)
-	ast.Accept(p)
+	ir := irconv.ConvertNode(ast)
+	irfmt.NewPrettyPrinter(writer, "    ").Print(ir)
 	err = writer.Flush()
 	if err != nil {
 		return fmt.Errorf("writing remaining buffer: %w", err)
