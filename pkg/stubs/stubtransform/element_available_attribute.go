@@ -248,6 +248,9 @@ func (e *ElementAvailableAttribute) shouldRemove(
 
 			e.logRemoval()
 			attrGroups = slices.Delete(attrGroups, attrI, attrI+1)
+			if len(attrGroups) == 0 {
+				return false, nil
+			}
 			return false, attrGroups
 		}
 	}
