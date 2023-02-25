@@ -79,6 +79,8 @@ func (p *PrettyPrinter) printIndent() {
 }
 
 func (p *PrettyPrinter) printNode(n ir.Node) {
+	p.printComments(n)
+
 	switch n := n.(type) {
 
 	case *ir.AnonClassExpr:
@@ -94,11 +96,20 @@ func (p *PrettyPrinter) printNode(n ir.Node) {
 		p.printNodeParameter(n)
 	case *ir.Nullable:
 		p.printNodeNullable(n)
+    case *ir.Union:
+        p.printNodeUnion(n)
 	case *ir.Argument:
 		p.printNodeArgument(n)
 
 	case *ir.Name:
 		p.printNameName(n)
+
+		// attrs
+
+	case *ir.AttributeGroup:
+		p.printAttributeGroup(n)
+	case *ir.Attribute:
+		p.printAttribute(n)
 
 		// scalar
 
@@ -405,13 +416,20 @@ func (p *PrettyPrinter) printClass(class ir.Class) {
 		p.joinPrint(", ", class.Implements.InterfaceNames)
 	}
 
-	writeString(p.w, "\n")
-	p.printIndent()
-	writeString(p.w, "{\n")
+	writeString(p.w, " {")
+
+    if len(class.Stmts) == 0 {
+        writeString(p.w, "}\n\n")
+        p.printIndent()
+        return
+    }
+
+    writeString(p.w, "\n\n")
 	p.printNodes(class.Stmts)
 	writeString(p.w, "\n")
 	p.printIndent()
-	writeString(p.w, "}")
+	writeString(p.w, "}\n")
+	p.printIndent()
 }
 
 func (p *PrettyPrinter) printExprAnonClass(n *ir.AnonClassExpr) {
@@ -1187,9 +1205,13 @@ func (p *PrettyPrinter) printStmtClassMethod(n *ir.ClassMethodStmt) {
 
 	switch s := n.Stmt.(type) {
 	case *ir.StmtList:
-		writeString(p.w, "\n")
-		p.printIndent()
-		writeString(p.w, "{\n")
+		writeString(p.w, " {")
+
+        if len(s.Stmts) == 0 {
+            writeString(p.w, "}\n")
+            return
+        }
+
 		p.printNodes(s.Stmts)
 		writeString(p.w, "\n")
 		p.printIndent()
@@ -1444,6 +1466,10 @@ func (p *PrettyPrinter) printStmtForeach(n *ir.ForeachStmt) {
 }
 
 func (p *PrettyPrinter) printStmtFunction(n *ir.FunctionStmt) {
+	for _, ag := range n.AttrGroups {
+		p.printNode(ag)
+	}
+
 	writeString(p.w, "function ")
 
 	if n.ReturnsRef {
@@ -1461,11 +1487,20 @@ func (p *PrettyPrinter) printStmtFunction(n *ir.FunctionStmt) {
 		p.Print(n.ReturnType)
 	}
 
-	writeString(p.w, " {\n")
+	writeString(p.w, " {")
+
+	if len(n.Stmts) == 0 {
+		writeString(p.w, "}\n")
+		p.printIndent()
+		return
+	}
+
+	writeString(p.w, "\n")
 	p.printNodes(n.Stmts)
 	writeString(p.w, "\n")
 	p.printIndent()
-	writeString(p.w, "}")
+	writeString(p.w, "}\n")
+    p.printIndent()
 }
 
 func (p *PrettyPrinter) printStmtGlobal(n *ir.GlobalStmt) {
@@ -1828,6 +1863,71 @@ func (p *PrettyPrinter) printStmtWhile(n *ir.WhileStmt) {
 			p.indentDepth--
 		}
 	}
+}
+
+func (p *PrettyPrinter) printAttributeGroup(n *ir.AttributeGroup) {
+	if len(n.Attrs) == 0 {
+		return
+	}
+
+	writeString(p.w, "#[")
+
+	for i, nn := range n.Attrs {
+		if i > 0 {
+			writeString(p.w, ", ")
+		}
+
+		p.printNode(nn)
+	}
+
+	writeString(p.w, "]\n")
+	p.printIndent()
+}
+
+func (p *PrettyPrinter) printAttribute(n *ir.Attribute) {
+	p.printNode(n.Name)
+
+	if len(n.Args) == 0 {
+		return
+	}
+
+	writeString(p.w, "(")
+	p.joinPrint(", ", n.Args)
+	writeString(p.w, ")")
+}
+
+func (p *PrettyPrinter) printNodeUnion(n *ir.Union) {
+    p.joinPrint("|", n.Types)
+}
+
+func (p *PrettyPrinter) printComments(n ir.Node) {
+    if n == nil {
+        return
+    }
+
+	n.IterateTokens(func(t *token.Token) bool {
+		if t.ID == token.T_DOC_COMMENT {
+			for i, line := range strutil.Lines(string(t.Value)) {
+                if i > 0 {
+                    writeString(p.w, " ")
+                }
+
+				writeString(p.w, strings.TrimSpace(line))
+				writeString(p.w, "\n")
+				p.printIndent()
+			}
+
+			return true
+		}
+
+		if t.ID == token.T_COMMENT {
+			writeString(p.w, strings.TrimSpace(string(t.Value)))
+			writeString(p.w, "\n")
+			p.printIndent()
+		}
+
+		return true
+	})
 }
 
 func writeString(w io.Writer, s string) {
