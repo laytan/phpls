@@ -13,6 +13,7 @@ import (
 )
 
 func TestFmt(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	in := `

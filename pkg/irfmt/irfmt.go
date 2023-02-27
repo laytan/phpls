@@ -16,7 +16,7 @@ type PrettyPrinter struct {
 	indentDepth int
 }
 
-// NewPrettyPrinter -  Constructor for PrettyPrinter
+// NewPrettyPrinter -  Constructor for PrettyPrinter.
 func NewPrettyPrinter(w io.Writer, indentStr string) *PrettyPrinter {
 	return &PrettyPrinter{
 		w:           w,
@@ -82,7 +82,6 @@ func (p *PrettyPrinter) printNode(n ir.Node) {
 	p.printComments(n)
 
 	switch n := n.(type) {
-
 	case *ir.AnonClassExpr:
 		p.printExprAnonClass(n)
 
@@ -405,7 +404,7 @@ func (p *PrettyPrinter) printNode(n ir.Node) {
 	}
 }
 
-func (p *PrettyPrinter) printClass(class ir.Class) {
+func (p *PrettyPrinter) printClass(class *ir.Class) {
 	if class.Extends != nil {
 		writeString(p.w, " extends ")
 		p.Print(class.Extends.ClassName)
@@ -441,7 +440,7 @@ func (p *PrettyPrinter) printExprAnonClass(n *ir.AnonClassExpr) {
 		writeString(p.w, ")")
 	}
 
-	p.printClass(n.Class)
+	p.printClass(&n.Class)
 }
 
 // node
@@ -832,7 +831,7 @@ func (p *PrettyPrinter) printBinarySpaceship(n *ir.SpaceshipExpr) {
 // cast
 
 func (p *PrettyPrinter) printTypeCastExpr(n *ir.TypeCastExpr) {
-	fmt.Fprintf(p.w, "(%s)", n.Type)
+	_, _ = fmt.Fprintf(p.w, "(%s)", n.Type)
 	p.Print(n.Expr)
 }
 
@@ -1231,7 +1230,7 @@ func (p *PrettyPrinter) printStmtClass(n *ir.ClassStmt) {
 	writeString(p.w, " ")
 	p.Print(n.ClassName)
 
-	p.printClass(n.Class)
+	p.printClass(&n.Class)
 }
 
 func (p *PrettyPrinter) printStmtClassConstList(n *ir.ClassConstListStmt) {
