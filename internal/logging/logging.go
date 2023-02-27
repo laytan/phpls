@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	daysToKeep = 14
+	daysToKeep = 5
 	hoursInDay = 24
 
 	dateLayout = "2006-01-02"
