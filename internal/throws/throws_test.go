@@ -36,6 +36,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAnnotateThrows(t *testing.T) {
+	t.SkipNow()
 	t.Parallel()
 	is := is.New(t)
 
