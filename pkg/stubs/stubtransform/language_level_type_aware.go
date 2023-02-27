@@ -94,9 +94,9 @@ func (e *LanguageLevelTypeAware) StmtFunction(n *ast.StmtFunction) {
 		doc.Type = typ
 
 		n.AttrGroups = slices.Delete(n.AttrGroups, i, i+1)
-        if len(n.AttrGroups) == 0 {
-            n.AttrGroups = nil
-        }
+		if len(n.AttrGroups) == 0 {
+			n.AttrGroups = nil
+		}
 
 		e.logRemoval()
 
@@ -147,9 +147,9 @@ func (e *LanguageLevelTypeAware) StmtPropertyList(n *ast.StmtPropertyList) {
 		doc.Type = typ
 
 		n.AttrGroups = slices.Delete(n.AttrGroups, i, i+1)
-        if len(n.AttrGroups) == 0 {
-            n.AttrGroups = nil
-        }
+		if len(n.AttrGroups) == 0 {
+			n.AttrGroups = nil
+		}
 
 		e.logRemoval()
 
@@ -175,9 +175,9 @@ func (e *LanguageLevelTypeAware) StmtClassMethod(n *ast.StmtClassMethod) {
 		doc.Type = typ
 
 		n.AttrGroups = slices.Delete(n.AttrGroups, i, i+1)
-        if len(n.AttrGroups) == 0 {
-            n.AttrGroups = nil
-        }
+		if len(n.AttrGroups) == 0 {
+			n.AttrGroups = nil
+		}
 
 		e.logRemoval()
 
@@ -291,9 +291,9 @@ func (e *LanguageLevelTypeAware) checkParams(ns []ast.Vertex) (changed []*paramC
 			})
 
 			typedParam.AttrGroups = slices.Delete(typedParam.AttrGroups, j, j+1)
-            if len(typedParam.AttrGroups) == 0 {
-                typedParam.AttrGroups = nil
-            }
+			if len(typedParam.AttrGroups) == 0 {
+				typedParam.AttrGroups = nil
+			}
 
 			e.logRemoval()
 

@@ -96,8 +96,8 @@ func (p *PrettyPrinter) printNode(n ir.Node) {
 		p.printNodeParameter(n)
 	case *ir.Nullable:
 		p.printNodeNullable(n)
-    case *ir.Union:
-        p.printNodeUnion(n)
+	case *ir.Union:
+		p.printNodeUnion(n)
 	case *ir.Argument:
 		p.printNodeArgument(n)
 
@@ -418,13 +418,13 @@ func (p *PrettyPrinter) printClass(class ir.Class) {
 
 	writeString(p.w, " {")
 
-    if len(class.Stmts) == 0 {
-        writeString(p.w, "}\n\n")
-        p.printIndent()
-        return
-    }
+	if len(class.Stmts) == 0 {
+		writeString(p.w, "}\n\n")
+		p.printIndent()
+		return
+	}
 
-    writeString(p.w, "\n\n")
+	writeString(p.w, "\n\n")
 	p.printNodes(class.Stmts)
 	writeString(p.w, "\n")
 	p.printIndent()
@@ -1207,10 +1207,10 @@ func (p *PrettyPrinter) printStmtClassMethod(n *ir.ClassMethodStmt) {
 	case *ir.StmtList:
 		writeString(p.w, " {")
 
-        if len(s.Stmts) == 0 {
-            writeString(p.w, "}\n")
-            return
-        }
+		if len(s.Stmts) == 0 {
+			writeString(p.w, "}\n")
+			return
+		}
 
 		p.printNodes(s.Stmts)
 		writeString(p.w, "\n")
@@ -1500,7 +1500,7 @@ func (p *PrettyPrinter) printStmtFunction(n *ir.FunctionStmt) {
 	writeString(p.w, "\n")
 	p.printIndent()
 	writeString(p.w, "}\n")
-    p.printIndent()
+	p.printIndent()
 }
 
 func (p *PrettyPrinter) printStmtGlobal(n *ir.GlobalStmt) {
@@ -1603,7 +1603,7 @@ func (p *PrettyPrinter) printStmtInterface(n *ir.InterfaceStmt) {
 		p.Print(n.InterfaceName)
 	}
 
-	if n.Extends != nil {
+	if n.Extends != nil && len(n.Extends.InterfaceNames) > 0 {
 		writeString(p.w, " extends ")
 		p.joinPrint(", ", n.Extends.InterfaceNames)
 	}
@@ -1897,20 +1897,20 @@ func (p *PrettyPrinter) printAttribute(n *ir.Attribute) {
 }
 
 func (p *PrettyPrinter) printNodeUnion(n *ir.Union) {
-    p.joinPrint("|", n.Types)
+	p.joinPrint("|", n.Types)
 }
 
 func (p *PrettyPrinter) printComments(n ir.Node) {
-    if n == nil {
-        return
-    }
+	if n == nil {
+		return
+	}
 
 	n.IterateTokens(func(t *token.Token) bool {
 		if t.ID == token.T_DOC_COMMENT {
 			for i, line := range strutil.Lines(string(t.Value)) {
-                if i > 0 {
-                    writeString(p.w, " ")
-                }
+				if i > 0 {
+					writeString(p.w, " ")
+				}
 
 				writeString(p.w, strings.TrimSpace(line))
 				writeString(p.w, "\n")

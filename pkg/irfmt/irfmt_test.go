@@ -66,8 +66,8 @@ class Test {
 	o := bytes.NewBufferString("")
 	irfmt.NewPrettyPrinter(o, "    ").Print(ir)
 
-    aOut := strings.TrimSpace(out)
-    aO := strings.TrimSpace(o.String())
+	aOut := strings.TrimSpace(out)
+	aO := strings.TrimSpace(o.String())
 
 	if aO != aOut {
 		t.Errorf(
