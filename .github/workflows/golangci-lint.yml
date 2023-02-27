@@ -15,13 +15,15 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - uses: actions/setup-go@v3
+        id: set-up-go
+        with:
+          go-version: 1.19
+          cache: true
 
       # TODO: cache this.
       - name: Build unsafenil
@@ -32,9 +34,12 @@ jobs:
       # In order to use unsafenil, we need to build from source so CGO is used.
       # See https://github.com/golangci/golangci-lint-action/issues/540
       # See https://github.com/golangci/golangci-lint/issues/1276
-      # TODO: cache this.
       - name: Install golangci-lint
+        if: ${{ steps.set-up-go.outputs.cache-hit != 'true' }}
         run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Add go binaries to path
+        run: echo $(go env GOPATH)/bin >> $GITHUB_PATH
 
       - name: Lint
         run: golangci-lint run --timeout 5m

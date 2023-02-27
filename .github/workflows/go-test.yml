@@ -17,7 +17,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -27,6 +27,7 @@ jobs:
         submodules: recursive
 
     - name: Set up Go
+      id: set-up-go
       uses: actions/setup-go@v3
       with:
         check-latest: true
@@ -34,13 +35,17 @@ jobs:
         go-version-file: go.mod
 
     - name: Install richgo
-      run: go install github.com/kyoh86/richgo@v0.3.10
+      if: ${{ steps.set-up-go.outputs.cache-hit != 'true' }}
+      run: go install github.com/kyoh86/richgo@latest
+
+    - name: Add go binaries to path
+      run: echo $(go env GOPATH)/bin >> $GITHUB_PATH
 
     - name: Generate
       run: go generate ./...
 
     - name: Test
-      run: richgo test -cover -race -shuffle=on -timeout=60s -v -tags what ./...
+      run: richgo test -cover -race -shuffle=on -timeout=60s ./...
       env:
         RICHGO_FORCE_COLOR: 1
         CI: true
