@@ -3,6 +3,7 @@ package irfmt
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/VKCOM/noverify/src/ir"
@@ -527,11 +528,17 @@ func (p *PrettyPrinter) printScalarDNumber(n *ir.Dnumber) {
 }
 
 func (p *PrettyPrinter) printScalarString(n *ir.String) {
+	// This allows the string to contain \t etc.
+	// and it will just print that, instead of a tab in that case.
+	// It does add quotes around the value so we reslice it.
+	val := strconv.Quote(n.Value)
+	val = val[1 : len(val)-1]
+
 	var s string
 	if n.DoubleQuotes {
-		s = `"` + n.Value + `"`
+		s = `"` + val + `"`
 	} else {
-		s = "'" + n.Value + "'"
+		s = "'" + val + "'"
 	}
 	writeString(p.w, s)
 }

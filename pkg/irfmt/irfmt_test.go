@@ -33,31 +33,23 @@ class Test {
     /**
      * @return string
      */
-     public function test(): string|int|false {}
-
-}
-    `
-
-	out := `
-<?php
-/**
- * Test
- */
-#[Test]
-function test() {
-    // Test.
-    /** @var string */
-    $test = '';
-}
-
-class Test {
-
-    /**
-     * @return string
-     */
     public function test(): string|int|false {}
 
 }
+
+/**
+ * Uppercase the first character of each word in a string
+ * @link https://php.net/manual/en/function.ucwords.php
+ * @param string $string <p>
+ * The input string.
+ * </p>
+ * @param string $separators [optional] <p>
+ * The optional separators contains the word separator characters.
+ * </p>
+ * @return string the modified string.
+ */
+#[Pure]
+function ucwords(string $string, string $separators = " \t\r\n\f\v"): string {}
     `
 
 	parser := parsing.New(phpversion.EightOne())
@@ -67,7 +59,7 @@ class Test {
 	o := bytes.NewBufferString("")
 	irfmt.NewPrettyPrinter(o, "    ").Print(ir)
 
-	aOut := strings.TrimSpace(out)
+	aOut := strings.TrimSpace(in)
 	aO := strings.TrimSpace(o.String())
 
 	if aO != aOut {
