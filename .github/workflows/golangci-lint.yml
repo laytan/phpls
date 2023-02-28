@@ -47,6 +47,7 @@ jobs:
           path: |
               unsafenil.so
               ${{ steps.get-gobin.outputs.gobin }}
+              ~/.cache/golangci-lint
 
           key: ${{ runner.os }}-go-lint-${{ hashFiles('**/go.sum') }}
           restore-keys: |
