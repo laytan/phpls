@@ -22,11 +22,28 @@ jobs:
       - uses: actions/setup-go@v3
         id: set-up-go
         with:
-          go-version: 1.19
+          go-version-file: go.mod
+          check-latest: true
           cache: true
 
-      # TODO: cache this.
+      - name: Get gobin
+        id: get-gobin
+        run: echo ::set-output name=gobin::$(go env GOPATH)/bin
+
+      - name: Cache unsafenil & golangci-lint
+        uses: actions/cache@v3
+        id: cache-others
+        with:
+          path: |
+              unsafenil.so
+              ${{ steps.get-gobin.outputs.gobin }}
+
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Build unsafenil
+        if: ${{ steps.cache-others.outputs.cache-hit != 'true' }}
         run: go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
         working-directory: ./third_party/unsafenil
 
@@ -35,11 +52,8 @@ jobs:
       # See https://github.com/golangci/golangci-lint-action/issues/540
       # See https://github.com/golangci/golangci-lint/issues/1276
       - name: Install golangci-lint
-        if: ${{ steps.set-up-go.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-others.outputs.cache-hit != 'true' }}
         run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-      - name: Add go binaries to path
-        run: echo $(go env GOPATH)/bin >> $GITHUB_PATH
 
       - name: Lint
         run: golangci-lint run --timeout 5m
