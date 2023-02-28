@@ -49,7 +49,7 @@ trait TraitTest {}
 /**
  * @var MethodTest // @t_in(comments_interface, 11)
  */
-interface InterfaceTest {}
+interface InterfaceTest {} // @t_out(comments_arr, 1) @t_out(comments_gen_arr, 1)
 
 class InheritsTest extends MethodTest {
 
@@ -58,3 +58,9 @@ class InheritsTest extends MethodTest {
      */
     public function test1($a) {}
 }
+
+/**
+ * @param InterfaceTest[] $a // @t_in(comments_arr, 18)
+ * @return array<InterfaceTest> // @t_in(comments_gen_arr, 19)
+ */
+function test_arrays($a) {}

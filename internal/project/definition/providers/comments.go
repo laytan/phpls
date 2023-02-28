@@ -5,9 +5,12 @@ import (
 
 	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
-	"github.com/laytan/elephp/internal/fqner"
+	"github.com/laytan/elephp/internal/doxcontext"
+	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/symbol"
+	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -42,45 +45,49 @@ func (p *CommentsProvider) Define(ctx *context.Ctx) ([]*definition.Definition, e
 		}
 	}
 
-	var clsLike *phpdoxer.TypeClassLike
+	var typ phpdoxer.Type
 
 	switch typedNode := nodeAtCursor.(type) {
 	case *phpdoxer.NodeThrows:
-		if c, ok := typedNode.Type.(*phpdoxer.TypeClassLike); ok {
-			clsLike = c
-		}
+		typ = typedNode.Type
 	case *phpdoxer.NodeReturn:
-		if c, ok := typedNode.Type.(*phpdoxer.TypeClassLike); ok {
-			clsLike = c
-		}
+		typ = typedNode.Type
 	case *phpdoxer.NodeVar:
-		if c, ok := typedNode.Type.(*phpdoxer.TypeClassLike); ok {
-			clsLike = c
-		}
+		typ = typedNode.Type
 	case *phpdoxer.NodeParam:
-		if c, ok := typedNode.Type.(*phpdoxer.TypeClassLike); ok {
-			clsLike = c
-		}
+		typ = typedNode.Type
 	case *phpdoxer.NodeInheritDoc:
 		m, ok := ctx.Current().(*ir.ClassMethodStmt)
 		if !ok {
-			return nil, fmt.Errorf("[providers.CommentsProvider.Define]: Got %T node with @inheritdoc, which is not supported", ctx.Current())
+			return nil, fmt.Errorf("got %T node with @inheritdoc, which is not supported", ctx.Current())
 		}
 
 		return p.defineInheritDoc(ctx, m)
 	}
 
-	results := []*definition.Definition{}
-
-	if clsLike == nil {
+	var results []*definition.Definition
+	if typ == nil {
 		return results, nil
 	}
 
-	if res, ok := fqner.FindFullyQualifiedName(ctx.Root(), &ir.Name{
-		Value:    clsLike.Name,
-		Position: c.Position,
-	}); ok {
-		results = append(results, definition.IndexNodeToDef(res))
+	fqnt := fqn.NewTraverser()
+	ctx.Root().Walk(fqnt)
+
+	var currFQN *fqn.FQN
+	clsNode := ctx.ClassScope()
+	if ir.GetNodeKind(clsNode) != ir.KindRoot {
+		currFQN = fqnt.ResultFor(&ir.Name{
+			Position: ir.GetPosition(clsNode),
+			Value:    nodeident.Get(clsNode),
+		})
+	}
+
+	clsses := doxcontext.ApplyContext(fqnt, currFQN, ir.GetPosition(ctx.Current()), typ)
+	for _, cls := range clsses {
+		// After ApplyContext, the returned types are all fully qualified.
+		if iNode, ok := index.FromContainer().Find(fqn.New(cls.Name)); ok {
+			results = append(results, definition.IndexNodeToDef(iNode))
+		}
 	}
 
 	return results, nil

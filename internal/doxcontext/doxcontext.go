@@ -18,6 +18,7 @@ import (
 // - Precedence -> recursively unpacked
 // - Union -> recursively unpacked
 // - Intersection -> recursively unpacked
+// - Arrays -> their value type
 //
 // Precedence, union & intersection can result in multiple classes, so a slice is returned.
 // TODO: return fqn.FQN's instead of typeclasslikes.
@@ -26,7 +27,7 @@ func ApplyContext(
 	currFqn *fqn.FQN,
 	currPos *position.Position,
 	doc phpdoxer.Type,
-) []*phpdoxer.TypeClassLike {
+) (res []*phpdoxer.TypeClassLike) {
 	switch typed := doc.(type) {
 	case *phpdoxer.TypeClassLike:
 		switch typed.Name {
@@ -59,15 +60,15 @@ func ApplyContext(
 	case *phpdoxer.TypePrecedence:
 		return ApplyContext(fqnt, currFqn, currPos, typed.Type)
 	case *phpdoxer.TypeUnion:
-		var res []*phpdoxer.TypeClassLike
 		res = append(res, ApplyContext(fqnt, currFqn, currPos, typed.Left)...)
 		res = append(res, ApplyContext(fqnt, currFqn, currPos, typed.Right)...)
 		return res
 	case *phpdoxer.TypeIntersection:
-		var res []*phpdoxer.TypeClassLike
 		res = append(res, ApplyContext(fqnt, currFqn, currPos, typed.Left)...)
 		res = append(res, ApplyContext(fqnt, currFqn, currPos, typed.Right)...)
 		return res
+	case *phpdoxer.TypeArray:
+		return ApplyContext(fqnt, currFqn, currPos, typed.ItemType)
 	}
 
 	return nil
