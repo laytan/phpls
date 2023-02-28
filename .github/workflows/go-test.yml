@@ -34,12 +34,28 @@ jobs:
         cache: true
         go-version-file: go.mod
 
-    - name: Install richgo
-      if: ${{ steps.set-up-go.outputs.cache-hit != 'true' }}
-      run: go install github.com/kyoh86/richgo@latest
+    - name: Get gobin
+      id: get-gobin
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          echo ::set-output name=gobin::$(go env GOPATH)\bin
+        else
+          echo ::set-output name=gobin::$(go env GOPATH)/bin
+        fi
+      shell: bash
 
-    - name: Add go binaries to path
-      run: echo $(go env GOPATH)/bin >> $GITHUB_PATH
+    - name: Cache richgo
+      uses: actions/cache@v3
+      id: cache-richgo
+      with:
+        path: ${{ steps.get-gobin.outputs.gobin }}
+        key: ${{ runner.os }}-go-test-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-test-
+
+    - name: Install richgo
+      if: ${{ steps.cache-richgo.outputs.cache-hit != 'true' }}
+      run: go install github.com/kyoh86/richgo@latest
 
     - name: Generate
       run: go generate ./...

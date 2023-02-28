@@ -38,9 +38,9 @@ jobs:
               unsafenil.so
               ${{ steps.get-gobin.outputs.gobin }}
 
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-lint-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-go-lint-
 
       - name: Build unsafenil
         if: ${{ steps.cache-others.outputs.cache-hit != 'true' }}
