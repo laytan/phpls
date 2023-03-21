@@ -16,6 +16,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
 	github.com/matryer/is v1.4.1
+	github.com/onsi/gomega v1.27.4
 	github.com/samber/do v1.6.0
 	github.com/shivamMg/trie v0.0.0
 	go.uber.org/goleak v1.2.1
@@ -24,10 +25,15 @@ require (
 )
 
 require (
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+	github.com/stretchr/testify v1.8.2 // indirect
+	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/VKCOM/php-parser => github.com/laytan/php-parser v0.8.3
