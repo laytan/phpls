@@ -82,5 +82,5 @@ func (l *Lexer) peekSeqWithSpace(seq ...rune) bool {
 		l.peeked = append(l.peeked, ch)
 	}
 
-	return unicode.IsSpace(l.peeked[len(seq)])
+	return l.peeked[len(seq)] == 0 || unicode.IsSpace(l.peeked[len(seq)])
 }

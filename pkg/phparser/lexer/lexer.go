@@ -6,18 +6,21 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/laytan/elephp/pkg/phparser/token"
 )
 
+// TODO: unicode might just be overhead, I don't think PHP supports this anyway, should see if byte-per-byte is faster than rune-per-rune (I think so).
 type Lexer struct {
+	name  string
 	input *bufio.Reader
 
-	cursor uint
-	line   uint
-	bol    uint // The beginning of the line.
+	cursor int
+	line   int
+	bol    int // The beginning of the line.
 
 	ch            rune
-	lastTokenType token.TokenType
+	lastTokenType lexer.TokenType
 
 	peeked []rune // Peeked characters, peeked[0] (if set) is always the character directly after ch.
 
@@ -29,24 +32,26 @@ type Lexer struct {
 	inStrVarBraced bool
 }
 
+var _ lexer.Lexer = &Lexer{}
+
 // New creates a new lexer to read from input.
-func New(input io.Reader) *Lexer {
-	l := &Lexer{input: bufio.NewReader(input)}
+func New(name string, input io.Reader) *Lexer {
+	l := &Lexer{name: name, input: bufio.NewReader(input)}
 	l.read()
 	l.cursor = 0
 	return l
 }
 
 // NewStartInPHP returns a new lexer, which does not require an opening `<?php` tag.
-func NewStartInPHP(input io.Reader) *Lexer {
-	l := New(input)
+func NewStartInPHP(name string, input io.Reader) *Lexer {
+	l := New(name, input)
 	l.inPHP = true
 	return l
 }
 
 // Next parses the next token and returns it.
 // returns tokenType token.EOF when there are no more tokens.
-func (l *Lexer) Next() (t token.Token) {
+func (l *Lexer) Next() (t lexer.Token, err error) {
 	defer func() {
 		l.lastTokenType = t.Type
 	}()
@@ -64,23 +69,22 @@ func (l *Lexer) Next() (t token.Token) {
 		if l.peekSeqWithSpace('?', 'p', 'h', 'p') {
 			l.inPHP = true
 			l.readN(5)
-			t.Type = token.PHPStart
-			t.Literal = "<?php"
-			return t
+			t.Type = lexer.TokenType(token.PHPStart)
+			t.Value = "<?php"
+			return
 		} else if l.peekSeqWithSpace('?', '=') {
 			l.inPHP = true
 			l.readN(3)
-			t.Type = token.PHPEchoStart
-			t.Literal = "<?="
-			return t
+			t.Type = lexer.TokenType(token.PHPEchoStart)
+			t.Value = "<?="
+			return
 		} else if l.ch != 0 {
-			t = token.Token{
-				Row: l.line,
-				Col: l.cursor - l.bol,
+			t = lexer.Token{
+				Type:  lexer.TokenType(token.NonPHP),
+				Value: l.readNonPHP(),
+				Pos:   l.pos(),
 			}
-            t.Type = token.NonPHP
-			t.Literal = l.readNonPHP()
-			return t
+			return
 		}
 	}
 
@@ -90,22 +94,22 @@ func (l *Lexer) Next() (t token.Token) {
 	}
 
 	l.skipWhitespace()
-	t = token.Token{
-		Literal: string(l.ch),
-		Row:     l.line,
-		Col:     l.cursor - l.bol,
+	t = lexer.Token{
+		Type:  lexer.TokenType(token.Illegal),
+		Value: string(l.ch),
+		Pos:   l.pos(),
 	}
 
 	if l.ch == 0 {
-		t.Literal = ""
-		t.Type = token.EOF
-		return t
+		t.Value = ""
+		t.Type = lexer.EOF
+		return
 	}
 
 	if l.inStr {
 		switch l.ch {
 		case '"':
-			t.Type = token.StringEnd
+			t.Type = lexer.TokenType(token.StringEnd)
 			l.inStr = false
 			l.inStrVar = false
 			l.inStrVarBraced = false
@@ -149,111 +153,132 @@ func (l *Lexer) Next() (t token.Token) {
 				}
 			}
 
-			t.Type = token.StringContent
-			t.Literal = content.String()
-			return t
+			t.Type = lexer.TokenType(token.StringContent)
+			t.Value = content.String()
+			return
 		}
 	}
 
 	// If the type is still illegal, check these cases.
-	if t.Type == token.Illegal {
+	if t.Type == lexer.TokenType(token.Illegal) {
 		switch l.ch {
 		case '{':
-			t.Type = token.LBrace
+			t.Type = lexer.TokenType(token.LBrace)
 		case '}':
-			t.Type = token.RBrace
+			t.Type = lexer.TokenType(token.RBrace)
 		case '(':
-			t.Type = token.LParen
+			t.Type = lexer.TokenType(token.LParen)
 		case ')':
-			t.Type = token.RParen
+			t.Type = lexer.TokenType(token.RParen)
 		case '[':
-			t.Type = token.LBracket
+			t.Type = lexer.TokenType(token.LBracket)
 		case ']':
-			t.Type = token.RBracket
+			t.Type = lexer.TokenType(token.RBracket)
 		case ',':
-			t.Type = token.Comma
+			t.Type = lexer.TokenType(token.Comma)
 		case '=':
-			t.Type = token.Assign
+			t.Type = lexer.TokenType(token.Assign)
 		case ';':
-			t.Type = token.Semicolon
+			t.Type = lexer.TokenType(token.Semicolon)
 		case '+':
-			t.Type = token.Plus
+			t.Type = lexer.TokenType(token.Plus)
+		case '&':
+			t.Type = lexer.TokenType(token.Reference)
+		case ':':
+			t.Type = lexer.TokenType(token.Colon)
+		case '!':
+			t.Type = lexer.TokenType(token.Not)
 		case '/':
-			if !l.peekIs('/') {
-				break
+			if l.peekIs('*') {
+				t.Type = lexer.TokenType(token.BlockComment)
+				t.Value = l.readBlockComment()
+				return
 			}
 
-			t.Type = token.LineComment
-			t.Literal = l.readUntil('\n')
-			return t
+			if l.peekIs('/') {
+				t.Type = lexer.TokenType(token.LineComment)
+				t.Value = l.readUntil('\n')
+			}
+
+			// Illegal if we get here.
+
 		case '\'':
 			str, ok := l.readUntilIncl('\'')
-			t.Literal = str
+			t.Value = str
 			if !ok {
-				return t
+				return
 			}
 
-			t.Type = token.SimpleString
-			return t
+			t.Type = lexer.TokenType(token.SimpleString)
+			return
 		case '"':
-			t.Type = token.StringStart
+			t.Type = lexer.TokenType(token.StringStart)
 			l.inStr = true
 		case '-':
 			if l.peekIs('>') {
 				l.read()
-				t.Type = token.ClassAccess
-				t.Literal = "->"
+				t.Type = lexer.TokenType(token.ClassAccess)
+				t.Value = "->"
 			} else {
-				t.Type = token.Minus
-				t.Literal = "-"
+				t.Type = lexer.TokenType(token.Minus)
+				t.Value = "-"
 			}
 		case '$':
-			l.read() // consume $
+			l.read() // $
 			ident := l.readIdent()
 			if len(ident) == 0 {
-				return t
+				return
 			}
 
-			t.Type = token.Var
-			t.Literal = "$" + ident
-			return t
+			t.Type = lexer.TokenType(token.Var)
+			t.Value = "$" + ident
+			return
+		case '?':
+			if l.peekIs('>') {
+				l.read()
+				l.inPHP = false
+				t.Type = lexer.TokenType(token.PHPEnd)
+				t.Value = "?>"
+			} else {
+				t.Type = lexer.TokenType(token.QuestionMark)
+			}
 		default:
+			if l.ch == '.' && l.peekSeq('.', '.') {
+				l.readN(3)
+				t.Type = lexer.TokenType(token.Variadic)
+				t.Value = "..."
+				return
+			}
+
 			if l.isNumberStart() {
-				t.Literal = l.readNumber()
-				t.Type = token.Number
-				return t
+				t.Value = l.readNumber()
+				t.Type = lexer.TokenType(token.Number)
+				return
 			}
 
 			if isIdent(l.ch) {
-				t.Literal = l.readIdent()
-				t.Type = token.LookupIdent(t.Literal)
-				return t
-			}
-
-			if l.ch == '?' && l.peekIs('>') {
-				l.read()
-				l.inPHP = false
-				t.Type = token.PHPEnd
-				t.Literal = "?>"
+				t.Value = l.readIdent()
+				t.Type = lexer.TokenType(token.LookupIdent(t.Value))
+				return
 			}
 		}
 	}
 
 	l.read()
-	return t
+	return
 }
 
-// skipWhitespace reads until a non-whitespace character is found,
-// incrementing l.line if a line break is encountered.
+func (l *Lexer) pos() lexer.Position {
+	return lexer.Position{
+		Filename: l.name,
+		Offset:   l.cursor,
+		Line:     l.line,
+		Column:   l.cursor - l.bol,
+	}
+}
+
 func (l *Lexer) skipWhitespace() {
 	for unicode.IsSpace(l.ch) {
-		if l.ch == '\n' {
-			l.read()
-			l.bol = l.cursor
-			l.line++
-			continue
-		}
-
 		l.read()
 	}
 }
@@ -269,6 +294,29 @@ func (l *Lexer) readNonPHP() string {
 			if l.peekSeqWithSpace('?', '=') || l.peekSeqWithSpace('?', 'p', 'h', 'p') {
 				return res.String()
 			}
+		}
+	}
+
+	return res.String()
+}
+
+func (l *Lexer) readBlockComment() string {
+	res := strings.Builder{}
+	res.WriteRune(l.ch) // /
+	l.read()
+	res.WriteRune(l.ch) // *
+	l.read()
+
+	for l.ch != 0 {
+		res.WriteRune(l.ch)
+		l.read()
+
+		if l.ch == '*' && l.peekIs('/') {
+			res.WriteRune(l.ch) // *
+			l.read()
+			res.WriteRune(l.ch) // /
+			l.read()
+			break
 		}
 	}
 

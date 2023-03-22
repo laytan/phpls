@@ -8,8 +8,8 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[Illegal-0]
-	_ = x[EOF-1]
+	_ = x[EOF - -1]
+	_ = x[Illegal-1]
 	_ = x[PHPStart-2]
 	_ = x[PHPEnd-3]
 	_ = x[PHPEchoStart-4]
@@ -79,34 +79,51 @@ func _() {
 	_ = x[Yield-68]
 	_ = x[YieldFrom-69]
 	_ = x[KeywordsEnd-70]
-	_ = x[Var-71]
-	_ = x[Number-72]
-	_ = x[Assign-73]
-	_ = x[Plus-74]
-	_ = x[Minus-75]
-	_ = x[Comma-76]
-	_ = x[Semicolon-77]
-	_ = x[LParen-78]
-	_ = x[RParen-79]
-	_ = x[LBrace-80]
-	_ = x[RBrace-81]
-	_ = x[LBracket-82]
-	_ = x[RBracket-83]
-	_ = x[ClassAccess-84]
-	_ = x[LineComment-85]
-	_ = x[SimpleString-86]
-	_ = x[StringStart-87]
-	_ = x[StringContent-88]
-	_ = x[StringEnd-89]
+	_ = x[Reference-71]
+	_ = x[Variadic-72]
+	_ = x[Var-73]
+	_ = x[Number-74]
+	_ = x[Not-75]
+	_ = x[QuestionMark-76]
+	_ = x[Assign-77]
+	_ = x[Plus-78]
+	_ = x[Minus-79]
+	_ = x[Comma-80]
+	_ = x[Colon-81]
+	_ = x[Semicolon-82]
+	_ = x[LParen-83]
+	_ = x[RParen-84]
+	_ = x[LBrace-85]
+	_ = x[RBrace-86]
+	_ = x[LBracket-87]
+	_ = x[RBracket-88]
+	_ = x[ClassAccess-89]
+	_ = x[LineComment-90]
+	_ = x[BlockComment-91]
+	_ = x[SimpleString-92]
+	_ = x[StringStart-93]
+	_ = x[StringContent-94]
+	_ = x[StringEnd-95]
+	_ = x[Count-96]
 }
 
-const _TokenType_name = "IllegalEOFPHPStartPHPEndPHPEchoStartNonPHPIdentKeywordsStartFunctionReturnAbstractAndAsBreakCallableCaseCatchClassCloneConstContinueDefaultDieDoEchoElseElseIfEndDeclareEndForEndForEachEndIfEndSwitchEndWhileExtendsFinalFinallyFnForForEachGlobalGoToIfImplementsIncludeIncludeOnceInstanceOfInsteadOfInterfaceKVarMatchNamespaceNewOrPrintPrivateProtectedPublicReadonlyRequireRequireOnceStaticSwitchThrowTraitTryUseWhileXORYieldYieldFromKeywordsEndVarNumberAssignPlusMinusCommaSemicolonLParenRParenLBraceRBraceLBracketRBracketClassAccessLineCommentSimpleStringStringStartStringContentStringEnd"
+const (
+	_TokenType_name_0 = "EOF"
+	_TokenType_name_1 = "IllegalPHPStartPHPEndPHPEchoStartNonPHPIdentKeywordsStartFunctionReturnAbstractAndAsBreakCallableCaseCatchClassCloneConstContinueDefaultDieDoEchoElseElseIfEndDeclareEndForEndForEachEndIfEndSwitchEndWhileExtendsFinalFinallyFnForForEachGlobalGoToIfImplementsIncludeIncludeOnceInstanceOfInsteadOfInterfaceKVarMatchNamespaceNewOrPrintPrivateProtectedPublicReadonlyRequireRequireOnceStaticSwitchThrowTraitTryUseWhileXORYieldYieldFromKeywordsEndReferenceVariadicVarNumberNotQuestionMarkAssignPlusMinusCommaColonSemicolonLParenRParenLBraceRBraceLBracketRBracketClassAccessLineCommentBlockCommentSimpleStringStringStartStringContentStringEndCount"
+)
 
-var _TokenType_index = [...]uint16{0, 7, 10, 18, 24, 36, 42, 47, 60, 68, 74, 82, 85, 87, 92, 100, 104, 109, 114, 119, 124, 132, 139, 142, 144, 148, 152, 158, 168, 174, 184, 189, 198, 206, 213, 218, 225, 227, 230, 237, 243, 247, 249, 259, 266, 277, 287, 296, 305, 309, 314, 323, 326, 328, 333, 340, 349, 355, 363, 370, 381, 387, 393, 398, 403, 406, 409, 414, 417, 422, 431, 442, 445, 451, 457, 461, 466, 471, 480, 486, 492, 498, 504, 512, 520, 531, 542, 554, 565, 578, 587}
+var (
+	_TokenType_index_1 = [...]uint16{0, 7, 15, 21, 33, 39, 44, 57, 65, 71, 79, 82, 84, 89, 97, 101, 106, 111, 116, 121, 129, 136, 139, 141, 145, 149, 155, 165, 171, 181, 186, 195, 203, 210, 215, 222, 224, 227, 234, 240, 244, 246, 256, 263, 274, 284, 293, 302, 306, 311, 320, 323, 325, 330, 337, 346, 352, 360, 367, 378, 384, 390, 395, 400, 403, 406, 411, 414, 419, 428, 439, 448, 456, 459, 465, 468, 480, 486, 490, 495, 500, 505, 514, 520, 526, 532, 538, 546, 554, 565, 576, 588, 600, 611, 624, 633, 638}
+)
 
 func (i TokenType) String() string {
-	if i >= TokenType(len(_TokenType_index)-1) {
+	switch {
+	case i == -1:
+		return _TokenType_name_0
+	case 1 <= i && i <= 96:
+		i -= 1
+		return _TokenType_name_1[_TokenType_index_1[i]:_TokenType_index_1[i+1]]
+	default:
 		return "TokenType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _TokenType_name[_TokenType_index[i]:_TokenType_index[i+1]]
 }

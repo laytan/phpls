@@ -15,12 +15,21 @@ func (l *Lexer) read() {
 	ch, _, _ := l.input.ReadRune()
 	l.ch = ch
 	l.cursor++
+
+    l.checkNewLine()
 }
 
 func (l *Lexer) readN(n int) {
     for i := 0; i < n; i++ {
         l.read()
     }
+}
+
+func (l *Lexer) checkNewLine() {
+	if l.ch == '\n' {
+		l.bol = l.cursor + 1
+		l.line++
+	}
 }
 
 // readUntil reads until any of the check runes is found (excluding this rune).

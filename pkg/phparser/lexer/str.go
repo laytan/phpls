@@ -1,6 +1,9 @@
 package lexer
 
-import "github.com/laytan/elephp/pkg/phparser/token"
+import (
+	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/laytan/elephp/pkg/phparser/token"
+)
 
 // isStrVarEnd determines if this is the end of the variable expression in a string.
 // according to PHP docs, one layer of array access, or one layer of property access
@@ -8,10 +11,10 @@ import "github.com/laytan/elephp/pkg/phparser/token"
 func (l *Lexer) isStrVarEnd() bool {
 	// Braces take everything until '}'.
 	if l.inStrVarBraced {
-		return l.lastTokenType == token.RBrace
+		return l.lastTokenType == lexer.TokenType(token.RBrace)
 	}
 
-	if l.lastTokenType == token.RBracket {
+	if l.lastTokenType == lexer.TokenType(token.RBracket) {
 		return true
 	}
 

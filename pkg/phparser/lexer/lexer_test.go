@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"appliedgo.net/what"
+	plexer "github.com/alecthomas/participle/v2/lexer"
 	"github.com/laytan/elephp/pkg/phparser/lexer"
 	"github.com/laytan/elephp/pkg/phparser/token"
 	. "github.com/onsi/gomega"
@@ -45,8 +46,8 @@ frogyield from
 	tests := []struct {
 		expectedType    token.TokenType
 		expectedLiteral string
-		expectedLine    uint
-		expectedCol     uint
+		expectedLine    int
+		expectedCol     int
 	}{
 		{token.Var, "$five", 0, 0},
 		{token.Assign, "=", 0, 6},
@@ -153,18 +154,18 @@ frogyield from
 		{token.Ident, "from", 24, 10},
 	}
 
-	l := lexer.NewStartInPHP(strings.NewReader(input))
+	l := lexer.NewStartInPHP("test", strings.NewReader(input))
 
 	for _, tt := range tests {
-		tok := l.Next()
+		tok, _ := l.Next()
 
 		what.Is(tok)
 		what.Is(tt)
 
-		g.Expect(tok.Type).To(Equal(tt.expectedType))
-		g.Expect(tok.Literal).To(Equal(tt.expectedLiteral))
-		g.Expect(tok.Col).To(Equal(tt.expectedCol), "columns should be equal")
-		g.Expect(tok.Row).To(Equal(tt.expectedLine), "rows should be equal")
+		g.Expect(tok.Type).To(Equal(plexer.TokenType(tt.expectedType)))
+		g.Expect(tok.Value).To(Equal(tt.expectedLiteral))
+		g.Expect(tok.Pos.Column).To(Equal(tt.expectedCol), "columns should be equal")
+		g.Expect(tok.Pos.Line).To(Equal(tt.expectedLine), "rows should be equal")
 	}
 }
 
@@ -182,25 +183,26 @@ func TestStringVars(t *testing.T) {
 		{`"$test[0]"`, `""`},
 		{`"teehee$test[0]"`, `"teehee"`},
 		{`"$people->john then said hello to $people->jane."`, `" then said hello to ."`},
-        {`"The ch at -2 is $string[-2]!"`, `"The ch at -2 is !"`},
-        {`"He drank some $juices[koolaid1] juice."`, `"He drank some juice."`},
-        {`"$test[0]->test"`, `"->test"`},
-        {`"{$test[0]->test}"`, `""`},
-        {`"test{$test}test"`, `"testtest"`},
-        {`"This is { $great}"`, `"This is { }"`},
-        {`"This is {$arr[4][3]}"`, `"This is"`},
-        {`"$bar['foo']test"`, `"test"`},
-        {`"hello{$world}!"`, `"hello!"`},
+		{`"The ch at -2 is $string[-2]!"`, `"The ch at -2 is !"`},
+		{`"He drank some $juices[koolaid1] juice."`, `"He drank some juice."`},
+		{`"$test[0]->test"`, `"->test"`},
+		{`"{$test[0]->test}"`, `""`},
+		{`"test{$test}test"`, `"testtest"`},
+		{`"This is { $great}"`, `"This is { }"`},
+		{`"This is {$arr[4][3]}"`, `"This is"`},
+		{`"$bar['foo']test"`, `"test"`},
+		{`"hello{$world}!"`, `"hello!"`},
 	}
 
 	for _, tt := range tests {
-		l := lexer.NewStartInPHP(strings.NewReader(tt.input))
+		l := lexer.NewStartInPHP("test", strings.NewReader(tt.input))
 
 		actOut := ""
-		for tok := l.Next(); tok.Type != token.EOF; tok = l.Next() {
-			if tok.Type == token.StringStart || tok.Type == token.StringEnd ||
-				tok.Type == token.StringContent {
-				actOut += tok.Literal
+		for tok, _ := l.Next(); tok.Type != plexer.TokenType(token.EOF); tok, _ = l.Next() {
+			if tok.Type == plexer.TokenType(token.StringStart) ||
+				tok.Type == plexer.TokenType(token.StringEnd) ||
+				tok.Type == plexer.TokenType(token.StringContent) {
+				actOut += tok.Value
 			}
 		}
 

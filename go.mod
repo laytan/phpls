@@ -25,6 +25,7 @@ require (
 )
 
 require (
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
