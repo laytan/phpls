@@ -1,12 +1,13 @@
 module github.com/laytan/elephp
 
-go 1.19
+go 1.20
 
 require (
 	appliedgo.net/what v0.1.5
 	github.com/DmitriyVTitov/size v1.5.0
 	github.com/VKCOM/noverify v0.5.3
 	github.com/VKCOM/php-parser v0.8.2
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/arl/statsviz v0.5.1
 	github.com/davecgh/go-spew v1.1.1
@@ -25,7 +26,6 @@ require (
 )
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect

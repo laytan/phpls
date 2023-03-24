@@ -1,6 +1,6 @@
 run:
     tests: true
-    go: '1.19'
+    go: '1.20'
 
 linters:
     disable-all: true
@@ -39,14 +39,14 @@ linters:
         - unused
         - whitespace
         - wrapcheck
-        - unsafenil
+        # - unsafenil
 
 linters-settings:
-    custom:
-        unsafenil:
-            path: ./unsafenil.so
-            description: Checks that there is no return of a nil error or false, and a nil/default value before it
-            original-url: github.com/laytan/unsafenil
+    # custom:
+    #     unsafenil:
+    #         path: ./unsafenil.so
+    #         description: Checks that there is no return of a nil error or false, and a nil/default value before it
+    #         original-url: github.com/laytan/unsafenil
 
     makezero:
         always: true
