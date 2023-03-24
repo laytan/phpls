@@ -3,5 +3,5 @@
 package stubs
 
 // The total amount of stub files.
-// Retrieved from phpstorm-stubs version v2022.3-93-g735d07ca in the directory ../../third_party/phpstorm-stubs.
+// Retrieved from phpstorm-stubs version v2022.3-107-g4a9c2952 in the directory ../../third_party/phpstorm-stubs.
 const TotalStubs = 719
