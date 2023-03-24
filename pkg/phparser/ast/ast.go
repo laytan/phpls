@@ -18,7 +18,7 @@ type Node interface {
 
 type BaseNode struct {
 	Pos    lexer.Position
-    Tokens []lexer.Token // TODO: when done, this can prob go for more performance.
+	Tokens []lexer.Token // TODO: when done, this can prob go for more performance.
 }
 
 func (b BaseNode) Position() lexer.Position {
