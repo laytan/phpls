@@ -12,10 +12,13 @@ import (
 	"github.com/onsi/gomega/format"
 )
 
+func TestMain(m *testing.M) {
+	format.UseStringerRepresentation = true
+}
+
 func TestNextToken(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
-	format.UseStringerRepresentation = true
 
 	input := `$five = 5;
 $ten = 0xa;
@@ -173,7 +176,6 @@ frogyield from
 func TestStringVars(t *testing.T) {
 	t.Parallel()
 	g := NewWithT(t)
-	format.UseStringerRepresentation = true
 
 	tests := []struct {
 		input  string
