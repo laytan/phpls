@@ -6,7 +6,7 @@
 
 package token
 
-func LookupIdent(keyword string) TokenType {
+func LookupIdent(keyword string) Type {
     switch(keyword) {
     case "function":
         return Function
@@ -38,6 +38,8 @@ func LookupIdent(keyword string) TokenType {
         return Default
     case "die":
         return Die
+    case "exit":
+        return Exit
     case "do":
         return Do
     case "echo":
@@ -132,6 +134,10 @@ func LookupIdent(keyword string) TokenType {
         return Yield
     case "yield from":
         return YieldFrom
+    case "true":
+        return True
+    case "false":
+        return False
     default:
         return Ident
     }

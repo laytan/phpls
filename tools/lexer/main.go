@@ -25,8 +25,8 @@ func main() {
 	flag.Parse()
 	if s != nil && len(*s) > 0 {
 		l := lexer.New("stdin", strings.NewReader(*s))
-		for t, _ := l.Next(); token.TokenType(t.Type) != token.EOF; t, _ = l.Next() {
-			fmt.Printf("%+v\n", t)
+		for t, _ := l.Next(); token.Type(t.Type) != token.EOF; t, _ = l.Next() {
+			fprintf("%+v\n", t)
 		}
 		return
 	}
@@ -34,51 +34,52 @@ func main() {
 	if f != nil && len(*f) > 0 {
 		file, err := os.Open(*f)
 		if err != nil {
-			fmt.Println(err)
+			fprintln(err)
 			os.Exit(1)
 			return
 		}
 		l := lexer.New(*f, file)
 		line := 0
 		fol := true
-		for t, _ := l.Next(); token.TokenType(t.Type) != token.EOF; t, _ = l.Next() {
+		for t, _ := l.Next(); token.Type(t.Type) != token.EOF; t, _ = l.Next() {
 			if t.Pos.Line > line {
 				line = t.Pos.Line
 				fol = true
-				fmt.Print("\n")
+				fprintln("")
 			}
 
 			if fol {
 				fol = false
 				for i := 0; i < t.Pos.Column; i++ {
-					fmt.Print(" ")
+					fprintf(" ")
 				}
 			}
 
-			tt := token.TokenType(t.Type)
+			tt := token.Type(t.Type)
 
 			if tt == token.Illegal {
-				fmt.Print(colorRed)
+				fprintf(colorRed)
 			}
 
 			if tt == token.NonPHP || tt == token.BlockComment || tt == token.LineComment ||
 				tt == token.PHPStart ||
 				tt == token.PHPEchoStart ||
 				tt == token.PHPEnd {
-				fmt.Print(colorGray)
+				fprintf(colorGray)
 			}
 
-			fmt.Printf("%s:\"%s\" ", token.TokenType(t.Type), t.Value)
-			fmt.Print(colorNone)
+			fprintf("%s:\"%s\" ", token.Type(t.Type), t.Value)
+			fprintf(colorNone)
 		}
-		fmt.Println()
+
+		fprintln("")
 		return
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		fmt.Printf(">> ")
+		fprintf(">> ")
 		scanned := scanner.Scan()
 		if !scanned {
 			return
@@ -86,8 +87,20 @@ func main() {
 
 		line := scanner.Text()
 		l := lexer.NewStartInPHP("repl", strings.NewReader(line))
-		for t, _ := l.Next(); token.TokenType(t.Type) != token.EOF; t, _ = l.Next() {
-			fmt.Printf("%#v\n", t)
+		for t, _ := l.Next(); token.Type(t.Type) != token.EOF; t, _ = l.Next() {
+			fprintf("%#v\n", t)
 		}
+	}
+}
+
+func fprintln(value any) {
+	if _, err := fmt.Println(value); err != nil {
+		panic(err)
+	}
+}
+
+func fprintf(value string, args ...any) {
+	if _, err := fmt.Printf(value, args...); err != nil {
+		panic(err)
 	}
 }

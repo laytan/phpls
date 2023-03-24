@@ -12,15 +12,11 @@ func isIdentStart(r rune) bool {
 		r == '\\'
 }
 
-func (l *Lexer) isIdentStart() bool {
-	return isIdentStart(l.ch) && isIdent(l.peek())
-}
-
 // readIdent keeps reading until a non-identifier character is found.
 func (l *Lexer) readIdent() string {
 	res := strings.Builder{}
 	for {
-		res.WriteRune(l.ch)
+		_, _ = res.WriteRune(l.ch)
 		l.read()
 
 		if !isIdent(l.ch) {

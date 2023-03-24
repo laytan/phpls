@@ -6,11 +6,11 @@ import (
 
 //go:generate stringer -type TokenType
 //go:generate go run lookup_ident_gen.go
-type TokenType lexer.TokenType
+type Type lexer.TokenType
 
 const (
-	EOF               = TokenType(lexer.EOF)
-	Illegal TokenType = iota // Anything not able to be lexed.
+	EOF          = Type(lexer.EOF)
+	Illegal Type = iota // Anything not able to be lexed.
 
 	PHPStart     // `<?php`
 	PHPEnd       // `?>`
@@ -36,6 +36,7 @@ const (
 	Continue
 	Default
 	Die
+	Exit
 	Do
 	Echo
 	Else
@@ -83,6 +84,8 @@ const (
 	XOR
 	Yield
 	YieldFrom // literal:"yield from" // YieldFrom has a special case in the lexer (because it has a space).
+	True      // TODO: this could be 'TRUE' or 'true', should think about case sensitivity in general.
+	False
 	KeywordsEnd
 
 	Reference // An `&` ch.
@@ -92,12 +95,20 @@ const (
 
 	Number // Any number value, not necessarily a legal/valid number.
 
-    Not
-    QuestionMark
+	Not
+	ErrorSuppress
+
+	QuestionMark
+
+	Concat
 
 	Assign
+	ConcatAssign
+
 	Plus
 	Minus
+	Divide
+	Times
 	Comma
 	Colon
 	Semicolon
@@ -108,17 +119,24 @@ const (
 	LBracket
 	RBracket
 
+	BinaryOr // `|`.
+
 	ClassAccess // `->`.
 
 	LineComment // A `// comment`.
-    // TODO: parse further (@var etc.).
-    BlockComment // A `/* comment */`.
+	// TODO: parse further (@var etc.).
+	BlockComment // A `/* comment */`.
 
 	SimpleString // A string using single quotes.
 
 	StringStart   // A double quote to start a complex string.
 	StringContent // Literal string text inside the complex string.
 	StringEnd     // A double quote ending a complex string.
+
+	Equals          // ==
+	StrictEquals    // ===
+	NotEquals       // !=
+	StrictNotEquals // !==
 
 	Count // Marks the end of the tokens, never lexed.
 )

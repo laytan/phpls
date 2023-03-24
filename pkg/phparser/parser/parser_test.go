@@ -9,6 +9,7 @@ import (
 )
 
 func TestParser(t *testing.T) {
+	t.Parallel()
 	g := NewWithT(t)
 
 	ast, err := parser.Parser.ParseString("test", `

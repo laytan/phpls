@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"path/filepath"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phparser/parser"
 	"github.com/laytan/elephp/pkg/phparser/token"
@@ -18,35 +18,23 @@ func main() {
 		start := time.Now()
 		a, err := parser.Parser.Parse("body", r.Body)
 		d := float64(time.Since(start)) / float64(time.Millisecond)
-		w.Header().Add("Server-Timing", fmt.Sprintf("parse;dur=%f", d))
+		w.Header().Add("Server-Timing", fmt.Sprintf("Parse;dur=%f", d))
 		if err != nil {
-			w.Write([]byte(err.Error()))
-			w.Write([]byte("\n\n"))
+			writeStr(w, err.Error())
+			writeStr(w, "\n\n")
 		}
 
-		// res := struct {
-		// 	Error error
-		// 	Ast   *ast.Program
-		// }{err, a}
-		//
-		// ms, err := json.MarshalIndent(res, "", "  ")
-		// if err != nil {
-		// 	panic(err)
-		// }
-		//
-		// w.Header().Add("Content-Type", "application/json")
-		// w.Write(ms)
-		spew.Fdump(w, a)
+		a.Dump(w, 0)
 	})
 
 	http.HandleFunc("/api/lex", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		toks, err := parser.Parser.Lex("body", r.Body)
 		d := float64(time.Since(start)) / float64(time.Millisecond)
-		w.Header().Add("Server-Timing", fmt.Sprintf("parse;dur=%f", d))
+		w.Header().Add("Server-Timing", fmt.Sprintf("Lex;dur=%f", d))
 		if err != nil {
-			w.Write([]byte(err.Error()))
-			w.Write([]byte("\n\n"))
+			writeStr(w, err.Error())
+			writeStr(w, "\n\n")
 		}
 
 		line := 0
@@ -55,26 +43,41 @@ func main() {
 			if t.Pos.Line > line {
 				line = t.Pos.Line
 				fol = true
-				fmt.Fprint(w, "\n")
+				fprintf(w, "\n %d | ", line+1)
 			}
 
 			if fol {
 				fol = false
 				for i := 0; i < t.Pos.Column; i++ {
-					fmt.Fprint(w, " ")
+					fprintf(w, " ")
 				}
 			}
 
-			tt := token.TokenType(t.Type)
-			fmt.Fprintf(w, "%s:\"%s\" ", tt, t.Value)
+			tt := token.Type(t.Type)
+			fprintf(w, "%s:\"%s\" ", tt, t.Value)
 		}
 	})
 
 	http.Handle(
 		"/",
-		http.FileServer(http.Dir(filepath.Join(pathutils.Root(), "www", "playground"))),
+		http.FileServer(http.Dir(filepath.Join(pathutils.Root(), "web", "playground"))),
 	)
 	log.Println("Listening on http://localhost:8080")
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe( // nolint:gosec // This is a local server, no security needed.
+		":8080",
+		nil,
+	)
 	log.Println(err)
+}
+
+func writeStr(w io.Writer, value string) {
+	if _, err := w.Write([]byte(value)); err != nil {
+		panic(err)
+	}
+}
+
+func fprintf(w io.Writer, format string, args ...any) {
+	if _, err := fmt.Fprintf(w, format, args...); err != nil {
+		panic(err)
+	}
 }

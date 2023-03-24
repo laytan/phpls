@@ -8,10 +8,17 @@ import (
 
 var Parser = participle.MustBuild[ast.Program](
 	participle.Lexer(lexer.NewDef()),
-	participle.Elide("NonPHP", "LineComment", "BlockComment", "PHPStart", "PHPEchoStart", "PHPEnd"),
-	participle.Union(ast.StatementImpls...), // Top level statements.
-	participle.Union(ast.ClassStatementImpls...), // Class level statements.
-	participle.Union(ast.CallableStatementImpls...), // Callable level statements.
-	participle.Union(ast.ExprImpls...), // Any expression.
-	participle.Union(ast.ExprNoArrAccImpls...), // Any expression - `ast.ArrAccessGroup`
+
+	// Tokens that can go everywhere.
+	participle.Elide("BlockComment", "LineComment", "PHPStart", "PHPEchoStart", "PHPEnd", "NonPHP"),
+
+	participle.Union(ast.StatementImpls...),
+	participle.Union(ast.ClassStatementImpls...),
+	participle.Union(ast.CallableStatementImpls...),
+	participle.Union(ast.ComplexStrContentImps...),
+	participle.Union(ast.AssignableImpls...),
+	participle.Union(ast.ValueImpls...),
+	participle.Union(ast.OperationImpls...),
+
+	participle.UseLookahead(participle.MaxLookahead),
 )

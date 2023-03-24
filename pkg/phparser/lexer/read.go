@@ -5,6 +5,7 @@ import "strings"
 // read reads the next rune into l.ch.
 // if the peeked buffer is non-empty it consumes from there first.
 func (l *Lexer) read() {
+	defer l.checkNewLine()
 	if len(l.peeked) > 0 {
 		l.ch = l.peeked[0]
 		l.peeked = l.peeked[1:]
@@ -15,14 +16,12 @@ func (l *Lexer) read() {
 	ch, _, _ := l.input.ReadRune()
 	l.ch = ch
 	l.cursor++
-
-    l.checkNewLine()
 }
 
 func (l *Lexer) readN(n int) {
-    for i := 0; i < n; i++ {
-        l.read()
-    }
+	for i := 0; i < n; i++ {
+		l.read()
+	}
 }
 
 func (l *Lexer) checkNewLine() {
@@ -35,7 +34,7 @@ func (l *Lexer) checkNewLine() {
 // readUntil reads until any of the check runes is found (excluding this rune).
 func (l *Lexer) readUntil(check ...rune) string {
 	res := strings.Builder{}
-	res.WriteRune(l.ch)
+	_, _ = res.WriteRune(l.ch)
 	l.read()
 
 	escaping := false
@@ -49,7 +48,7 @@ func (l *Lexer) readUntil(check ...rune) string {
 		}
 
 		escaping = !escaping && l.ch == '\\'
-		res.WriteRune(l.ch)
+		_, _ = res.WriteRune(l.ch)
 		l.read()
 	}
 

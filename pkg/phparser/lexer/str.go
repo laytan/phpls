@@ -24,7 +24,7 @@ func (l *Lexer) isStrVarEnd() bool {
 	}
 
 	// If not inside of [], we are at the end, if the ch is not an identifier character.
-	if l.peekUntil('[', ']', '"') != ']' {
+	if l.ch != ']' && l.peekUntil('[', ']', '"') != ']' {
 		return !isIdent(l.ch)
 	}
 

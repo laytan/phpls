@@ -24,11 +24,11 @@ func isNumber(r rune) bool {
 func (l *Lexer) readNumber() string {
 	res := strings.Builder{}
 	// This is the first character, checked before calling this function.
-	res.WriteRune(l.ch)
+	_, _ = res.WriteRune(l.ch)
 	l.read()
 
 	for isNumber(l.ch) {
-		res.WriteRune(l.ch)
+		_, _ = res.WriteRune(l.ch)
 		l.read()
 	}
 

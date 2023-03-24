@@ -22,14 +22,14 @@ func main() {
 		ast, err := p.ParseString("stdin", *s)
 		spew.Dump(ast)
 		if err != nil {
-			fmt.Println(fmt.Errorf("parsing stdin: %w", err))
+			fprintln(fmt.Errorf("parsing stdin: %w", err))
 		}
 	}
 
 	if f != nil && len(*f) > 0 {
 		file, err := os.Open(*f)
 		if err != nil {
-			fmt.Println(err)
+			fprintln(err)
 			os.Exit(1)
 			return
 		}
@@ -37,7 +37,7 @@ func main() {
 		ast, err := p.Parse(*f, file)
 		spew.Dump(ast)
 		if err != nil {
-			fmt.Println(err)
+			fprintln(err)
 		}
 
 		return
@@ -46,7 +46,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		fmt.Printf(">> ")
+		fprintf(">> ")
 		scanned := scanner.Scan()
 		if !scanned {
 			return
@@ -56,7 +56,19 @@ func main() {
 		ast, err := p.ParseString("repl", line)
 		spew.Dump(ast)
 		if err != nil {
-			fmt.Println(fmt.Errorf("parsing line from repl: %w", err))
+			fprintln(fmt.Errorf("parsing line from repl: %w", err))
 		}
+	}
+}
+
+func fprintln(value any) {
+	if _, err := fmt.Println(value); err != nil {
+		panic(err)
+	}
+}
+
+func fprintf(value string, args ...any) {
+	if _, err := fmt.Printf(value, args...); err != nil {
+		panic(err)
 	}
 }

@@ -7,12 +7,12 @@ import (
 	"github.com/laytan/elephp/pkg/phparser/token"
 )
 
-type LexerDef struct {
+type Definition struct {
 	symbols map[string]participle.TokenType
 }
 
-func NewDef() *LexerDef {
-	ld := &LexerDef{
+func NewDef() *Definition {
+	ld := &Definition{
 		symbols: map[string]participle.TokenType{},
 	}
 
@@ -23,12 +23,12 @@ func NewDef() *LexerDef {
 	return ld
 }
 
-var _ participle.Definition = &LexerDef{}
+var _ participle.Definition = &Definition{}
 
-func (l *LexerDef) Symbols() map[string]participle.TokenType {
+func (l *Definition) Symbols() map[string]participle.TokenType {
 	return l.symbols
 }
 
-func (l *LexerDef) Lex(filename string, r io.Reader) (participle.Lexer, error) {
+func (l *Definition) Lex(filename string, r io.Reader) (participle.Lexer, error) {
 	return New(filename, r), nil
 }

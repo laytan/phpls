@@ -66,26 +66,26 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 	// )
 
 	if !l.inPHP {
-		if l.peekSeqWithSpace('?', 'p', 'h', 'p') {
+		t = lexer.Token{
+			Pos: l.pos(),
+		}
+
+		switch {
+		case l.peekSeqWithSpace('?', 'p', 'h', 'p'):
 			l.inPHP = true
 			l.readN(5)
 			t.Type = lexer.TokenType(token.PHPStart)
 			t.Value = "<?php"
-			return
-		} else if l.peekSeqWithSpace('?', '=') {
+		case l.peekSeqWithSpace('?', '='):
 			l.inPHP = true
 			l.readN(3)
 			t.Type = lexer.TokenType(token.PHPEchoStart)
 			t.Value = "<?="
-			return
-		} else if l.ch != 0 {
-			t = lexer.Token{
-				Type:  lexer.TokenType(token.NonPHP),
-				Value: l.readNonPHP(),
-				Pos:   l.pos(),
-			}
-			return
+		case l.ch != 0:
+			t.Type = lexer.TokenType(token.NonPHP)
+			t.Value = l.readNonPHP()
 		}
+		return
 	}
 
 	if l.inStrVar && l.isStrVarEnd() {
@@ -133,13 +133,13 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 			content := strings.Builder{}
 			for found := false; !found; {
 				read := l.readUntil('{', '$', '"')
-				content.WriteString(read)
+				_, _ = content.WriteString(read)
 
 				found = true
 
 				// If we got { or $ at the end of the string, add it as content.
 				if l.peek() == '"' {
-					content.WriteRune(l.ch)
+					_, _ = content.WriteRune(l.ch)
 					l.read()
 					break
 				}
@@ -176,32 +176,70 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 			t.Type = lexer.TokenType(token.RBracket)
 		case ',':
 			t.Type = lexer.TokenType(token.Comma)
-		case '=':
-			t.Type = lexer.TokenType(token.Assign)
 		case ';':
 			t.Type = lexer.TokenType(token.Semicolon)
 		case '+':
 			t.Type = lexer.TokenType(token.Plus)
-		case '&':
-			t.Type = lexer.TokenType(token.Reference)
 		case ':':
 			t.Type = lexer.TokenType(token.Colon)
+		case '*':
+			t.Type = lexer.TokenType(token.Times)
+		case '@':
+			t.Type = lexer.TokenType(token.ErrorSuppress)
+		case '|':
+			if l.peekIs('|') {
+				l.read()
+				t.Value = "||"
+				t.Type = lexer.TokenType(token.Or)
+			} else {
+				t.Type = lexer.TokenType(token.BinaryOr)
+			}
+		case '=':
+			switch {
+			case l.peekSeq('=', '='):
+				l.readN(2)
+				t.Type = lexer.TokenType(token.StrictEquals)
+				t.Value = "==="
+			case l.peekIs('='):
+				l.read()
+				t.Type = lexer.TokenType(token.Equals)
+				t.Value = "=="
+			default:
+				t.Type = lexer.TokenType(token.Assign)
+			}
+		case '&':
+			if l.peekIs('&') {
+				l.read()
+				t.Value = "&&"
+				t.Type = lexer.TokenType(token.And)
+			} else {
+				t.Type = lexer.TokenType(token.Reference)
+			}
 		case '!':
-			t.Type = lexer.TokenType(token.Not)
+			switch {
+			case l.peekSeq('=', '='):
+				l.readN(2)
+				t.Type = lexer.TokenType(token.StrictNotEquals)
+				t.Value = "!=="
+			case l.peekIs('='):
+				l.read()
+				t.Type = lexer.TokenType(token.NotEquals)
+				t.Value = "!="
+			default:
+				t.Type = lexer.TokenType(token.Not)
+			}
 		case '/':
-			if l.peekIs('*') {
+			switch {
+			case l.peekIs('*'):
 				t.Type = lexer.TokenType(token.BlockComment)
 				t.Value = l.readBlockComment()
 				return
-			}
-
-			if l.peekIs('/') {
+			case l.peekIs('/'):
 				t.Type = lexer.TokenType(token.LineComment)
 				t.Value = l.readUntil('\n')
+			default:
+				t.Type = lexer.TokenType(token.Divide)
 			}
-
-			// Illegal if we get here.
-
 		case '\'':
 			str, ok := l.readUntilIncl('\'')
 			t.Value = str
@@ -226,7 +264,7 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 		case '$':
 			l.read() // $
 			ident := l.readIdent()
-			if len(ident) == 0 {
+			if ident == "" {
 				return
 			}
 
@@ -242,14 +280,20 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 			} else {
 				t.Type = lexer.TokenType(token.QuestionMark)
 			}
-		default:
-			if l.ch == '.' && l.peekSeq('.', '.') {
-				l.readN(3)
+		case '.':
+			switch {
+			case l.peekSeq(',', '.'):
+				l.readN(2)
 				t.Type = lexer.TokenType(token.Variadic)
 				t.Value = "..."
-				return
+			case l.peekIs('='):
+				l.read()
+				t.Value = ".="
+				t.Type = lexer.TokenType(token.ConcatAssign)
+			default:
+				t.Type = lexer.TokenType(token.Concat)
 			}
-
+		default:
 			if l.isNumberStart() {
 				t.Value = l.readNumber()
 				t.Type = lexer.TokenType(token.Number)
@@ -265,7 +309,7 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 	}
 
 	l.read()
-	return
+	return t, err
 }
 
 func (l *Lexer) pos() lexer.Position {
@@ -287,7 +331,7 @@ func (l *Lexer) skipWhitespace() {
 func (l *Lexer) readNonPHP() string {
 	res := strings.Builder{}
 	for l.ch != 0 {
-		res.WriteRune(l.ch)
+		_, _ = res.WriteRune(l.ch)
 		l.read()
 
 		if l.ch == '<' {
@@ -302,19 +346,19 @@ func (l *Lexer) readNonPHP() string {
 
 func (l *Lexer) readBlockComment() string {
 	res := strings.Builder{}
-	res.WriteRune(l.ch) // /
+	_, _ = res.WriteRune(l.ch) // /
 	l.read()
-	res.WriteRune(l.ch) // *
+	_, _ = res.WriteRune(l.ch) // *
 	l.read()
 
 	for l.ch != 0 {
-		res.WriteRune(l.ch)
+		_, _ = res.WriteRune(l.ch)
 		l.read()
 
 		if l.ch == '*' && l.peekIs('/') {
-			res.WriteRune(l.ch) // *
+			_, _ = res.WriteRune(l.ch) // *
 			l.read()
-			res.WriteRune(l.ch) // /
+			_, _ = res.WriteRune(l.ch) // /
 			l.read()
 			break
 		}

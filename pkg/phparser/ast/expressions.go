@@ -1,53 +1,294 @@
+// nolint: gocritic // hugeParam for dump not prio to address.
 package ast
 
-import "github.com/laytan/elephp/pkg/functional"
+import (
+	"io"
 
-var (
-	ExprNoArrAccImpls []ExprNoArrAcc
-	ExprImpls         []Expr
+	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/laytan/elephp/pkg/phparser/token"
 )
-
-func init() {
-	ExprNoArrAccImpls = []ExprNoArrAcc{SimpleString{}, Call{}, Var{}}
-	ExprImpls = append([]Expr{ArrAccessGroup{}}, noArrAccToExpr(ExprNoArrAccImpls)...)
-}
-
-func noArrAccToExpr(es []ExprNoArrAcc) []Expr {
-	return functional.Map(es, func(e ExprNoArrAcc) Expr { return e.(Expr) })
-}
 
 type (
-	Expr         interface{ expr() }
-	ExprNoArrAcc interface{ exprNoArr() }
+	Value interface {
+		Node
+		value()
+	}
+	Operation interface {
+		Node
+		operation()
+	}
 )
 
+var (
+	ValueImpls = []Value{
+		Number{},
+		Var{},
+		SimpleString{},
+		ComplexString{},
+		Bool{},
+		Call{},
+		Group{},
+		Not{},
+		ErrorSuppress{},
+		Constant{},
+	}
+	OperationImpls = []Operation{
+		IndexOperation{},
+		MethodCallOperation{},
+		PropertyFetchOperation{},
+		CommonOperation{},
+	}
+)
+
+type Number struct {
+	BaseNode
+
+	Value string `parser:"@Number"`
+}
+
+var _ Value = Number{}
+
+func (n Number) value() {}
+
+func (n Number) Dump(w io.Writer, level int) {
+	n.BaseDump(w, level, "Number")
+	level++
+	writeStr(w, "Value: %s", n.Value)
+	writeEOL(w, level)
+}
+
+type Bool struct {
+	BaseNode
+
+	Value string `parser:"@( True | False )"`
+}
+
+var _ Value = Bool{}
+
+func (b Bool) value() {}
+
+func (b Bool) Dump(w io.Writer, level int) {
+	b.BaseDump(w, level, "Bool")
+	level++
+	writeStr(w, "Value: %s", b.Value)
+	writeEOL(w, level)
+}
+
 type Var struct {
+	BaseNode
+
 	Value string `parser:"@Var"`
 }
 
-func (v Var) expr()      {}
-func (v Var) exprNoArr() {}
+var _ Value = Var{}
 
-type ArrAccessGroup struct {
-	// Any expression, but not the `ArrAccessGroup` (this struct).
-	Value   *ExprNoArrAcc `parser:"@@"`
-	Indices []Expr        `parser:"(LBracket @@ RBracket )+"`
+func (v Var) value()             {}
+func (v Var) complexStrContent() {}
+func (v Var) assignable()        {}
+
+func (v Var) Dump(w io.Writer, level int) {
+	v.BaseDump(w, level, "Var")
+	level++
+	writeStr(w, "Value: %s", v.Value)
+	writeEOL(w, level)
 }
 
-func (v ArrAccessGroup) expr() {}
+type Constant struct {
+	BaseNode
 
-type SimpleString struct {
-	Value string `parser:"@SimpleString"`
+	Value string `parser:"@Ident"`
 }
 
-func (s SimpleString) expr()      {}
-func (s SimpleString) exprNoArr() {}
+var _ Value = Constant{}
 
-type IfTernary struct {
-	// TODO: add condition and add to union type, probably need something similar to ArrAccessGroup to prevent left recursion.
-    // I believe there are some rules where nested ternaries need parentheses, can probably use those rules to our advantage.
-	IfTrue  Expr `parser:"QuestionMark @@"`
-	IfFalse Expr `parser:"Colon @@"`
+func (c Constant) value() {}
+
+func (c Constant) Dump(w io.Writer, level int) {
+	c.BaseDump(w, level, "Constant")
+	level++
+	writeStr(w, "Value: %s", c.Value)
+	writeEOL(w, level)
 }
 
-func (i IfTernary) expr() {}
+type Call struct {
+	BaseNode
+
+	Name       string `parser:"@Ident"`
+	Parameters []Expr `parser:"LParen @@? ( Comma @@ )* RParen"`
+}
+
+var _ Node = Call{}
+
+func (c Call) value()      {}
+func (c Call) assignable() {}
+
+func (c Call) Dump(w io.Writer, level int) {
+	c.BaseDump(w, level, "Call")
+	level++
+	writeStr(w, "Name: %s", c.Name)
+	writeEOL(w, level)
+	writeStr(w, "Parameters:")
+	level++
+	writeEOL(w, level)
+	writeList(w, level, c.Parameters)
+}
+
+type Group struct {
+	BaseNode
+
+	Value Expr `parser:"LParen @@ RParen"`
+}
+
+var _ Node = Group{}
+
+func (g Group) value() {}
+
+func (g Group) Dump(w io.Writer, level int) {
+	g.BaseDump(w, level, "Group")
+	level++
+	writeStr(w, "Value:")
+	level++
+	writeEOL(w, level)
+	g.Value.Dump(w, level)
+}
+
+type Not struct {
+	BaseNode
+
+	Value Expr `parser:"Not @@"`
+}
+
+var _ Node = Not{}
+
+func (n Not) value() {}
+
+func (n Not) Dump(w io.Writer, level int) {
+	n.BaseDump(w, level, "Not")
+	level++
+	writeStr(w, "Value:")
+	level++
+	writeEOL(w, level)
+	n.Value.Dump(w, level)
+}
+
+type ErrorSuppress struct {
+	BaseNode
+
+	Value Expr `parser:"ErrorSuppress @@"`
+}
+
+var _ Node = ErrorSuppress{}
+
+func (e ErrorSuppress) value() {}
+
+func (e ErrorSuppress) Dump(w io.Writer, level int) {
+	e.BaseDump(w, level, "ErrorSuppress")
+	level++
+	writeStr(w, "Value")
+	level++
+	writeEOL(w, level)
+	e.Value.Dump(w, level)
+}
+
+type Expr struct {
+	BaseNode
+
+	Left       Value       `parser:"@@"`
+	Operations []Operation `parser:"@@*"`
+}
+
+var _ Node = Expr{}
+
+func (e Expr) complexStrContent() {}
+
+func (e Expr) Dump(w io.Writer, level int) {
+	e.BaseDump(w, level, "Expr")
+	level++
+	writeStr(w, "Left:")
+	level++
+	writeEOL(w, level)
+	e.Left.Dump(w, level)
+	level--
+	writeEOL(w, level)
+	writeStr(w, "Operations:")
+	level++
+	writeEOL(w, level)
+	writeList(w, level, e.Operations)
+}
+
+type IndexOperation struct {
+	BaseNode
+
+	Index Expr `parser:"LBracket @@ RBracket"`
+}
+
+var _ Node = IndexOperation{}
+
+func (i IndexOperation) operation() {}
+
+func (i IndexOperation) Dump(w io.Writer, level int) {
+	i.BaseDump(w, level, "IndexOperation")
+	level++
+	writeStr(w, "Index:")
+	level++
+	writeEOL(w, level)
+	i.Index.Dump(w, level)
+}
+
+type MethodCallOperation struct {
+	BaseNode
+
+	Fetch Call `parser:"ClassAccess @@"`
+}
+
+var _ Node = MethodCallOperation{}
+
+func (m MethodCallOperation) operation() {}
+
+func (m MethodCallOperation) Dump(w io.Writer, level int) {
+	m.BaseDump(w, level, "MethodCallOperation")
+	level++
+	writeStr(w, "Fetch:")
+	level++
+	writeEOL(w, level)
+	m.Fetch.Dump(w, level)
+}
+
+type PropertyFetchOperation struct {
+	BaseNode
+
+	Fetch string `parser:"ClassAccess @Ident"`
+}
+
+var _ Node = PropertyFetchOperation{}
+
+func (p PropertyFetchOperation) operation() {}
+
+func (p PropertyFetchOperation) Dump(w io.Writer, level int) {
+	p.BaseDump(w, level, "PropertyFetchOperation")
+	level++
+	writeStr(w, "Fetch: %s", p.Fetch)
+	writeEOL(w, level)
+}
+
+type CommonOperation struct {
+	BaseNode
+
+	Operator lexer.Token `parser:"@( Equals | StrictEquals | NotEquals | StrictNotEquals | Plus | Minus | Divide | Times | Concat | And | Or | BinaryOr )"`
+	Right    Value       `parser:"@@"`
+}
+
+var _ Node = CommonOperation{}
+
+func (i CommonOperation) operation() {}
+
+func (i CommonOperation) Dump(w io.Writer, level int) {
+	i.BaseDump(w, level, "CommonOperation")
+	level++
+	writeStr(w, "Operator: %s", token.Type(i.Operator.Type))
+	writeEOL(w, level)
+	writeStr(w, "Right:")
+	level++
+	writeEOL(w, level)
+	i.Right.Dump(w, level)
+}

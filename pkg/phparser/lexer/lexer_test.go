@@ -13,6 +13,7 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
+	t.Parallel()
 	g := NewWithT(t)
 	format.UseStringerRepresentation = true
 
@@ -44,7 +45,7 @@ frogyield from
 `
 
 	tests := []struct {
-		expectedType    token.TokenType
+		expectedType    token.Type
 		expectedLiteral string
 		expectedLine    int
 		expectedCol     int
@@ -170,6 +171,7 @@ frogyield from
 }
 
 func TestStringVars(t *testing.T) {
+	t.Parallel()
 	g := NewWithT(t)
 	format.UseStringerRepresentation = true
 
