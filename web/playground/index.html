@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>ElePHP Playground</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css"
+        />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.12.0/cdn.min.js"
+            defer
+        ></script>
+    </head>
+    <body>
+        <main
+            x-data="{
+                input: '',
+                output: '',
+                mode: 'parse',
+                async go() {
+                    this.output = await window[this.mode](this.input);
+                },
+            }"
+            class="container"
+        >
+            <h1>ElePHP Playground</h1>
+            <hr />
+            <label for="input">Code:</label>
+
+            <textarea
+                x-model="input"
+                @input="go()"
+                class="u-full-width"
+                id="input"
+                style="height: 30vh"
+            ></textarea>
+
+            <div>
+                <button @click="mode = 'parse'; go();">Parse mode</button>
+                <button @click="mode = 'lex'; go();">Lex mode</button>
+                <button @click="go()">GO</button>
+            </div>
+
+            <p>Current mode: <span x-text="mode"></span></p>
+
+            <div class="output-container">
+                <pre x-text="output"></pre>
+                <div class="lines">
+                    <template x-for="i in 100">
+                        <div class="line"></div>
+                    </template>
+                </div>
+            </div>
+        </main>
+    </body>
+    <script>
+        async function parse(input) {
+            let response = await fetch("/api/parse", {
+                method: "POST",
+                body: input,
+            });
+            return await response.text();
+        }
+
+        async function lex(input) {
+            let response = await fetch("/api/lex", {
+                method: "POST",
+                body: input,
+            });
+            return await response.text();
+        }
+    </script>
+    <style>
+        textarea {
+            background: url(http://i.imgur.com/2cOaJ.png);
+            background-attachment: local;
+            background-repeat: no-repeat;
+            background-position-y: 0.95rem;
+            padding-left: 35px;
+            font-size: 1.1rem;
+            line-height: 1.6rem;
+            overflow-x: auto;
+            white-space: pre;
+            overflow-wrap: normal;
+        }
+
+        .output-container {
+            position: relative;
+        }
+
+        .lines {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            z-index: -1;
+        }
+
+        .line {
+            width: 1px;
+            background-color: #eee;
+            height: 100%;
+            margin-right: 3.4ch;
+        }
+    </style>
+</html>
