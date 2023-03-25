@@ -29,14 +29,16 @@ var (
 		Call{},
 		Group{},
 		Not{},
+		New{},
 		ErrorSuppress{},
 		Constant{},
 	}
 	OperationImpls = []Operation{
+		CommonOperation{},
 		IndexOperation{},
 		MethodCallOperation{},
 		PropertyFetchOperation{},
-		CommonOperation{},
+		IfOperation{},
 	}
 )
 
@@ -84,7 +86,6 @@ var _ Value = Var{}
 
 func (v Var) value()             {}
 func (v Var) complexStrContent() {}
-func (v Var) assignable()        {}
 
 func (v Var) Dump(w io.Writer, level int) {
 	v.BaseDump(w, level, "Var")
@@ -119,8 +120,7 @@ type Call struct {
 
 var _ Node = Call{}
 
-func (c Call) value()      {}
-func (c Call) assignable() {}
+func (c Call) value() {}
 
 func (c Call) Dump(w io.Writer, level int) {
 	c.BaseDump(w, level, "Call")
@@ -150,6 +150,22 @@ func (g Group) Dump(w io.Writer, level int) {
 	level++
 	writeEOL(w, level)
 	g.Value.Dump(w, level)
+}
+
+type New struct {
+	BaseNode
+
+	Value Expr `parser:"New @@"`
+}
+
+func (n New) value() {}
+
+func (n New) Dump(w io.Writer, level int) {
+	n.BaseDump(w, level, "New")
+	level++
+	writeStr(w, "Value:")
+	writeEOL(w, level)
+	n.Value.Dump(w, level)
 }
 
 type Not struct {
@@ -219,7 +235,7 @@ func (e Expr) Dump(w io.Writer, level int) {
 type IndexOperation struct {
 	BaseNode
 
-	Index Expr `parser:"LBracket @@ RBracket"`
+	Index *Expr `parser:"LBracket @@? RBracket"`
 }
 
 var _ Node = IndexOperation{}
@@ -229,10 +245,12 @@ func (i IndexOperation) operation() {}
 func (i IndexOperation) Dump(w io.Writer, level int) {
 	i.BaseDump(w, level, "IndexOperation")
 	level++
-	writeStr(w, "Index:")
-	level++
-	writeEOL(w, level)
-	i.Index.Dump(w, level)
+	if i.Index != nil {
+		writeStr(w, "Index:")
+		level++
+		writeEOL(w, level)
+		i.Index.Dump(w, level)
+	}
 }
 
 type MethodCallOperation struct {
@@ -271,10 +289,34 @@ func (p PropertyFetchOperation) Dump(w io.Writer, level int) {
 	writeEOL(w, level)
 }
 
+type IfOperation struct {
+	BaseNode
+
+	IfTrue Expr `parser:"QuestionMark @@"`
+	Else   Expr `parser:"Colon @@"`
+}
+
+func (p IfOperation) operation() {}
+
+func (p IfOperation) Dump(w io.Writer, level int) {
+	p.BaseDump(w, level, "IfOperation")
+	level++
+	writeStr(w, "IfTrue:")
+	level++
+	writeEOL(w, level)
+	p.IfTrue.Dump(w, level)
+	level--
+	writeEOL(w, level)
+	writeStr(w, "Else:")
+	level++
+	writeEOL(w, level)
+	p.Else.Dump(w, level)
+}
+
 type CommonOperation struct {
 	BaseNode
 
-	Operator lexer.Token `parser:"@( Equals | StrictEquals | NotEquals | StrictNotEquals | Plus | Minus | Divide | Times | Concat | And | Or | BinaryOr )"`
+	Operator lexer.Token `parser:"@( Equals | StrictEquals | NotEquals | StrictNotEquals | Plus | Minus | Divide | Times | Concat | And | Or | BinaryOr | Assign | ConcatAssign )"`
 	Right    Value       `parser:"@@"`
 }
 

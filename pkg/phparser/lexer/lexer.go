@@ -204,6 +204,10 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 				l.read()
 				t.Type = lexer.TokenType(token.Equals)
 				t.Value = "=="
+			case l.peekIs('>'):
+				l.read()
+				t.Type = lexer.TokenType(token.Arrow)
+				t.Value = "=>"
 			default:
 				t.Type = lexer.TokenType(token.Assign)
 			}
@@ -236,7 +240,8 @@ func (l *Lexer) Next() (t lexer.Token, err error) {
 				return
 			case l.peekIs('/'):
 				t.Type = lexer.TokenType(token.LineComment)
-				t.Value = l.readUntil('\n')
+				t.Value = l.readLineComment()
+				return
 			default:
 				t.Type = lexer.TokenType(token.Divide)
 			}
@@ -360,6 +365,27 @@ func (l *Lexer) readBlockComment() string {
 			l.read()
 			_, _ = res.WriteRune(l.ch) // /
 			l.read()
+			break
+		}
+	}
+
+	return res.String()
+}
+
+func (l *Lexer) readLineComment() string {
+	res := strings.Builder{}
+	_, _ = res.WriteRune(l.ch) // /
+	l.read()
+	_, _ = res.WriteRune(l.ch) // /
+	l.read()
+
+	for l.ch != 0 {
+		_, _ = res.WriteRune(l.ch)
+		l.read()
+
+		if l.ch == '\n' {
+			break
+		} else if l.ch == '?' && l.peekIs('>') {
 			break
 		}
 	}

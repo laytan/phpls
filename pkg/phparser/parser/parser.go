@@ -16,7 +16,6 @@ var Parser = participle.MustBuild[ast.Program](
 	participle.Union(ast.ClassStatementImpls...),
 	participle.Union(ast.CallableStatementImpls...),
 	participle.Union(ast.ComplexStrContentImps...),
-	participle.Union(ast.AssignableImpls...),
 	participle.Union(ast.ValueImpls...),
 	participle.Union(ast.OperationImpls...),
 

@@ -4,7 +4,7 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-//go:generate stringer -type TokenType
+//go:generate stringer -type Type
 //go:generate go run lookup_ident_gen.go
 type Type lexer.TokenType
 
@@ -122,6 +122,8 @@ const (
 	BinaryOr // `|`.
 
 	ClassAccess // `->`.
+
+	Arrow // `=>`.
 
 	LineComment // A `// comment`.
 	// TODO: parse further (@var etc.).

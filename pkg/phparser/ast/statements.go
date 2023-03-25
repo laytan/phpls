@@ -3,8 +3,6 @@ package ast
 
 import (
 	"io"
-
-	"github.com/alecthomas/participle/v2/lexer"
 )
 
 var (
@@ -12,31 +10,32 @@ var (
 		Die{},
 		Exit{},
 		CallStatement{},
-		Assign{},
 		Class{},
 		Function{},
 		Die{},
+		Echo{},
+		Global{},
 		Require{},
 		Namespace{},
+		Foreach{},
 		IfStatement{},
+		ExprStatement{},
 	}
 	ClassStatementImpls = []ClassStatement{
 		Method{},
 		CallStatement{},
 		Require{},
-		IfStatement{},
 	}
 	CallableStatementImpls = []CallableStatement{
 		Die{},
 		Exit{},
 		CallStatement{},
-		Assign{},
+		Echo{},
+		Global{},
 		Require{},
+		Foreach{},
 		IfStatement{},
-	}
-	AssignableImpls = []Assignable{
-		Var{},
-		Call{},
+		ExprStatement{},
 	}
 )
 
@@ -57,12 +56,6 @@ type (
 	CallableStatement interface {
 		Node
 		callableStatement()
-	}
-
-	// Anything that can prefix an assigment, see `ast.AssignableImpls`.
-	Assignable interface {
-		Node
-		assignable()
 	}
 )
 
@@ -103,52 +96,61 @@ func (r Require) Dump(w io.Writer, level int) {
 	r.Value.Dump(w, level)
 }
 
-// type RequireOnce struct {
-//     BaseNode
-//
-//     Value Expr `parser:"RequireOnce @@ Semicolon"`
-// }
-//
-// func (r RequireOnce) statement()         {}
-// func (r RequireOnce) classStatement()    {}
-// func (r RequireOnce) callableStatement() {}
-//
-// func (r RequireOnce) Dump(w io.Writer, level int) {
-// 	r.BaseDump(w, level, "Require")
-// 	level++
-// 	writeStr(w, "Value:")
-// 	level++
-// 	writeEOL(w, level)
-// 	r.Value.Dump(w, level)
-// }
-
-type Assign struct {
+type Global struct {
 	BaseNode
 
-	Comment  *string     `parser:"@BlockComment?"`
-	Var      Assignable  `parser:"@@"`
-	Operator lexer.Token `parser:"@( Assign | ConcatAssign )"`
-	Value    Expr        `parser:"@@ Semicolon"`
+	Vars []Var `parser:"Global @@ (Comma @@)* Semicolon"`
 }
 
-func (a Assign) statement()         {}
-func (a Assign) callableStatement() {}
+func (g Global) statement()         {}
+func (g Global) callableStatement() {}
 
-func (a Assign) Dump(w io.Writer, level int) {
-	a.BaseDump(w, level, "Assign")
+func (g Global) Dump(w io.Writer, level int) {
+	g.BaseDump(w, level, "Global")
+	level++
+	writeStr(w, "Vars:")
+	level++
+	writeEOL(w, level)
+	writeList(w, level, g.Vars)
+}
+
+type Echo struct {
+	BaseNode
+
+	Exprs []Expr `parser:"Echo @@ (Comma @@)* Semicolon"`
+}
+
+func (e Echo) statement()         {}
+func (e Echo) callableStatement() {}
+
+func (e Echo) Dump(w io.Writer, level int) {
+	e.BaseDump(w, level, "Echo")
+	level++
+	writeStr(w, "Exprs:")
+	level++
+	writeEOL(w, level)
+	writeList(w, level, e.Exprs)
+}
+
+type ExprStatement struct {
+	BaseNode
+
+	Comment *string `parser:"@BlockComment?"`
+	Expr    Expr    `parser:"@@ Semicolon"`
+}
+
+func (a ExprStatement) statement()         {}
+func (a ExprStatement) callableStatement() {}
+
+func (a ExprStatement) Dump(w io.Writer, level int) {
+	a.BaseDump(w, level, "ExprStatement")
 	level++
 	writeStr(w, "Comment: %s", defaultStr(a.Comment))
 	writeEOL(w, level)
-	writeStr(w, "Var:")
+	writeStr(w, "Expr:")
 	level++
 	writeEOL(w, level)
-	a.Var.Dump(w, level)
-	level--
-	writeEOL(w, level)
-	writeStr(w, "Value:")
-	level++
-	writeEOL(w, level)
-	a.Value.Dump(w, level)
+	a.Expr.Dump(w, level)
 }
 
 type Class struct {
@@ -320,7 +322,6 @@ type IfStatement struct {
 }
 
 func (i IfStatement) statement()         {}
-func (i IfStatement) classStatement()    {}
 func (i IfStatement) callableStatement() {}
 
 func (i IfStatement) Dump(w io.Writer, level int) {
@@ -352,7 +353,7 @@ type IfPart struct {
 	BaseNode
 
 	Condition  Expr        `parser:"LParen @@ RParen"`
-	Statements []Statement `parser:"LBrace @@* RBrace"` // TODO: this could be statements, but also could be CallableStatments.
+	Statements []Statement `parser:"( LBrace @@* RBrace ) | ( Colon @@* EndIf Semicolon )"` // TODO: this could be statements, but also could be CallableStatments.
 }
 
 func (i IfPart) Dump(w io.Writer, level int) {
@@ -373,7 +374,7 @@ func (i IfPart) Dump(w io.Writer, level int) {
 type Else struct {
 	BaseNode
 
-	Statements []Statement `parser:"Else LBrace @@* RBrace"`
+	Statements []Statement `parser:"Else ( LBrace @@* RBrace ) | ( Colon @@* (?= ElseIf Colon ) | (?= EndIf Semicolon ) )"`
 }
 
 func (e Else) Dump(w io.Writer, level int) {
@@ -383,4 +384,46 @@ func (e Else) Dump(w io.Writer, level int) {
 	level++
 	writeEOL(w, level)
 	writeList(w, level, e.Statements)
+}
+
+type Foreach struct {
+	BaseNode
+
+	Collection  Expr                `parser:"ForEach LParen @@ As"`
+	Key         *Expr               `parser:"(@@ Arrow)?"`
+	ByReference bool                `parser:"Reference?"`
+	Value       Expr                `parser:"@@ RParen"`
+	Statements  []CallableStatement `parser:"( LBrace @@* RBrace ) | ( Colon @@* EndForEach Semicolon )"`
+}
+
+func (f Foreach) statement()         {}
+func (f Foreach) callableStatement() {}
+
+func (f Foreach) Dump(w io.Writer, level int) {
+	f.BaseDump(w, level, "Foreach")
+	level++
+	writeStr(w, "Collection:")
+	level++
+	writeEOL(w, level)
+	f.Collection.Dump(w, level)
+	level--
+	if f.Key != nil {
+		writeStr(w, "Key:")
+		level++
+		writeEOL(w, level)
+		f.Key.Dump(w, level)
+		level--
+	}
+	writeStr(w, "ByReference: %v", f.ByReference)
+	writeEOL(w, level)
+	writeStr(w, "Value:")
+	level++
+	writeEOL(w, level)
+	f.Value.Dump(w, level)
+	level--
+	writeEOL(w, level)
+	writeStr(w, "Statements:")
+	level++
+	writeEOL(w, level)
+	writeList(w, level, f.Statements)
 }
