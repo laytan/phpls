@@ -7,7 +7,7 @@ require (
 	github.com/DmitriyVTitov/size v1.5.0
 	github.com/VKCOM/noverify v0.5.3
 	github.com/VKCOM/php-parser v0.8.2
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5
+	github.com/alecthomas/participle/v2 v2.0.0
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/arl/statsviz v0.5.1
 	github.com/davecgh/go-spew v1.1.1
