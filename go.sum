@@ -4,8 +4,8 @@ github.com/DmitriyVTitov/size v1.5.0 h1:/PzqxYrOyOUX1BXj6J9OuVRVGe+66VL4D9FlUaW5
 github.com/DmitriyVTitov/size v1.5.0/go.mod h1:le6rNI4CoLQV1b9gzp1+3d7hMAD/uu2QcJ+aYbNgiU0=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
-github.com/arl/statsviz v0.5.1 h1:3HY0ZEB738JtguWsD1Tf1pFJZiCcWUmYRq/3OTYKaSI=
-github.com/arl/statsviz v0.5.1/go.mod h1:zDnjgRblGm1Dyd7J5YlbH7gM1/+HRC+SfkhZhQb5AnM=
+github.com/arl/statsviz v0.5.2 h1:0+F96LduGQx7HZlMTUL9PNHv7lixwWCdxJzWC+SGSkI=
+github.com/arl/statsviz v0.5.2/go.mod h1:UomKe3l2yafXH6/LnOt8xGbiU3CEl70J1LJSW1fZO/E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
