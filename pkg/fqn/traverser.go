@@ -83,7 +83,7 @@ func (f *Traverser) ResultFor(name ast.Vertex) *FQN {
 
 	// Else use namespace+class name.
 	if ns.ns != "" {
-		return New(PartSeperator + ns.ns + PartSeperator + cn)
+		return New(ns.ns + PartSeperator + cn)
 	}
 
 	// Else use class name.

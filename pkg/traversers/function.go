@@ -34,15 +34,13 @@ func (f *Function) EnterNode(node ast.Vertex) bool {
 		return true
 	}
 
+	if fn, ok := node.(*ast.StmtFunction); ok && nodeident.Get(fn.Name) == f.name {
+		f.Function = fn
+	}
+
 	if nodescopes.IsScope(node.GetType()) {
 		return false
 	}
 
 	return true
-}
-
-func (f *Function) StmtFunction(node *ast.StmtFunction) {
-	if nodeident.Get(node) == f.name {
-		f.Function = node
-	}
 }

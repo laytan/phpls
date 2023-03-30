@@ -16,7 +16,7 @@ func NewFunction() *FunctionProvider {
 }
 
 func (p *FunctionProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
-	return kind != ast.TypeExprFunctionCall
+	return kind == ast.TypeExprFunctionCall
 }
 
 func (p *FunctionProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {

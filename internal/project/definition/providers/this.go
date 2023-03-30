@@ -20,7 +20,7 @@ func (p *ThisProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
 		return false
 	}
 
-	return nodeident.Get(ctx.Current()) == "this"
+	return nodeident.Get(ctx.Current()) == "$this"
 }
 
 // TODO: use DefineExpr.

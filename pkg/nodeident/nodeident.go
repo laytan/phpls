@@ -66,7 +66,11 @@ func Get(n ast.Vertex) string {
 		return "\\" + strings.Join(functional.Map(n.Parts, Get), "\\")
 
 	case *ast.StmtNamespace:
-		return Get(n.Name)
+		if n.Name == nil {
+			return "\\"
+		}
+
+		return "\\" + Get(n.Name)
 
 	case *ast.Parameter:
 		return Get(n.Var)

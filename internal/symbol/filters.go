@@ -25,9 +25,14 @@ type NamedModified interface {
 	Modified
 }
 
-func FilterOverwrittenBy[T NamedModified](m T) FilterFunc[T] {
+func FilterOverwrittenBy[T NamedModified](m T, addDollar ...bool) FilterFunc[T] {
+	name := m.Name()
+	if len(addDollar) > 0 && addDollar[0] {
+		name = "$" + name
+	}
+
 	filters := []FilterFunc[T]{
-		FilterName[T](m.Name()),
+		FilterName[T](name),
 		FilterNotPrivacy[T](phprivacy.PrivacyPrivate),
 	}
 

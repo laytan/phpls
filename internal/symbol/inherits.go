@@ -131,11 +131,6 @@ func (t *inheritsTraverser) EnterNode(node ast.Vertex) bool {
 		return t.currNamespace == t.target.Namespace()
 
 	default:
-		// Don't go into scopes that are not necessary.
-		if nodescopes.IsNonClassLikeScope(node.GetType()) {
-			return false
-		}
-
 		// Don't go into classes that don't match target.
 		if nodescopes.IsClassLike(node.GetType()) {
 			if nodeident.Get(node) != t.target.Name() {
@@ -146,18 +141,20 @@ func (t *inheritsTraverser) EnterNode(node ast.Vertex) bool {
 		switch typedNode := node.(type) {
 		case *ast.StmtTraitUse:
 			t.uses = append(t.uses, functional.MapFilter(typedNode.Traits, nodeToName)...)
-			return false
 		case *ast.StmtClass:
 			t.implements = append(t.implements, functional.MapFilter(typedNode.Implements, nodeToName)...)
 			if typedNode.Extends != nil {
 				t.extends = typedNode.Extends.(*ast.Name)
 			}
-			return false
 		case *ast.StmtInterface:
 			t.implements = append(t.implements, functional.MapFilter(typedNode.Extends, nodeToName)...)
-			return false
-		default:
-			return true
 		}
+
+		// Don't go into scopes that are not necessary.
+		if nodescopes.IsNonClassLikeScope(node.GetType()) {
+			return false
+		}
+
+		return true
 	}
 }

@@ -58,7 +58,7 @@ func (p *propertyResolver) Up(
 	}
 
 	prop := cls.FindProperty(
-		symbol.FilterName[*symbol.Property](toResolve.Identifier),
+		symbol.FilterName[*symbol.Property]("$"+toResolve.Identifier),
 		symbol.FilterNotStatic[*symbol.Property](),
 		symbol.FilterCanBeAccessedFrom[*symbol.Property](
 			determinePrivacy(privacy, cls.Kind(), &iteration{
@@ -81,7 +81,7 @@ func (p *propertyResolver) Up(
 		}
 
 		prop := inhCls.FindProperty(
-			symbol.FilterName[*symbol.Property](toResolve.Identifier),
+			symbol.FilterName[*symbol.Property]("$"+toResolve.Identifier),
 			symbol.FilterNotStatic[*symbol.Property](),
 			symbol.FilterCanBeAccessedFrom[*symbol.Property](
 				determinePrivacy(privacy, inhCls.Kind(), &iteration{
@@ -197,7 +197,7 @@ func (c *classConstResolver) Down(
 	next = constFetch.Class
 
 	ident := nodeident.Get(constFetch.Class)
-	if ident == "self" || ident == "parent" || ident == "this" || ident == "static" {
+	if ident == "self" || ident == "parent" || ident == "$this" || ident == "static" {
 		next = &ast.ExprVariable{
 			Position: next.GetPosition(),
 			Name:     &ast.Identifier{Value: []byte(ident)},

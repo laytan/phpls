@@ -53,9 +53,9 @@ func (p *variableResolver) Up(
 ) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
 	wrk := wrkspc.FromContainer()
 	switch toResolve.Identifier {
-	case "this", "self", "static":
+	case "$this", "self", "static":
 		if node, ok := fqner.FindFullyQualifiedName(scopes.Root, &ast.Name{
-			Position: scopes.Class.GetPosition(),
+			Position: scopes.Block.GetPosition(),
 			Parts:    nameParts(nodeident.Get(scopes.Class)),
 		}); ok {
 			return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.FIROf(node.Path))},
@@ -164,15 +164,14 @@ type nameResolver struct{}
 func (p *nameResolver) Down(
 	node ast.Vertex,
 ) (*DownResolvement, ast.Vertex, bool) {
-	propNode, ok := node.(*ast.Name) // TODO: what about other names
-	if !ok {
+	if !nodescopes.IsName(node.GetType()) {
 		return nil, nil, false
 	}
 
 	return &DownResolvement{
 		ExprType:   TypeName,
-		Identifier: nodeident.Get(propNode),
-		Position:   propNode.Position,
+		Identifier: nodeident.Get(node),
+		Position:   node.GetPosition(),
 	}, nil, true
 }
 

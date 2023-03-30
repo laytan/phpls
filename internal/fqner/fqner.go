@@ -9,9 +9,16 @@ import (
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
-func FullyQualifyName(root *ast.Root, name *ast.Name) *fqn.FQN {
+func FullyQualifyName(root *ast.Root, name ast.Vertex) *fqn.FQN {
+	if !nodescopes.IsName(name.GetType()) {
+		panic(
+			"FullyQualifyName can only be called with *ast.Name, *ast.NameFullyQualified or *ast.NameRelative",
+		)
+	}
+
 	if strings.HasPrefix(nodeident.Get(name), `\`) {
 		return fqn.New(nodeident.Get(name))
 	}
@@ -23,7 +30,7 @@ func FullyQualifyName(root *ast.Root, name *ast.Name) *fqn.FQN {
 	return t.ResultFor(name)
 }
 
-func FindFullyQualifiedName(root *ast.Root, name *ast.Name) (*index.INode, bool) {
+func FindFullyQualifiedName(root *ast.Root, name ast.Vertex) (*index.INode, bool) {
 	qualified := FullyQualifyName(root, name)
 	return index.FromContainer().Find(qualified)
 }

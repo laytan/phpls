@@ -23,7 +23,11 @@ func NewIndexTraverser() *INodeTraverser {
 func (t *INodeTraverser) EnterNode(node ast.Vertex) bool {
 	switch typedNode := node.(type) {
 	case *ast.StmtNamespace:
-		t.currentNamespace = nodeident.Get(typedNode) + "\\"
+		t.currentNamespace = nodeident.Get(typedNode)
+		if t.currentNamespace != "\\" {
+			t.currentNamespace += "\\"
+		}
+
 		return true
 
 	case *ast.StmtFunction, *ast.StmtClass, *ast.StmtInterface, *ast.StmtTrait:

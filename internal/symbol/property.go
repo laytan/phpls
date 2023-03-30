@@ -57,7 +57,7 @@ func (p *Property) Type() (phpdoxer.Type, *ClassLike, error) {
 			return nil, nil, fmt.Errorf("iterating inherited classes of %s: %w", p.cls.Name(), err)
 		}
 
-		prop := inhCls.FindProperty(FilterOverwrittenBy(p))
+		prop := inhCls.FindProperty(FilterOverwrittenBy(p, true))
 		if prop == nil {
 			continue
 		}

@@ -237,6 +237,8 @@ func NodeComments(node ast.Vertex) []string {
 		}
 
 		ff = tn.ConstTkn.FreeFloating
+	case *ast.ExprVariable:
+		ff = tn.Name.(*ast.Identifier).IdentifierTkn.FreeFloating
 	}
 
 	docs := []string{}

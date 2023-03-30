@@ -72,9 +72,9 @@ func (m *methodsTraverser) EnterNode(node ast.Vertex) bool {
 		return true
 	}
 
-	return !nodescopes.IsScope(node.GetType())
-}
+	if mth, ok := node.(*ast.StmtClassMethod); ok {
+		m.Methods = append(m.Methods, mth)
+	}
 
-func (m *methodsTraverser) StmtClassMethod(method *ast.StmtClassMethod) {
-	m.Methods = append(m.Methods, method)
+	return !nodescopes.IsScope(node.GetType())
 }

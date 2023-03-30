@@ -24,6 +24,12 @@ var (
 		ast.TypeStmtTrait:     true,
 		ast.TypeStmtInterface: true,
 	}
+
+	NameScopes = map[ast.Type]bool{
+		ast.TypeNameRelative:       true,
+		ast.TypeNameFullyQualified: true,
+		ast.TypeName:               true,
+	}
 )
 
 func IsScope(kind ast.Type) bool {
@@ -36,4 +42,8 @@ func IsClassLike(kind ast.Type) bool {
 
 func IsNonClassLikeScope(kind ast.Type) bool {
 	return !IsClassLike(kind)
+}
+
+func IsName(kind ast.Type) bool {
+	return NameScopes[kind]
 }

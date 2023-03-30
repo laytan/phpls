@@ -5,6 +5,7 @@ import (
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/project/definition"
+	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 // NameProvider resolves the definition of a class-like name.
@@ -16,8 +17,7 @@ func NewName() *NameProvider {
 }
 
 func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
-	// TODO: ast.fullyqualified name, ast.relativename
-	if kind != ast.TypeName {
+	if !nodescopes.IsName(kind) {
 		return false
 	}
 
@@ -38,7 +38,7 @@ func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
 func (p *NameProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	tdef, ok := fqner.FindFullyQualifiedName(
 		ctx.Root(),
-		ctx.Current().(*ast.Name),
+		ctx.Current(),
 	)
 	if !ok {
 		return nil, definition.ErrNoDefinitionFound
