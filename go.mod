@@ -13,7 +13,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f // TODO: use os.ConfigDir
 	github.com/matryer/is v1.4.1
 	github.com/samber/do v1.6.0
 	github.com/shivamMg/trie v0.0.1

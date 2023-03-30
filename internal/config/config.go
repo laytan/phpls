@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/kirsle/configdir"
 	"github.com/laytan/elephp/pkg/connection"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/samber/do"
@@ -170,7 +170,7 @@ func (c *lsConfig) StubsDir() string {
 	defer c.stubsDirMu.Unlock()
 
 	if c.opts.StubsDir == "" {
-		c.opts.StubsDir = configdir.LocalCache(c.Name(), c.Version(), "stubs")
+		c.opts.StubsDir = c.cacheDir("stubs")
 	}
 
 	return c.opts.StubsDir
@@ -181,7 +181,7 @@ func (c *lsConfig) LogsDir() string {
 	defer c.logsDirMu.Unlock()
 
 	if c.opts.LogsDir == "" {
-		c.opts.LogsDir = configdir.LocalCache(c.Name(), c.Version(), "logs")
+		c.opts.LogsDir = c.cacheDir("logs")
 	}
 
 	return c.opts.LogsDir
@@ -212,4 +212,18 @@ func (c *lsConfig) PHPVersion() (*phpversion.PHPVersion, error) {
 
 	c.phpVersion = v
 	return v, nil
+}
+
+func (c *lsConfig) cacheDir(subfolder string) string {
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		panic(err)
+	}
+
+	cacheDir := filepath.Join(dir, c.Name(), c.Version(), subfolder)
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		panic(err)
+	}
+
+	return cacheDir
 }
