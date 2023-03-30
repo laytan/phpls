@@ -45,7 +45,7 @@ jobs:
 
     - name: Set up Go
       id: set-up-go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
         check-latest: true
         cache: true
