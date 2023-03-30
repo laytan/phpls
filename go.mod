@@ -7,7 +7,7 @@ require (
 	github.com/DmitriyVTitov/size v1.5.0
 	github.com/VKCOM/php-parser v0.8.2
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
-	github.com/arl/statsviz v0.5.1
+	github.com/arl/statsviz v0.5.2
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.1
