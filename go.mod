@@ -16,7 +16,7 @@ require (
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f // TODO: use os.ConfigDir
 	github.com/matryer/is v1.4.1
 	github.com/samber/do v1.6.0
-	github.com/shivamMg/trie v0.0.0
+	github.com/shivamMg/trie v0.0.1
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 	golang.org/x/sync v0.1.0
