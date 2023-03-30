@@ -10,7 +10,7 @@ require (
 	github.com/arl/statsviz v0.5.2
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/websocket v1.5.0
-	github.com/hashicorp/golang-lru/v2 v2.0.1
+	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f // TODO: use os.ConfigDir
