@@ -1,43 +1,41 @@
 package traversers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"log"
+
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 func NewUses(classLikeName string) *Uses {
 	return &Uses{
-		Uses:          make([]*ir.Name, 0),
+		Uses:          make([]*ast.Name, 0),
 		classLikeName: classLikeName,
 	}
 }
 
-// Uses implements ir.Visitor.
 type Uses struct {
-	Uses          []*ir.Name
+	visitor.Null
+	Uses          []*ast.Name
 	classLikeName string
 }
 
-func (u *Uses) EnterNode(node ir.Node) bool {
-	switch typedNode := node.(type) {
-	// Only parse a class-like node if the name matches (for multiple classes in a file).
-	case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
-		if nodeident.Get(node) == u.classLikeName {
-			return true
-		}
-
-		return false
-
-	case *ir.TraitUseStmt:
-		for _, trait := range typedNode.Traits {
-			if name, ok := trait.(*ir.Name); ok {
-				u.Uses = append(u.Uses, name)
-			}
-		}
+func (u *Uses) EnterNode(node ast.Vertex) bool {
+	if nodescopes.IsClassLike(node.GetType()) {
+		return nodeident.Get(node) == u.classLikeName
 	}
 
-	return !nodescopes.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(node.GetType())
 }
 
-func (u *Uses) LeaveNode(ir.Node) {}
+func (u *Uses) StmtTraitUse(node *ast.StmtTraitUse) {
+	for _, trait := range node.Traits {
+		if name, ok := trait.(*ast.Name); ok {
+			u.Uses = append(u.Uses, name)
+		} else {
+			log.Printf("*ast.StmtTraitUse uses node that is not *ast.Name but %T", trait)
+		}
+	}
+}

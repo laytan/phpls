@@ -1,9 +1,12 @@
 package doxcontext
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"strings"
+
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/position"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -39,10 +42,7 @@ func ApplyContext(
 		}
 
 		return []*phpdoxer.TypeClassLike{{
-			Name: fqnt.ResultFor(&ir.Name{
-				Position: currPos,
-				Value:    typed.Name,
-			}).String(),
+			Name:           fqnt.ResultFor(createName(currPos, typed.Name)).String(),
 			FullyQualified: true,
 		}}
 	case *phpdoxer.TypeConstant:
@@ -52,7 +52,7 @@ func ApplyContext(
 
 		// In case the user created a class in all CAPS, we catch here that
 		// it is not a constant, but a class.
-		res := fqnt.ResultFor(&ir.Name{Position: currPos, Value: typed.Const})
+		res := fqnt.ResultFor(createName(currPos, typed.Const))
 		if res != nil {
 			return []*phpdoxer.TypeClassLike{{Name: res.String(), FullyQualified: true}}
 		}
@@ -72,4 +72,14 @@ func ApplyContext(
 	}
 
 	return nil
+}
+
+func createName(pos *position.Position, name string) *ast.Name {
+	return &ast.Name{
+		Position: pos,
+		Parts: functional.Map(
+			strings.Split(name, "\\"),
+			func(v string) ast.Vertex { return &ast.NamePart{Value: []byte(v)} },
+		),
+	}
 }

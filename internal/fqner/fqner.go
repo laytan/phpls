@@ -3,39 +3,43 @@ package fqner
 import (
 	"strings"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/elephp/pkg/nodeident"
 )
 
-func FullyQualifyName(root *ir.Root, name *ir.Name) *fqn.FQN {
-	if strings.HasPrefix(name.Value, `\`) {
-		return fqn.New(name.Value)
+func FullyQualifyName(root *ast.Root, name *ast.Name) *fqn.FQN {
+	if strings.HasPrefix(nodeident.Get(name), `\`) {
+		return fqn.New(nodeident.Get(name))
 	}
 
 	t := fqn.NewTraverser()
-	root.Walk(t)
+	tv := traverser.NewTraverser(t)
+	root.Accept(tv)
 
 	return t.ResultFor(name)
 }
 
-func FindFullyQualifiedName(root *ir.Root, name *ir.Name) (*index.INode, bool) {
+func FindFullyQualifiedName(root *ast.Root, name *ast.Name) (*index.INode, bool) {
 	qualified := FullyQualifyName(root, name)
 	return index.FromContainer().Find(qualified)
 }
 
 type rooter interface {
-	Root() *ir.Root
+	Root() *ast.Root
 }
 
 type FullyQualifier struct {
 	rooter rooter
 
 	cached *fqn.FQN
-	node   ir.Node
+	node   ast.Vertex
 }
 
-func New(rooter rooter, node ir.Node) *FullyQualifier {
+func New(rooter rooter, node ast.Vertex) *FullyQualifier {
 	return &FullyQualifier{
 		rooter: rooter,
 		node:   node,
@@ -53,32 +57,18 @@ func (f *FullyQualifier) GetFQN() *fqn.FQN {
 		return f.cached
 	}
 
-	var name *ir.Name
-	switch typedNode := f.node.(type) {
-	case *ir.ClassStmt:
-		name = &ir.Name{
-			Value:    typedNode.ClassName.Value,
-			Position: typedNode.ClassName.Position,
-		}
-	case *ir.InterfaceStmt:
-		name = &ir.Name{
-			Value:    typedNode.InterfaceName.Value,
-			Position: typedNode.InterfaceName.Position,
-		}
-	case *ir.TraitStmt:
-		name = &ir.Name{
-			Value:    typedNode.TraitName.Value,
-			Position: typedNode.TraitName.Position,
-		}
-	case *ir.Identifier:
-		name = &ir.Name{
-			Value:    typedNode.Value,
-			Position: typedNode.Position,
-		}
-	case *ir.Name:
-		name = typedNode
+	var name *ast.Name
+	switch tn := f.node.(type) {
+	case *ast.Name:
+		name = tn
 	default:
-		return nil
+		name = &ast.Name{
+			Position: f.node.GetPosition(),
+			Parts: functional.Map(
+				strings.Split(nodeident.Get(f.node), "\\"),
+				func(s string) ast.Vertex { return &ast.NamePart{Value: []byte(s)} },
+			),
+		}
 	}
 
 	f.cached = FullyQualifyName(f.rooter.Root(), name)

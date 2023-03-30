@@ -1,7 +1,7 @@
 package symbol
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/nodeident"
 )
 
@@ -11,10 +11,10 @@ type Method struct {
 	*doxed
 	*parametized
 
-	node *ir.ClassMethodStmt
+	node *ast.StmtClassMethod
 }
 
-func NewMethod(root rooter, node *ir.ClassMethodStmt) *Method {
+func NewMethod(root rooter, node *ast.StmtClassMethod) *Method {
 	doxed := NewDoxed(node)
 
 	return &Method{
@@ -38,6 +38,6 @@ func (m *Method) Name() string {
 	return nodeident.Get(m.node)
 }
 
-func (m *Method) Node() *ir.ClassMethodStmt {
+func (m *Method) Node() *ast.StmtClassMethod {
 	return m.node
 }

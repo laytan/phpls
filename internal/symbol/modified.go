@@ -3,8 +3,9 @@ package symbol
 import (
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/set"
 )
@@ -56,29 +57,27 @@ func newModified(modifiers *set.Set[string]) *modified {
 	}
 }
 
-func newModifiedFromNode(node ir.Node) *modified {
-	var mods []*ir.Identifier
+func newModifiedFromNode(node ast.Vertex) *modified {
+	var mods []ast.Vertex
 	switch typedNode := node.(type) {
-	case *ir.ClassMethodStmt:
+	case *ast.StmtClassMethod:
 		mods = typedNode.Modifiers
-	case *ir.ClassStmt:
+	case *ast.StmtClass:
 		mods = typedNode.Modifiers
-	case *ir.PropertyListStmt:
+	case *ast.StmtPropertyList:
 		mods = typedNode.Modifiers
-	case *ir.ClassConstListStmt:
+	case *ast.StmtClassConstList:
 		mods = typedNode.Modifiers
-	case *ir.TraitStmt, *ir.InterfaceStmt:
+	case *ast.StmtTrait, *ast.StmtInterface:
 		// An interface or trait is a valid class-like but never has modifiers,
 		// even though, lets not complain using the default case.
-		mods = []*ir.Identifier{}
+		mods = []ast.Vertex{}
 	default:
 		log.Printf("[symbol.NewModifiedFromNode]: %T is not a node that can be modified", node)
-		mods = []*ir.Identifier{}
+		mods = []ast.Vertex{}
 	}
 
-	return newModified(set.NewFromSlice(
-		functional.Map(mods, func(ident *ir.Identifier) string { return ident.Value }),
-	))
+	return newModified(set.NewFromSlice(functional.Map(mods, nodeident.Get)))
 }
 
 func (m *modified) Privacy() phprivacy.Privacy {

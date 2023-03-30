@@ -4,16 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/ie"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/elephp/pkg/nodevar"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/traversers"
@@ -29,9 +33,9 @@ var starters = map[Type]StartResolver{
 type variableResolver struct{}
 
 func (p *variableResolver) Down(
-	node ir.Node,
-) (*DownResolvement, ir.Node, bool) {
-	propNode, ok := node.(*ir.SimpleVar)
+	node ast.Vertex,
+) (*DownResolvement, ast.Vertex, bool) {
+	propNode, ok := node.(*ast.ExprVariable)
 	if !ok {
 		return nil, nil, false
 	}
@@ -50,9 +54,9 @@ func (p *variableResolver) Up(
 	wrk := wrkspc.FromContainer()
 	switch toResolve.Identifier {
 	case "this", "self", "static":
-		if node, ok := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
-			Position: ir.GetPosition(scopes.Class),
-			Value:    nodeident.Get(scopes.Class),
+		if node, ok := fqner.FindFullyQualifiedName(scopes.Root, &ast.Name{
+			Position: scopes.Class.GetPosition(),
+			Parts:    nameParts(nodeident.Get(scopes.Class)),
 		}); ok {
 			return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.FIROf(node.Path))},
 				node.FQN,
@@ -76,21 +80,26 @@ func (p *variableResolver) Up(
 		}
 
 		t := traversers.NewVariable(toResolve.Identifier)
-		scopes.Block.Walk(t)
+		tv := traverser.NewTraverser(t)
+		scopes.Block.Accept(tv)
 		if t.Result == nil {
 			return nil, nil, 0, false
 		}
 
 		ta := traversers.NewAssignment(t.Result)
-		scopes.Block.Walk(ta)
+		tav := traverser.NewTraverser(ta)
+		scopes.Block.Accept(tav)
 		if ta.Assignment == nil || ta.Scope == nil {
 			return nil, nil, 0, false
 		}
 
-		cls, _ := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
-			Position: ir.GetPosition(scopes.Class),
-			Value:    nodeident.Get(scopes.Class),
-		})
+		var cls *index.INode
+		if scopes.Class.GetType() != ast.TypeRoot {
+			cls, _ = fqner.FindFullyQualifiedName(scopes.Root, &ast.Name{
+				Position: scopes.Class.GetPosition(),
+				Parts:    nameParts(nodeident.Get(scopes.Class)),
+			})
+		}
 
 		varSym := symbol.NewVariable(wrkspc.NewRooter(scopes.Path, scopes.Root), ta.Assignment)
 		typ, err := varSym.TypeCls(
@@ -110,13 +119,16 @@ func (p *variableResolver) Up(
 				), phprivacy.PrivacyPublic, true
 		}
 
-		switch typedScope := ta.Scope.(type) {
-		case *ir.Assign:
-			if res, lastClass, left := Resolve(typedScope.Expr, scopes); left == 0 {
+		if nodevar.IsAssignment(ta.Scope.GetType()) {
+			if res, lastClass, left := Resolve(nodevar.AssignmentExpr(ta.Scope), scopes); left == 0 {
 				return res, lastClass, phprivacy.PrivacyPublic, true
 			}
 
-		case *ir.Parameter:
+			return nil, nil, 0, false
+		}
+
+		switch typedScope := ta.Scope.(type) {
+		case *ast.Parameter:
 			rooter := wrkspc.NewRooter(scopes.Path, scopes.Root)
 			param := symbol.NewParameter(rooter, scopes.Block, typedScope)
 			typ, err := param.TypeClass()
@@ -150,9 +162,9 @@ func (p *variableResolver) Up(
 type nameResolver struct{}
 
 func (p *nameResolver) Down(
-	node ir.Node,
-) (*DownResolvement, ir.Node, bool) {
-	propNode, ok := node.(*ir.Name)
+	node ast.Vertex,
+) (*DownResolvement, ast.Vertex, bool) {
+	propNode, ok := node.(*ast.Name) // TODO: what about other names
 	if !ok {
 		return nil, nil, false
 	}
@@ -172,9 +184,9 @@ func (p *nameResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	qualified := fqner.FullyQualifyName(scopes.Root, &ir.Name{
+	qualified := fqner.FullyQualifyName(scopes.Root, &ast.Name{
 		Position: toResolve.Position,
-		Value:    toResolve.Identifier,
+		Parts:    nameParts(toResolve.Identifier),
 	})
 
 	privacy, err := p.DeterminePrivacy(scopes, qualified)
@@ -197,14 +209,14 @@ func (p *nameResolver) Up(
 
 func (p *nameResolver) DeterminePrivacy(scopes *Scopes, fqn *fqn.FQN) (phprivacy.Privacy, error) {
 	// If we are not in a class, it is automatically public access.
-	if !nodescopes.IsClassLike(ir.GetNodeKind(scopes.Class)) {
+	if !nodescopes.IsClassLike(scopes.Class.GetType()) {
 		return phprivacy.PrivacyPublic, nil
 	}
 
 	// If we are in the same class, private access.
-	scopeFqn := fqner.FullyQualifyName(scopes.Root, &ir.Name{
-		Position: ir.GetPosition(scopes.Class),
-		Value:    nodeident.Get(scopes.Class),
+	scopeFqn := fqner.FullyQualifyName(scopes.Root, &ast.Name{
+		Position: scopes.Class.GetPosition(),
+		Parts:    nameParts(nodeident.Get(scopes.Class)),
 	})
 	if fqn.String() == scopeFqn.String() {
 		return phprivacy.PrivacyPrivate, nil
@@ -233,9 +245,9 @@ func (p *nameResolver) DeterminePrivacy(scopes *Scopes, fqn *fqn.FQN) (phprivacy
 type functionResolver struct{}
 
 func (p *functionResolver) Down(
-	node ir.Node,
-) (*DownResolvement, ir.Node, bool) {
-	propNode, ok := node.(*ir.FunctionCallExpr)
+	node ast.Vertex,
+) (*DownResolvement, ast.Vertex, bool) {
+	propNode, ok := node.(*ast.ExprFunctionCall)
 	if !ok {
 		return nil, nil, false
 	}
@@ -256,16 +268,17 @@ func (p *functionResolver) Up(
 	}
 
 	t := traversers.NewFunctionCall(toResolve.Identifier)
-	scopes.Block.Walk(t)
+	tv := traverser.NewTraverser(t)
+	scopes.Block.Accept(tv)
 	if t.Result == nil {
 		log.Printf("could not find function matching function call %s", toResolve.Identifier)
 		return nil, nil, 0, false
 	}
 
-	typeOfFunc := func(n ir.Node) *fqn.FQN {
+	typeOfFunc := func(n ast.Vertex) *fqn.FQN {
 		ret, _, err := symbol.NewFunction(
 			wrkspc.NewRooter(scopes.Path, scopes.Root),
-			n.(*ir.FunctionStmt),
+			n.(*ast.StmtFunction),
 		).Returns()
 
 		if err != nil && !errors.Is(err, symbol.ErrNoReturn) {
@@ -273,9 +286,9 @@ func (p *functionResolver) Up(
 		}
 
 		if retCls, ok := ret.(*phpdoxer.TypeClassLike); ok {
-			return fqner.FullyQualifyName(scopes.Root, &ir.Name{
-				Position: ir.GetPosition(n),
-				Value:    retCls.Name,
+			return fqner.FullyQualifyName(scopes.Root, &ast.Name{
+				Position: n.GetPosition(),
+				Parts:    nameParts(retCls.Name),
 			})
 		}
 
@@ -283,9 +296,10 @@ func (p *functionResolver) Up(
 	}
 
 	// If have local scope, check it for the function.
-	if ir.GetNodeKind(scopes.Block) != ir.KindRoot {
+	if scopes.Block.GetType() != ast.TypeRoot {
 		ft := traversers.NewFunction(toResolve.Identifier)
-		scopes.Block.Walk(ft)
+		tv := traverser.NewTraverser(ft)
+		scopes.Block.Accept(tv)
 
 		if ft.Function != nil {
 			return &Resolved{
@@ -296,9 +310,9 @@ func (p *functionResolver) Up(
 	}
 
 	// Check for functions defined in the used namespaces.
-	if def, ok := fqner.FindFullyQualifiedName(scopes.Root, &ir.Name{
+	if def, ok := fqner.FindFullyQualifiedName(scopes.Root, &ast.Name{
 		Position: toResolve.Position,
-		Value:    toResolve.Identifier,
+		Parts:    nameParts(toResolve.Identifier),
 	}); ok {
 		n := def.ToIRNode(wrkspc.FromContainer().FIROf(def.Path))
 		return &Resolved{
@@ -325,18 +339,18 @@ func (p *functionResolver) Up(
 type newResolver struct{}
 
 func (newresolver *newResolver) Down(
-	node ir.Node,
-) (*DownResolvement, ir.Node, bool) {
-	newNode, ok := node.(*ir.NewExpr)
+	node ast.Vertex,
+) (*DownResolvement, ast.Vertex, bool) {
+	newNode, ok := node.(*ast.ExprNew)
 	if !ok {
 		return nil, nil, false
 	}
 
 	// TODO: new expression using a non-name node
-	if name, ok := newNode.Class.(*ir.Name); ok {
+	if name, ok := newNode.Class.(*ast.Name); ok {
 		return &DownResolvement{
 			ExprType:   TypeNew,
-			Identifier: name.Value,
+			Identifier: nodeident.Get(name),
 			Position:   name.Position,
 		}, nil, true
 	}
@@ -355,7 +369,7 @@ func (newresolver *newResolver) Up(
 
 	if qualified := fqner.FullyQualifyName(
 		scopes.Root,
-		&ir.Name{Position: toResolve.Position, Value: toResolve.Identifier},
+		&ast.Name{Position: toResolve.Position, Parts: nameParts(toResolve.Identifier)},
 	); qualified != nil {
 		def, ok := index.FromContainer().Find(qualified)
 		if !ok {
@@ -377,9 +391,9 @@ func (newresolver *newResolver) Up(
 
 func parentOf(scopes *Scopes) *index.INode {
 	switch scopes.Class.(type) {
-	case *ir.ClassStmt:
+	case *ast.StmtClass:
 		break
-	case *ir.TraitStmt:
+	case *ast.StmtTrait:
 		// TODO: get parent of trait
 		log.Println("TODO: get parent of trait")
 		return nil
@@ -389,8 +403,7 @@ func parentOf(scopes *Scopes) *index.INode {
 		return nil
 	}
 
-	class := scopes.Class.(*ir.ClassStmt)
-
+	class := scopes.Class.(*ast.StmtClass)
 	if class.Extends == nil {
 		log.Println("encountered parent:: but current class does not extend anything")
 		return nil
@@ -398,14 +411,21 @@ func parentOf(scopes *Scopes) *index.INode {
 
 	if node, ok := fqner.FindFullyQualifiedName(
 		scopes.Root,
-		class.Extends.ClassName,
+		class.Extends.(*ast.Name),
 	); ok {
 		return node
 	}
 
 	log.Printf(
 		"could not find fully qualified class for %s in index",
-		class.Extends.ClassName.Value,
+		nodeident.Get(class.Extends),
 	)
 	return nil
+}
+
+func nameParts(name string) []ast.Vertex {
+	return functional.Map(
+		strings.Split(name, "\\"),
+		func(s string) ast.Vertex { return &ast.NamePart{Value: []byte(s)} },
+	)
 }

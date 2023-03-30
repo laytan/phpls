@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/nodeident"
 )
 
 // UseProvider resolves the definition of 'use Foo/Bar/FooBar' statements.
@@ -20,12 +21,12 @@ func NewUse() *UseProvider {
 	return &UseProvider{}
 }
 
-func (p *UseProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
-	return kind == ir.KindName && ctx.DirectlyWrappedBy(ir.KindUseStmt)
+func (p *UseProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	return kind == ast.TypeName && ctx.DirectlyWrappedBy(ast.TypeStmtUse)
 }
 
 func (p *UseProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
-	key := fqn.New(fqn.PartSeperator + ctx.Current().(*ir.Name).Value)
+	key := fqn.New(fqn.PartSeperator + nodeident.Get(ctx.Current()))
 	res, ok := index.FromContainer().Find(key)
 	if !ok {
 		log.Println(fmt.Errorf("[providers.UseProvider.Define]: can't find %s in index", key))

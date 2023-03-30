@@ -2,7 +2,7 @@ package expr
 
 import (
 	"appliedgo.net/what"
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/position"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
@@ -25,9 +25,9 @@ const (
 
 type Scopes struct {
 	Path  string
-	Root  *ir.Root
-	Class ir.Node
-	Block ir.Node
+	Root  *ast.Root
+	Class ast.Vertex
+	Block ast.Vertex
 }
 
 type DownResolvement struct {
@@ -43,7 +43,7 @@ type UpResolvement struct {
 }
 
 type Resolver interface {
-	Down(node ir.Node) (resolvement *DownResolvement, next ir.Node, done bool)
+	Down(node ast.Vertex) (resolvement *DownResolvement, next ast.Vertex, done bool)
 }
 type ClassResolver interface {
 	Resolver
@@ -76,12 +76,12 @@ func AllResolvers() *map[Type]Resolver {
 }
 
 type Resolved struct {
-	Node ir.Node
+	Node ast.Vertex
 	Path string
 }
 
 func Resolve(
-	node ir.Node,
+	node ast.Vertex,
 	scopes *Scopes,
 ) (result *Resolved, lastClass *fqn.FQN, left int) {
 	symbols := stack.New[*DownResolvement]()
@@ -140,7 +140,7 @@ func Resolve(
 func Down(
 	resolvers *map[Type]Resolver,
 	symbols *stack.Stack[*DownResolvement],
-	current ir.Node,
+	current ast.Vertex,
 ) {
 	what.Happens("Down: %T", current)
 	for _, resolver := range *resolvers {

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
@@ -42,7 +42,7 @@ func TestClass(t *testing.T) {
 		IROf(filepath.Join(pathutils.Root(), "internal", "symbol", "testdata", "test.php"))
 	is.NoErr(err)
 
-	n := root.Stmts[0].(*ir.ExpressionStmt).Expr.(*ir.NewExpr).Class.(*ir.Name)
+	n := root.Stmts[0].(*ast.StmtExpression).Expr.(*ast.ExprNew).Class.(*ast.Name)
 
 	c, err := symbol.NewClassLikeFromName(root, n)
 	is.NoErr(err)

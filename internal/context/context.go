@@ -3,8 +3,9 @@ package context
 import (
 	"fmt"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/token"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/position"
@@ -13,11 +14,11 @@ import (
 
 type Ctx struct {
 	start      *position.Position
-	nodes      []ir.Node
+	nodes      []ast.Vertex
 	comment    *token.Token
 	curr       int
-	scope      ir.Node
-	classScope ir.Node
+	scope      ast.Vertex
+	classScope ast.Vertex
 }
 
 func New(pos *position.Position) (*Ctx, error) {
@@ -31,9 +32,9 @@ func New(pos *position.Position) (*Ctx, error) {
 }
 
 // Whether the current node is wrapped by the given kind.
-func (c *Ctx) WrappedBy(kind ir.NodeKind) bool {
+func (c *Ctx) WrappedBy(kind ast.Type) bool {
 	for i := c.curr - 1; i >= 0; i-- {
-		if ir.GetNodeKind(c.nodes[i]) == kind {
+		if c.nodes[i].GetType() == kind {
 			return true
 		}
 	}
@@ -42,9 +43,9 @@ func (c *Ctx) WrappedBy(kind ir.NodeKind) bool {
 }
 
 // Whether the current node wraps the given node kind.
-func (c *Ctx) Wraps(kind ir.NodeKind) bool {
+func (c *Ctx) Wraps(kind ast.Type) bool {
 	for i := c.curr + 1; i < len(c.nodes); i++ {
-		if ir.GetNodeKind(c.nodes[i]) == kind {
+		if c.nodes[i].GetType() == kind {
 			return true
 		}
 	}
@@ -53,13 +54,13 @@ func (c *Ctx) Wraps(kind ir.NodeKind) bool {
 }
 
 // Whether the current node directly is wrapped by the given kind.
-func (c *Ctx) DirectlyWrappedBy(kind ir.NodeKind) bool {
-	return c.curr != 0 && ir.GetNodeKind(c.nodes[c.curr-1]) == kind
+func (c *Ctx) DirectlyWrappedBy(kind ast.Type) bool {
+	return c.curr != 0 && c.nodes[c.curr-1].GetType() == kind
 }
 
 // Whether the current node directly wraps the given node kind.
-func (c *Ctx) DirectlyWraps(kind ir.NodeKind) bool {
-	return c.curr != len(c.nodes)-2 && ir.GetNodeKind(c.nodes[c.curr+1]) == kind
+func (c *Ctx) DirectlyWraps(kind ast.Type) bool {
+	return c.curr != len(c.nodes)-2 && c.nodes[c.curr+1].GetType() == kind
 }
 
 type CommentPosition int
@@ -83,12 +84,12 @@ func (c *Ctx) Position() *position.Position {
 }
 
 // The next scope of the current node, (function, root, method, class etc.).
-func (c *Ctx) Scope() ir.Node {
+func (c *Ctx) Scope() ast.Vertex {
 	return c.scope
 }
 
 // The next scope of the current node, but only the class-like nodes.
-func (c *Ctx) ClassScope() ir.Node {
+func (c *Ctx) ClassScope() ast.Vertex {
 	return c.classScope
 }
 
@@ -106,13 +107,13 @@ func (c *Ctx) Advance() bool {
 }
 
 // The current node and whether there is a current node.
-func (c *Ctx) Current() ir.Node {
+func (c *Ctx) Current() ast.Vertex {
 	return c.nodes[c.curr]
 }
 
 // Get the root/top most node.
-func (c *Ctx) Root() *ir.Root {
-	return c.nodes[0].(*ir.Root)
+func (c *Ctx) Root() *ast.Root {
+	return c.nodes[0].(*ast.Root)
 }
 
 func (c *Ctx) Path() string {
@@ -136,12 +137,12 @@ func (c *Ctx) setScopes() {
 		}
 
 		n := c.nodes[i]
-		if !foundScope && nodescopes.IsScope(ir.GetNodeKind(n)) {
+		if !foundScope && nodescopes.IsScope(n.GetType()) {
 			c.scope = n
 			foundScope = true
 		}
 
-		if !foundClassScope && nodescopes.IsClassLike(ir.GetNodeKind(n)) {
+		if !foundClassScope && nodescopes.IsClassLike(n.GetType()) {
 			c.classScope = n
 			foundClassScope = true
 		}
@@ -159,8 +160,9 @@ func (c *Ctx) init() error {
 	}
 
 	apos := position.LocToPos(content, c.start.Row, c.start.Col)
-	nap := traversers.NewNodeAtPos(apos)
-	root.Walk(nap)
+	nap := traversers.NewNodeAtPos(int(apos))
+	tv := traverser.NewTraverser(nap)
+	root.Accept(tv)
 
 	c.nodes = nap.Nodes
 	c.curr = len(nap.Nodes)

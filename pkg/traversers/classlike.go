@@ -1,7 +1,8 @@
 package traversers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
@@ -12,20 +13,19 @@ func NewClassLike(name string) *ClassLike {
 
 // ClassLike implements ir.Visitor.
 type ClassLike struct {
+	visitor.Null
 	name      string
-	ClassLike ir.Node
+	ClassLike ast.Vertex
 }
 
-func (c *ClassLike) EnterNode(node ir.Node) bool {
+func (c *ClassLike) EnterNode(node ast.Vertex) bool {
 	if c.ClassLike != nil {
 		return false
 	}
 
-	if nodescopes.IsClassLike(ir.GetNodeKind(node)) && nodeident.Get(node) == c.name {
+	if nodescopes.IsClassLike(node.GetType()) && nodeident.Get(node) == c.name {
 		c.ClassLike = node
 	}
 
-	return !nodescopes.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(node.GetType())
 }
-
-func (c *ClassLike) LeaveNode(ir.Node) {}

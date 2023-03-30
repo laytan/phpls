@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/fqner"
@@ -17,7 +17,6 @@ import (
 	"github.com/laytan/elephp/pkg/annotated"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
@@ -76,17 +75,18 @@ func TestAnnotateThrows(t *testing.T) {
 					is.NoErr(err)
 
 					// Get the first method or function in the context.
-					var scope ir.Node
-					var scopeKind ir.NodeKind
+					var scope ast.Vertex
+					var scopeKind ast.Type
 					for advanced := true; advanced; advanced = ctx.Advance() {
 						scope = ctx.Current()
-						scopeKind = ir.GetNodeKind(scope)
-						if scopeKind == ir.KindClassMethodStmt || scopeKind == ir.KindFunctionStmt {
+						scopeKind = scope.GetType()
+						if scopeKind == ast.TypeStmtClassMethod ||
+							scopeKind == ast.TypeStmtFunction {
 							break
 						}
 					}
 
-					if scopeKind != ir.KindClassMethodStmt && scopeKind != ir.KindFunctionStmt {
+					if scopeKind != ast.TypeStmtClassMethod && scopeKind != ast.TypeStmtFunction {
 						t.Errorf("in node is not a method or function: %v", ctx)
 					}
 
@@ -101,17 +101,17 @@ func TestAnnotateThrows(t *testing.T) {
 							is.NoErr(err)
 
 							cls := ctx.Current()
-							if !nodescopes.IsClassLike(ir.GetNodeKind(cls)) {
+							if !nodescopes.IsClassLike(cls.GetType()) {
 								t.Errorf("out node is not a class like node %v", cls)
 							}
 
 							root, err := wrkspc.FromContainer().IROf(pos.Path)
 							is.NoErr(err)
 
-							fqn := fqner.FullyQualifyName(root, &ir.Name{
-								Position: ir.GetPosition(cls),
-								Value:    nodeident.Get(cls),
-							})
+							fqn := fqner.FullyQualifyName(
+								root,
+								cls.(*ast.StmtClass).Name.(*ast.Name),
+							)
 
 							return fqn
 						},

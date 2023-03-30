@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 )
@@ -15,13 +15,8 @@ func NewFunction() *FunctionProvider {
 	return &FunctionProvider{}
 }
 
-func (p *FunctionProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
-	if kind != ir.KindFunctionCallExpr {
-		return false
-	}
-
-	_, ok := ctx.Current().(*ir.FunctionCallExpr).Function.(*ir.Name)
-	return ok
+func (p *FunctionProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	return kind != ast.TypeExprFunctionCall
 }
 
 func (p *FunctionProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {

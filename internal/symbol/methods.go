@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
@@ -13,8 +15,9 @@ type (
 )
 
 func (c *ClassLike) MethodsIter() MethodsIterFunc {
-	mt := &methodsTraverser{Methods: []*ir.ClassMethodStmt{}}
-	c.node.Walk(mt)
+	mt := &methodsTraverser{Methods: []*ast.StmtClassMethod{}}
+	tv := traverser.NewTraverser(mt)
+	c.node.Accept(tv)
 	i := 0
 
 	return func() (m *Method, done bool, genErr error) {
@@ -50,13 +53,14 @@ MethodsIter:
 }
 
 type methodsTraverser struct {
-	Methods        []*ir.ClassMethodStmt
+	visitor.Null
+	Methods        []*ast.StmtClassMethod
 	firstTraversed bool
 }
 
-func (m *methodsTraverser) EnterNode(node ir.Node) bool {
+func (m *methodsTraverser) EnterNode(node ast.Vertex) bool {
 	if !m.firstTraversed {
-		if !nodescopes.IsClassLike(ir.GetNodeKind(node)) {
+		if !nodescopes.IsClassLike(node.GetType()) {
 			log.Panicf(
 				"[symbol.methodsTraverser.EnterNode]: methodsTraverser can only be used on class-like nodes, got %T",
 				node,
@@ -68,11 +72,9 @@ func (m *methodsTraverser) EnterNode(node ir.Node) bool {
 		return true
 	}
 
-	if method, ok := node.(*ir.ClassMethodStmt); ok {
-		m.Methods = append(m.Methods, method)
-	}
-
-	return !nodescopes.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(node.GetType())
 }
 
-func (m *methodsTraverser) LeaveNode(ir.Node) {}
+func (m *methodsTraverser) StmtClassMethod(method *ast.StmtClassMethod) {
+	m.Methods = append(m.Methods, method)
+}

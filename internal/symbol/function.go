@@ -3,7 +3,8 @@ package symbol
 import (
 	"fmt"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/traversers"
@@ -14,10 +15,10 @@ type Function struct {
 	*doxed
 	*parametized
 
-	node *ir.FunctionStmt
+	node *ast.StmtFunction
 }
 
-func NewFunction(root rooter, node *ir.FunctionStmt) *Function {
+func NewFunction(root rooter, node *ast.StmtFunction) *Function {
 	doxed := NewDoxed(node)
 
 	return &Function{
@@ -38,7 +39,8 @@ func NewFunction(root rooter, node *ir.FunctionStmt) *Function {
 
 func NewFunctionFromFQN(root rooter, qualified *fqn.FQN) (*Function, error) {
 	ft := traversers.NewFunction(qualified.Name())
-	root.Root().Walk(ft)
+	tv := traverser.NewTraverser(ft)
+	root.Root().Accept(tv)
 
 	if ft.Function == nil {
 		return nil, fmt.Errorf(
@@ -54,6 +56,6 @@ func (m *Function) Name() string {
 	return nodeident.Get(m.node)
 }
 
-func (m *Function) Node() *ir.FunctionStmt {
+func (m *Function) Node() *ast.StmtFunction {
 	return m.node
 }

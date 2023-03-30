@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/VKCOM/noverify/src/ir"
-	"github.com/VKCOM/noverify/src/ir/irfmt"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/printer"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/throws"
 	"github.com/laytan/elephp/internal/wrkspc"
@@ -26,7 +27,7 @@ func (p *Project) Hover(currpos *position.Position) string {
 Nodes:
 	for i := len(nodes) - 1; i >= 0; i-- {
 		switch typedNode := nodes[i].(type) {
-		case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt, *ir.PropertyListStmt, *ir.FunctionCallExpr:
+		case *ast.StmtClass, *ast.StmtInterface, *ast.StmtTrait, *ast.StmtPropertyList, *ast.ExprFunctionCall:
 			if cmnts := cleanedNodeComments(typedNode); len(cmnts) > 0 {
 				out = append(out, cmnts)
 			}
@@ -37,7 +38,7 @@ Nodes:
 
 			break Nodes
 
-		case *ir.FunctionStmt:
+		case *ast.StmtFunction:
 			top = append(top, funcOrMethodThrows(root, typedNode, currpos.Path))
 
 			if cmnts := cleanedNodeComments(typedNode); len(cmnts) > 0 {
@@ -50,7 +51,7 @@ Nodes:
 
 			break Nodes
 
-		case *ir.ClassMethodStmt:
+		case *ast.StmtClassMethod:
 			top = append(top, funcOrMethodThrows(root, typedNode, currpos.Path))
 
 			if cmnts := cleanedNodeComments(nodes[i+1]); len(cmnts) > 0 {
@@ -63,14 +64,14 @@ Nodes:
 
 			break Nodes
 
-		case *ir.Parameter:
+		case *ast.Parameter:
 			if signature := NodeSignature(typedNode); len(signature) > 0 {
 				out = append(out, signature)
 			}
 
 			break Nodes
 
-		case *ir.ClassConstListStmt:
+		case *ast.StmtClassConstList:
 			if cmnts := cleanedNodeComments(typedNode); len(cmnts) > 0 {
 				out = append(out, cmnts)
 			}
@@ -96,12 +97,13 @@ Nodes:
 	return strings.Join(top, "\n") + "\n" + outStr
 }
 
-func nodeToHover(p *Project, currpos *position.Position) ([]ir.Node, *ir.Root) {
-	napper := func(pos *position.Position) ([]ir.Node, *ir.Root) {
+func nodeToHover(p *Project, currpos *position.Position) ([]ast.Vertex, *ast.Root) {
+	napper := func(pos *position.Position) ([]ast.Vertex, *ast.Root) {
 		content, root := wrkspc.FromContainer().FAllOf(pos.Path)
 		apos := position.LocToPos(content, pos.Row, pos.Col)
-		nap := traversers.NewNodeAtPos(apos)
-		root.Walk(nap)
+		nap := traversers.NewNodeAtPos(int(apos))
+		napt := traverser.NewTraverser(nap)
+		root.Accept(napt)
 
 		return nap.Nodes, root
 	}
@@ -115,18 +117,18 @@ func nodeToHover(p *Project, currpos *position.Position) ([]ir.Node, *ir.Root) {
 	return napper(pos)
 }
 
-func NodeSignature(node ir.Node) string {
+func NodeSignature(node ast.Vertex) string {
 	if node == nil {
 		return ""
 	}
 
 	out := new(bytes.Buffer)
-	p := irfmt.NewPrettyPrinter(out, "")
-	p.Print(withoutStmts(node))
+	p := printer.NewPrinter(out)
+	withoutStmts(node).Accept(p)
 	return cleanBrackets(out.String())
 }
 
-func funcOrMethodThrows(root *ir.Root, node ir.Node, path string) string {
+func funcOrMethodThrows(root *ast.Root, node ast.Vertex, path string) string {
 	builder := strings.Builder{}
 	//nolint:revive // This always returns a nil error.
 	builder.WriteString("Throws:")
@@ -158,97 +160,29 @@ func cleanBrackets(signature string) string {
 	return signature
 }
 
-func cleanedNodeComments(node ir.Node) string {
+func cleanedNodeComments(node ast.Vertex) string {
 	cmnts := symbol.NodeComments(node)
 	return strings.Join(cmnts, "\n")
 }
 
-// TODO: can this be done in a less verbose way?
-// Shallow copies the node excluding its Stmts property.
-func withoutStmts(node ir.Node) ir.Node {
+func withoutStmts(node ast.Vertex) ast.Vertex {
 	switch t := node.(type) {
-	case *ir.ClassStmt:
-		return &ir.ClassStmt{
-			Position:             t.Position,
-			AttrGroups:           t.AttrGroups,
-			Modifiers:            t.Modifiers,
-			ClassTkn:             t.ClassTkn,
-			ClassName:            t.ClassName,
-			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
-			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
-			Class: ir.Class{
-				Extends:    t.Extends,
-				Implements: t.Implements,
-				Doc:        t.Doc,
-				Stmts:      nil,
-			},
-		}
-
-	case *ir.InterfaceStmt:
-		return &ir.InterfaceStmt{
-			Position:             t.Position,
-			AttrGroups:           t.AttrGroups,
-			InterfaceTkn:         t.InterfaceTkn,
-			InterfaceName:        t.InterfaceName,
-			Extends:              t.Extends,
-			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
-			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
-			Doc:                  t.Doc,
-			Stmts:                nil,
-		}
-
-	case *ir.TraitStmt:
-		return &ir.TraitStmt{
-			Position:             t.Position,
-			AttrGroups:           t.AttrGroups,
-			TraitTkn:             t.TraitTkn,
-			TraitName:            t.TraitName,
-			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
-			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
-			Doc:                  t.Doc,
-			Stmts:                nil,
-		}
-
-	case *ir.FunctionStmt:
-		return &ir.FunctionStmt{
-			Position:             t.Position,
-			AttrGroups:           t.AttrGroups,
-			FunctionTkn:          t.FunctionTkn,
-			AmpersandTkn:         t.AmpersandTkn,
-			FunctionName:         t.FunctionName,
-			OpenParenthesisTkn:   t.OpenParenthesisTkn,
-			Params:               t.Params,
-			SeparatorTkns:        t.SeparatorTkns,
-			CloseParenthesisTkn:  t.CloseParenthesisTkn,
-			ColonTkn:             t.ColonTkn,
-			ReturnType:           t.ReturnType,
-			OpenCurlyBracketTkn:  t.OpenCurlyBracketTkn,
-			CloseCurlyBracketTkn: t.CloseCurlyBracketTkn,
-			ReturnsRef:           t.ReturnsRef,
-			Doc:                  t.Doc,
-			Stmts:                nil,
-		}
-
-	case *ir.ClassMethodStmt:
-		return &ir.ClassMethodStmt{
-			Position:            t.Position,
-			AttrGroups:          t.AttrGroups,
-			Modifiers:           t.Modifiers,
-			FunctionTkn:         t.FunctionTkn,
-			AmpersandTkn:        t.AmpersandTkn,
-			MethodName:          t.MethodName,
-			OpenParenthesisTkn:  t.OpenParenthesisTkn,
-			Params:              t.Params,
-			SeparatorTkns:       t.SeparatorTkns,
-			CloseParenthesisTkn: t.CloseParenthesisTkn,
-			ColonTkn:            t.ColonTkn,
-			ReturnType:          t.ReturnType,
-			ReturnsRef:          t.ReturnsRef,
-			Doc:                 t.Doc,
-			Stmt:                nil,
-		}
-
-	default:
-		return node
+	case *ast.StmtClass:
+		t.Stmts = nil
+		return t
+	case *ast.StmtInterface:
+		t.Stmts = nil
+		return t
+	case *ast.StmtTrait:
+		t.Stmts = nil
+		return t
+	case *ast.StmtFunction:
+		t.Stmts = nil
+		return t
+	case *ast.StmtClassMethod:
+		t.Stmt = nil
+		return t
 	}
+
+	return node
 }

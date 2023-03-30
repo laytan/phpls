@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/project/definition"
@@ -15,18 +15,19 @@ func NewName() *NameProvider {
 	return &NameProvider{}
 }
 
-func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
-	if kind != ir.KindName {
+func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	// TODO: ast.fullyqualified name, ast.relativename
+	if kind != ast.TypeName {
 		return false
 	}
 
 	// If in a function, don't define it.
-	if ctx.DirectlyWrappedBy(ir.KindFunctionCallExpr) {
+	if ctx.DirectlyWrappedBy(ast.TypeExprFunctionCall) {
 		return false
 	}
 
 	// If a constant fetch, don't define it.
-	if ctx.DirectlyWrappedBy(ir.KindConstFetchExpr) {
+	if ctx.DirectlyWrappedBy(ast.TypeExprConstFetch) {
 		return false
 	}
 
@@ -37,7 +38,7 @@ func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
 func (p *NameProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	tdef, ok := fqner.FindFullyQualifiedName(
 		ctx.Root(),
-		ctx.Current().(*ir.Name),
+		ctx.Current().(*ast.Name),
 	)
 	if !ok {
 		return nil, definition.ErrNoDefinitionFound

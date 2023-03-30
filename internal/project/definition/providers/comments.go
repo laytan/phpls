@@ -3,14 +3,14 @@ package providers
 import (
 	"fmt"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -20,7 +20,7 @@ func NewComments() *CommentsProvider {
 	return &CommentsProvider{}
 }
 
-func (p *CommentsProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
+func (p *CommentsProvider) CanDefine(ctx *context.Ctx, _ ast.Type) bool {
 	if c, _ := ctx.InComment(); c != nil {
 		return true
 	}
@@ -57,7 +57,7 @@ func (p *CommentsProvider) Define(ctx *context.Ctx) ([]*definition.Definition, e
 	case *phpdoxer.NodeParam:
 		typ = typedNode.Type
 	case *phpdoxer.NodeInheritDoc:
-		m, ok := ctx.Current().(*ir.ClassMethodStmt)
+		m, ok := ctx.Current().(*ast.StmtClassMethod)
 		if !ok {
 			return nil, fmt.Errorf("got %T node with @inheritdoc, which is not supported", ctx.Current())
 		}
@@ -71,18 +71,16 @@ func (p *CommentsProvider) Define(ctx *context.Ctx) ([]*definition.Definition, e
 	}
 
 	fqnt := fqn.NewTraverser()
-	ctx.Root().Walk(fqnt)
+	fqntt := traverser.NewTraverser(fqnt)
+	ctx.Root().Accept(fqntt)
 
 	var currFQN *fqn.FQN
 	clsNode := ctx.ClassScope()
-	if ir.GetNodeKind(clsNode) != ir.KindRoot {
-		currFQN = fqnt.ResultFor(&ir.Name{
-			Position: ir.GetPosition(clsNode),
-			Value:    nodeident.Get(clsNode),
-		})
+	if clsNode.GetType() != ast.TypeRoot {
+		currFQN = fqnt.ResultFor(clsNode)
 	}
 
-	clsses := doxcontext.ApplyContext(fqnt, currFQN, ir.GetPosition(ctx.Current()), typ)
+	clsses := doxcontext.ApplyContext(fqnt, currFQN, ctx.Current().GetPosition(), typ)
 	for _, cls := range clsses {
 		// After ApplyContext, the returned types are all fully qualified.
 		if iNode, ok := index.FromContainer().Find(fqn.New(cls.Name)); ok {
@@ -95,7 +93,7 @@ func (p *CommentsProvider) Define(ctx *context.Ctx) ([]*definition.Definition, e
 
 func (p *CommentsProvider) defineInheritDoc(
 	ctx *context.Ctx,
-	m *ir.ClassMethodStmt,
+	m *ast.StmtClassMethod,
 ) ([]*definition.Definition, error) {
 	meth := symbol.NewMethod(ctx, m)
 	cls, err := symbol.NewClassLikeFromMethod(ctx.Root(), m)

@@ -5,9 +5,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/token"
 	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -20,13 +21,13 @@ func FilterDocKind(kind phpdoxer.NodeKind) DocFilter {
 }
 
 type doxed struct {
-	node ir.Node
+	node ast.Vertex
 
 	docNodeCache []phpdoxer.Node
 }
 
 func NewDoxed(
-	node ir.Node,
+	node ast.Vertex,
 ) *doxed { //nolint:revive // This struct is embedded inside other symbol structs, if we leave it public, it will be accessible by users.
 	return &doxed{node: node}
 }
@@ -112,14 +113,14 @@ func (d *doxed) RawDocs() string {
 
 // TypeHintToDocType Turns a type hint node, from for example ir.FunctionStmt.ReturnType into the
 // equivalent phpdoxer.Type.
-func TypeHintToDocType(node ir.Node) (phpdoxer.Type, error) {
+func TypeHintToDocType(node ast.Vertex) (phpdoxer.Type, error) {
 	var isNullable bool
-	if nullable, ok := node.(*ir.Nullable); ok {
+	if nullable, ok := node.(*ast.Nullable); ok {
 		node = nullable.Expr
 		isNullable = true
 	}
 
-	name, ok := node.(*ir.Name)
+	name, ok := node.(*ast.Name)
 	if !ok {
 		return nil, fmt.Errorf(
 			"%T is unsupported for a return type hint, expecting *ir.Name or *ir.Nullable",
@@ -127,61 +128,125 @@ func TypeHintToDocType(node ir.Node) (phpdoxer.Type, error) {
 		)
 	}
 
-	toParse := name.Value
+	toParse := nodeident.Get(name)
 	if isNullable {
 		toParse = "null|" + toParse
 	}
 
 	t, err := phpdoxer.ParseType(toParse)
 	if err != nil {
-		return nil, fmt.Errorf(`parsing type hint into doc type "%s": %w`, name.Value, err)
+		return nil, fmt.Errorf(`parsing type hint into doc type "%s": %w`, toParse, err)
 	}
 
 	return t, nil
 }
 
-func NodeComments(node ir.Node) []string {
-	switch typedNode := node.(type) {
-	case *ir.FunctionStmt:
-		return []string{typedNode.Doc.Raw}
+func NodeComments(node ast.Vertex) []string {
+	var ff []*token.Token
+	switch tn := node.(type) {
+	case *ast.StmtFunction:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
 
-	case *ir.ArrowFunctionExpr:
-		return []string{typedNode.Doc.Raw}
+		ff = tn.FunctionTkn.FreeFloating
+	case *ast.ExprArrowFunction:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
 
-	case *ir.ClosureExpr:
-		return []string{typedNode.Doc.Raw}
+		if tn.StaticTkn != nil {
+			ff = tn.StaticTkn.FreeFloating
+			break
+		}
 
-	case *ir.ClassConstListStmt:
-		return []string{typedNode.Doc.Raw}
+		ff = tn.FnTkn.FreeFloating
+	case *ast.StmtTrait:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
 
-	case *ir.ClassMethodStmt:
-		return []string{typedNode.Doc.Raw}
+		ff = tn.TraitTkn.FreeFloating
+	case *ast.StmtClass:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
 
-	case *ir.ClassStmt:
-		return []string{typedNode.Doc.Raw}
+		if len(tn.Modifiers) > 0 {
+			ff = tn.Modifiers[0].(*ast.Identifier).IdentifierTkn.FreeFloating
+			break
+		}
 
-	case *ir.InterfaceStmt:
-		return []string{typedNode.Doc.Raw}
+		ff = tn.ClassTkn.FreeFloating
+	case *ast.StmtInterface:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
 
-	case *ir.PropertyListStmt:
-		return []string{typedNode.Doc.Raw}
+		ff = tn.InterfaceTkn.FreeFloating
+	case *ast.StmtPropertyList:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
 
-	case *ir.TraitStmt:
-		return []string{typedNode.Doc.Raw}
+		if len(tn.Modifiers) > 0 {
+			ff = tn.Modifiers[0].(*ast.Identifier).IdentifierTkn.FreeFloating
+			break
+		}
 
-	case *ir.FunctionCallExpr:
-		return NodeComments(typedNode.Function)
+		log.Println("Warning: *ast.StmtPropertyList without any attributes or modifiers, is that possible?")
+	case *ast.StmtClassMethod:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
 
-	default:
-		docs := []string{}
-		node.IterateTokens(func(t *token.Token) bool {
-			if t.ID != token.T_COMMENT && t.ID != token.T_DOC_COMMENT {
-				return true
-			}
+		if len(tn.Modifiers) > 0 {
+			ff = tn.Modifiers[0].(*ast.Identifier).IdentifierTkn.FreeFloating
+			break
+		}
 
-			docs = append(docs, string(t.Value))
-			return true
-		})
-		return docs
+		ff = tn.FunctionTkn.FreeFloating
+	case *ast.ExprClosure:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
+
+		if tn.StaticTkn != nil {
+			ff = tn.StaticTkn.FreeFloating
+			break
+		}
+
+		ff = tn.FunctionTkn.FreeFloating
+	case *ast.StmtClassConstList:
+		if len(tn.AttrGroups) > 0 {
+			ff = tn.AttrGroups[0].(*ast.AttributeGroup).OpenAttributeTkn.FreeFloating
+			break
+		}
+
+		if len(tn.Modifiers) > 0 {
+			ff = tn.Modifiers[0].(*ast.Identifier).IdentifierTkn.FreeFloating
+			break
+		}
+
+		ff = tn.ConstTkn.FreeFloating
 	}
+
+	docs := []string{}
+	for _, f := range ff {
+		if f.ID != token.T_COMMENT && f.ID != token.T_DOC_COMMENT {
+			continue
+		}
+
+		docs = append(docs, string(f.Value))
+	}
+
+	return docs
 }

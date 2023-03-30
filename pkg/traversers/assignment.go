@@ -1,81 +1,51 @@
 package traversers
 
 import (
-	"log"
-
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/elephp/pkg/nodevar"
 )
 
-func NewAssignment(variable *ir.SimpleVar) *Assignment {
+func NewAssignment(variable *ast.ExprVariable) *Assignment {
 	return &Assignment{
 		variable: variable,
 		isFirst:  true,
 	}
 }
 
-// Assignment implements ir.Visitor.
 type Assignment struct {
-	variable   *ir.SimpleVar
-	Assignment *ir.SimpleVar
-	Scope      ir.Node
+	visitor.Null
+	variable   *ast.ExprVariable
+	Assignment *ast.ExprVariable
+	Scope      ast.Vertex
 	isFirst    bool
 }
 
-func (a *Assignment) EnterNode(node ir.Node) bool {
+func (a *Assignment) EnterNode(node ast.Vertex) bool {
 	defer func() { a.isFirst = false }()
 
 	// Only check the current scope.
-	if !a.isFirst && nodescopes.IsScope(ir.GetNodeKind(node)) {
+	if !a.isFirst && nodescopes.IsScope(node.GetType()) {
 		return false
 	}
 
 	// Only check assignments before our variable.
-	if pos := ir.GetPosition(node); pos != nil {
+	if pos := node.GetPosition(); pos != nil {
 		if pos.StartPos > a.variable.Position.StartPos {
 			return false
 		}
 	}
 
-	switch typedNode := node.(type) {
-	case *ir.Assign:
-		if assigned, ok := typedNode.Variable.(*ir.SimpleVar); ok {
-			if assigned.Name == a.variable.Name {
-				a.Assignment = assigned
-				a.Scope = typedNode
-			}
-		}
-
-	case *ir.Parameter:
-		if typedNode.Variable.Name == a.variable.Name {
-			a.Assignment = typedNode.Variable
-			a.Scope = typedNode
-		}
-
-	case *ir.GlobalStmt:
-		for _, varNode := range typedNode.Vars {
-			typedVar, ok := varNode.(*ir.SimpleVar)
-			if !ok {
-				continue
-			}
-
-			if typedVar.Name == a.variable.Name {
-				a.Assignment = typedVar
-				a.Scope = typedNode
-			}
-		}
-
-	case *ir.ListExpr:
-		for _, item := range typedNode.Items {
-			typedVar, ok := item.Val.(*ir.SimpleVar)
-			if !ok {
-				log.Printf("Got type %T for an item in list expression, expected *ir.SimpleVar", item.Val)
-				continue
-			}
-
-			if typedVar.Name == a.variable.Name {
-				a.Assignment = typedVar
-				a.Scope = typedNode
+	varName := nodeident.Get(a.variable)
+	if nodevar.IsAssignment(node.GetType()) {
+		assigned := nodevar.Assigned(node)
+		for _, ass := range assigned {
+			if nodeident.Get(ass) == varName {
+				a.Assignment = ass
+				a.Scope = node
+				break
 			}
 		}
 	}
@@ -83,4 +53,10 @@ func (a *Assignment) EnterNode(node ir.Node) bool {
 	return true
 }
 
-func (a *Assignment) LeaveNode(ir.Node) {}
+func (a *Assignment) Parameter(param *ast.Parameter) {
+	varName := nodeident.Get(a.variable)
+	if varName == nodeident.Get(param.Var.(*ast.ExprVariable)) {
+		a.Assignment = param.Var.(*ast.ExprVariable)
+		a.Scope = param
+	}
+}

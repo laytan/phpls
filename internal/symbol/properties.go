@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
@@ -13,8 +15,9 @@ type (
 )
 
 func (c *ClassLike) PropertiesIter() PropertiesIterFunc {
-	pt := &propertiesTraverser{Properties: []*ir.PropertyListStmt{}}
-	c.node.Walk(pt)
+	pt := &propertiesTraverser{Properties: []*ast.StmtPropertyList{}}
+	tv := traverser.NewTraverser(pt)
+	c.node.Accept(tv)
 	i := 0
 
 	return func() (p *Property, done bool, genErr error) {
@@ -50,13 +53,14 @@ PropertiesIter:
 }
 
 type propertiesTraverser struct {
-	Properties     []*ir.PropertyListStmt
+	visitor.Null
+	Properties     []*ast.StmtPropertyList
 	firstTraversed bool
 }
 
-func (t *propertiesTraverser) EnterNode(node ir.Node) bool {
+func (t *propertiesTraverser) EnterNode(node ast.Vertex) bool {
 	if !t.firstTraversed {
-		if !nodescopes.IsClassLike(ir.GetNodeKind(node)) {
+		if !nodescopes.IsClassLike(node.GetType()) {
 			log.Panicf(
 				"[symbol.propertiesTraverser.EnterNode]: propertiesTraverser can only be used on class-like nodes, got %T",
 				node,
@@ -68,11 +72,9 @@ func (t *propertiesTraverser) EnterNode(node ir.Node) bool {
 		return true
 	}
 
-	if property, ok := node.(*ir.PropertyListStmt); ok {
-		t.Properties = append(t.Properties, property)
-	}
-
-	return !nodescopes.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(node.GetType())
 }
 
-func (t *propertiesTraverser) LeaveNode(ir.Node) {}
+func (t *propertiesTraverser) StmtPropertyList(property *ast.StmtPropertyList) {
+	t.Properties = append(t.Properties, property)
+}

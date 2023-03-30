@@ -1,7 +1,3 @@
-run:
-    tests: true
-    go: '1.20'
-
 linters:
     disable-all: true
     enable:
@@ -41,6 +37,7 @@ linters:
         - wrapcheck
         # - unsafenil
 
+
 linters-settings:
     # custom:
     #     unsafenil:
@@ -48,8 +45,8 @@ linters-settings:
     #         description: Checks that there is no return of a nil error or false, and a nil/default value before it
     #         original-url: github.com/laytan/unsafenil
 
-    makezero:
-        always: true
+    exhaustive:
+        default-signifies-exhaustive: true
 
     forbidigo:
         forbid:
@@ -116,10 +113,10 @@ linters-settings:
             - sliceClear
             - stringXbytes
 
-    exhaustive:
-        default-signifies-exhaustive: true
     gosimple:
         checks: ["all"]
+    makezero:
+        always: true
     nakedret:
         max-func-lines: 1
     revive:
@@ -127,116 +124,116 @@ linters-settings:
           # START DEFAULTS
           #
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#blank-imports
-          - name: blank-imports
+          - disabled: false
+            name: blank-imports
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-as-argument
-          - name: context-as-argument
+          - disabled: false
+            name: context-as-argument
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-keys-type
-          - name: context-keys-type
+          - disabled: false
+            name: context-keys-type
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#dot-imports
-          - name: dot-imports
+          - disabled: false
+            name: dot-imports
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-return
-          - name: error-return
+          - disabled: false
+            name: error-return
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
-          - name: error-strings
+          - disabled: false
+            name: error-strings
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-naming
-          - name: error-naming
+          - disabled: false
+            name: error-naming
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#exported
-          - name: exported
+          - disabled: false
+            name: exported
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#if-return
-          - name: if-return
+          - disabled: false
+            name: if-return
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#increment-decrement
-          - name: increment-decrement
+          - disabled: false
+            name: increment-decrement
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#var-naming
-          - name: var-naming
+          - disabled: false
+            name: var-naming
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#var-declaration
-          - name: var-declaration
+          - disabled: false
+            name: var-declaration
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#package-comments
-          - name: package-comments
+          - disabled: false
+            name: package-comments
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range
-          - name: range
+          - disabled: false
+            name: range
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range
-          - name: range
+          - disabled: false
+            name: range
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#receiver-naming
-          - name: receiver-naming
+          - disabled: false
+            name: receiver-naming
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#time-naming
-          - name: time-naming
+          - disabled: false
+            name: time-naming
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unexported-return
-          - name: unexported-return
+          - disabled: false
+            name: unexported-return
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#indent-error-flow
-          - name: indent-error-flow
+          - disabled: false
+            name: indent-error-flow
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#errorf
-          - name: errorf
+          - disabled: false
+            name: errorf
             severity: warning
-            disabled: false
 
           # START CUSTOM
           #
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#atomic
-          - name: atomic
+          - disabled: false
+            name: atomic
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#bool-literal-in-expr
-          - name: bool-literal-in-expr
+          - disabled: false
+            name: bool-literal-in-expr
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#defer
-          - name: defer
+          - disabled: false
+            name: defer
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#early-return
-          - name: early-return
+          - disabled: false
+            name: early-return
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#time-equal
-          - name: time-equal
+          - disabled: false
+            name: time-equal
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unhandled-error
-          - name: unhandled-error
+          - disabled: false
+            name: unhandled-error
             severity: warning
-            disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#use-any
-          - name: use-any
+          - disabled: false
+            name: use-any
             severity: warning
-            disabled: false
     wrapcheck:
         ignoreSigs:
           - .Errorf(
@@ -249,3 +246,5 @@ linters-settings:
           - .WithStack(
           - jsonrpc2.NewError(
           - lsperrors.ErrRequestFailed
+run:
+    tests: true

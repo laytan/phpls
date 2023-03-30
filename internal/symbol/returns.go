@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
@@ -17,7 +18,7 @@ type canReturn struct {
 	*doxed
 	rooter
 
-	node ir.Node
+	node ast.Vertex
 }
 
 // Returns gets the return type of this callable.
@@ -31,7 +32,7 @@ func (r *canReturn) Returns() (phpdoxer.Type, *ClassLike, error) {
 		return nil, nil, fmt.Errorf("parsing own return of %v: %w", r.node, err)
 	}
 	if rh != nil {
-		if method, ok := r.node.(*ir.ClassMethodStmt); ok {
+		if method, ok := r.node.(*ast.StmtClassMethod); ok {
 			cls, err := r.class()
 			if err != nil {
 				return nil, nil, fmt.Errorf("retrieving enclosing class of %v: %w", method, err)
@@ -54,26 +55,27 @@ func (r *canReturn) Returns() (phpdoxer.Type, *ClassLike, error) {
 // ReturnsClass resolves and unpacks the raw type returned from Returns into
 // the classes it represents.
 // See doxcontext.ApplyContext for more.
-func (r *canReturn) ReturnsClass() ([]*phpdoxer.TypeClassLike, error) {
+func (r *canReturn) ReturnsClass() ([]*phpdoxer.TypeClassLike, error) { //nolint:dupl // Not really duplicated, could extract later.
 	ret, cls, err := r.Returns()
 	if err != nil {
 		return nil, fmt.Errorf("getting return type to apply context: %w", err)
 	}
 
 	fqnt := fqn.NewTraverser()
+	fqntt := traverser.NewTraverser(fqnt)
 	var currFqn *fqn.FQN
-	var node ir.Node
+	var node ast.Vertex
 
 	switch typedCallable := r.node.(type) {
-	case *ir.ClassMethodStmt:
+	case *ast.StmtClassMethod:
 		root := cls.Root()
-		root.Walk(fqnt)
+		root.Accept(fqntt)
 
 		currFqn = cls.GetFQN()
 		node = typedCallable
-	case *ir.FunctionStmt:
+	case *ast.StmtFunction:
 		root := r.Root()
-		root.Walk(fqnt)
+		root.Accept(fqntt)
 
 		// If we are not a method this one does not really matter for ApplyContext.
 		currFqn = fqn.New(fqn.PartSeperator)
@@ -82,12 +84,12 @@ func (r *canReturn) ReturnsClass() ([]*phpdoxer.TypeClassLike, error) {
 		return nil, fmt.Errorf("*canReturn with invalid callable %T", typedCallable)
 	}
 
-	return doxcontext.ApplyContext(fqnt, currFqn, ir.GetPosition(node), ret), nil
+	return doxcontext.ApplyContext(fqnt, currFqn, node.GetPosition(), ret), nil
 }
 
 // NOTE: it is assumed that ownReturns is checked already.
 func (r *canReturn) returnsComment() (phpdoxer.Type, *ClassLike, error) {
-	methNode, ok := r.node.(*ir.ClassMethodStmt)
+	methNode, ok := r.node.(*ast.StmtClassMethod)
 	if !ok {
 		return nil, nil, fmt.Errorf("checking node is class method: %w", ErrNoReturn)
 	}
@@ -148,11 +150,11 @@ func (r *canReturn) returnsHint() (phpdoxer.Type, error) {
 	return TypeHintToDocType(retNode)
 }
 
-func (r *canReturn) returnsHintNode() ir.Node {
+func (r *canReturn) returnsHintNode() ast.Vertex {
 	switch tNode := r.node.(type) {
-	case *ir.FunctionStmt:
+	case *ast.StmtFunction:
 		return tNode.ReturnType
-	case *ir.ClassMethodStmt:
+	case *ast.StmtClassMethod:
 		return tNode.ReturnType
 	default:
 		log.Panicf("*canReturn with invalid node of type %T", tNode)
@@ -163,7 +165,7 @@ func (r *canReturn) returnsHintNode() ir.Node {
 
 func (r *canReturn) class() (*ClassLike, error) {
 	switch typedNode := r.node.(type) {
-	case *ir.ClassMethodStmt:
+	case *ast.StmtClassMethod:
 		cls, err := NewClassLikeFromMethod(r.Root(), typedNode)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving class of method %v: %w", typedNode, err)

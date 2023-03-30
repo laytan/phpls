@@ -4,8 +4,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/position"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/phpversion"
@@ -61,7 +62,7 @@ func TestFQNTraverser(t *testing.T) {
 
 	cases := map[string]struct {
 		code   string
-		name   *ir.Name
+		name   *ast.Name
 		expect string
 	}{
 		"single semicolon": {
@@ -70,24 +71,30 @@ func TestFQNTraverser(t *testing.T) {
             namespace Test;
             // Some comment.
             `,
-			name: &ir.Name{Value: "TestName", Position: &position.Position{
-				StartLine: 3,
-				StartPos:  50,
-				EndLine:   3,
-				EndPos:    51,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("TestName")}},
+				Position: &position.Position{
+					StartLine: 3,
+					StartPos:  50,
+					EndLine:   3,
+					EndPos:    51,
+				},
+			},
 			expect: "\\Test\\TestName",
 		},
 		"no namespaces": {
 			code: `
             <?php
             `,
-			name: &ir.Name{Value: "TestName", Position: &position.Position{
-				StartLine: 1,
-				StartPos:  1,
-				EndLine:   1,
-				EndPos:    2,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("TestName")}},
+				Position: &position.Position{
+					StartLine: 1,
+					StartPos:  1,
+					EndLine:   1,
+					EndPos:    2,
+				},
+			},
 			expect: "\\TestName",
 		},
 		"single global namespace block": {
@@ -97,12 +104,15 @@ func TestFQNTraverser(t *testing.T) {
                 // Some comment.
             }
             `,
-			name: &ir.Name{Value: "TestName", Position: &position.Position{
-				StartLine: 3,
-				StartPos:  20,
-				EndLine:   3,
-				EndPos:    24,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("TestName")}},
+				Position: &position.Position{
+					StartLine: 3,
+					StartPos:  20,
+					EndLine:   3,
+					EndPos:    24,
+				},
+			},
 			expect: "\\TestName",
 		},
 		"single namespace block": {
@@ -112,12 +122,15 @@ func TestFQNTraverser(t *testing.T) {
                 // Some comment.
             }
             `,
-			name: &ir.Name{Value: "TestName", Position: &position.Position{
-				StartLine: 3,
-				StartPos:  55,
-				EndLine:   3,
-				EndPos:    56,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("TestName")}},
+				Position: &position.Position{
+					StartLine: 3,
+					StartPos:  55,
+					EndLine:   3,
+					EndPos:    56,
+				},
+			},
 			expect: "\\Test\\TestName",
 		},
 		"double semicolon": {
@@ -128,12 +141,15 @@ func TestFQNTraverser(t *testing.T) {
             namespace Test2;
             // Some comment 2.
             `,
-			name: &ir.Name{Value: "TestName", Position: &position.Position{
-				StartLine: 3,
-				StartPos:  55,
-				EndLine:   3,
-				EndPos:    56,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("TestName")}},
+				Position: &position.Position{
+					StartLine: 3,
+					StartPos:  55,
+					EndLine:   3,
+					EndPos:    56,
+				},
+			},
 			expect: "\\Test\\TestName",
 		},
 		"double block": {
@@ -147,12 +163,15 @@ func TestFQNTraverser(t *testing.T) {
                 // Some comment 2.
             }
             `,
-			name: &ir.Name{Value: "TestName", Position: &position.Position{
-				StartLine: 7,
-				StartPos:  140,
-				EndLine:   7,
-				EndPos:    141,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("TestName")}},
+				Position: &position.Position{
+					StartLine: 7,
+					StartPos:  140,
+					EndLine:   7,
+					EndPos:    141,
+				},
+			},
 			expect: "\\Test2\\TestName",
 		},
 		"mixed": {
@@ -165,12 +184,15 @@ func TestFQNTraverser(t *testing.T) {
             use Test\Aliassed as Alias;
             // some comment 2.
             `,
-			name: &ir.Name{Value: "Alias", Position: &position.Position{
-				StartLine: 6,
-				StartPos:  130,
-				EndLine:   6,
-				EndPos:    131,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("Alias")}},
+				Position: &position.Position{
+					StartLine: 6,
+					StartPos:  130,
+					EndLine:   6,
+					EndPos:    131,
+				},
+			},
 			expect: "\\Test\\Aliassed",
 		},
 		"block with use statement": {
@@ -181,12 +203,15 @@ func TestFQNTraverser(t *testing.T) {
                 // Some comment.
             }
             `,
-			name: &ir.Name{Value: "Test", Position: &position.Position{
-				StartLine: 4,
-				StartPos:  60,
-				EndLine:   4,
-				EndPos:    61,
-			}},
+			name: &ast.Name{
+				Parts: []ast.Vertex{&ast.NamePart{Value: []byte("Test")}},
+				Position: &position.Position{
+					StartLine: 4,
+					StartPos:  60,
+					EndLine:   4,
+					EndPos:    61,
+				},
+			},
 			expect: "\\Testing\\Test",
 		},
 	}
@@ -199,11 +224,12 @@ func TestFQNTraverser(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
 
-			root, err := parser.Parse(test.code)
+			root, err := parser.Parse([]byte(test.code))
 			is.NoErr(err)
 
 			fqnt := fqn.NewTraverser()
-			root.Walk(fqnt)
+			fqntt := traverser.NewTraverser(fqnt)
+			root.Accept(fqntt)
 
 			result := fqnt.ResultFor(test.name)
 			is.Equal(result.String(), test.expect)

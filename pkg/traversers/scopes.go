@@ -1,27 +1,29 @@
 package traversers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
 type ScopesTraverser struct {
-	subject     ir.Node
-	Block       ir.Node
-	Class       ir.Node
+	visitor.Null
+	subject     ast.Vertex
+	Block       ast.Vertex
+	Class       ast.Vertex
 	rootVisited bool
 	Done        bool
 }
 
-func NewScopesTraverser(subject ir.Node) *ScopesTraverser {
+func NewScopesTraverser(subject ast.Vertex) *ScopesTraverser {
 	return &ScopesTraverser{
 		subject: subject,
 	}
 }
 
-func (s *ScopesTraverser) EnterNode(node ir.Node) bool {
+func (s *ScopesTraverser) EnterNode(node ast.Vertex) bool {
 	if !s.rootVisited {
-		if _, ok := node.(*ir.Root); !ok {
+		if _, ok := node.(*ast.Root); !ok {
 			panic("ScopesTraverser only works on the root")
 		}
 
@@ -41,15 +43,13 @@ func (s *ScopesTraverser) EnterNode(node ir.Node) bool {
 		return false
 	}
 
-	if nodescopes.IsClassLike(ir.GetNodeKind(node)) {
+	if nodescopes.IsClassLike(node.GetType()) {
 		s.Class = node
 	}
 
-	if nodescopes.IsScope(ir.GetNodeKind(node)) {
+	if nodescopes.IsScope(node.GetType()) {
 		s.Block = node
 	}
 
 	return true
 }
-
-func (s *ScopesTraverser) LeaveNode(node ir.Node) {}

@@ -1,7 +1,9 @@
 package traversers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
@@ -12,14 +14,14 @@ func NewFunction(name string) *Function {
 	}
 }
 
-// Function implements ir.Visitor.
 type Function struct {
+	visitor.Null
 	name           string
-	Function       *ir.FunctionStmt
+	Function       *ast.StmtFunction
 	currNodeIsRoot bool
 }
 
-func (f *Function) EnterNode(node ir.Node) bool {
+func (f *Function) EnterNode(node ast.Vertex) bool {
 	defer func() { f.currNodeIsRoot = false }()
 
 	if f.Function != nil {
@@ -28,22 +30,19 @@ func (f *Function) EnterNode(node ir.Node) bool {
 
 	// If the scope of the traverser is a function, the first call will be a
 	// function which we need to ignore.
-	kind := ir.GetNodeKind(node)
-	if f.currNodeIsRoot && kind == ir.KindFunctionStmt {
+	if f.currNodeIsRoot && node.GetType() == ast.TypeStmtFunction {
 		return true
 	}
 
-	if function, ok := node.(*ir.FunctionStmt); ok {
-		if function.FunctionName.Value == f.name {
-			f.Function = function
-		}
-	}
-
-	if nodescopes.IsScope(ir.GetNodeKind(node)) {
+	if nodescopes.IsScope(node.GetType()) {
 		return false
 	}
 
 	return true
 }
 
-func (f *Function) LeaveNode(ir.Node) {}
+func (f *Function) StmtFunction(node *ast.StmtFunction) {
+	if nodeident.Get(node) == f.name {
+		f.Function = node
+	}
+}

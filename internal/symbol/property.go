@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
@@ -18,10 +19,10 @@ type Property struct {
 	*doxed
 
 	cls  *ClassLike
-	node *ir.PropertyListStmt
+	node *ast.StmtPropertyList
 }
 
-func NewProperty(cls *ClassLike, node *ir.PropertyListStmt) *Property {
+func NewProperty(cls *ClassLike, node *ast.StmtPropertyList) *Property {
 	return &Property{
 		cls:      cls,
 		node:     node,
@@ -34,7 +35,7 @@ func (p *Property) Name() string {
 	return nodeident.Get(p.node)
 }
 
-func (p *Property) Node() *ir.PropertyListStmt {
+func (p *Property) Node() *ast.StmtPropertyList {
 	return p.node
 }
 
@@ -85,7 +86,8 @@ func (p *Property) ClsType() ([]*phpdoxer.TypeClassLike, error) {
 	}
 
 	fqnt := fqn.NewTraverser()
-	cls.Root().Walk(fqnt)
+	tv := traverser.NewTraverser(fqnt)
+	cls.Root().Accept(tv)
 
 	return doxcontext.ApplyContext(fqnt, cls.GetFQN(), p.node.Position, doc), nil
 }

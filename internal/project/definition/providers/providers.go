@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/internal/project/definition"
@@ -13,7 +12,7 @@ func DefineExpr(ctx *context.Ctx) ([]*definition.Definition, error) {
 		res != nil {
 		return []*definition.Definition{{
 			Path:       res.Path,
-			Position:   ir.GetPosition(res.Node),
+			Position:   res.Node.GetPosition(),
 			Identifier: nodeident.Get(res.Node),
 		}}, nil
 	}

@@ -1,7 +1,6 @@
 package stubtransform
 
 import (
-	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
@@ -10,13 +9,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/VKCOM/noverify/src/ir/irconv"
 	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
 	"github.com/VKCOM/php-parser/pkg/errors"
 	"github.com/VKCOM/php-parser/pkg/parser"
 	"github.com/VKCOM/php-parser/pkg/version"
-	"github.com/laytan/elephp/pkg/irfmt"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"golang.org/x/sync/errgroup"
 )
@@ -194,15 +191,16 @@ func (w *Walker) TransformFile(transformers []ast.Visitor, path string, finalPat
 	// f := formatter.NewFormatter()
 	// ast.Accept(f)
 
-	writer := bufio.NewWriter(file)
-	ir := irconv.ConvertNode(ast)
-	irfmt.NewPrettyPrinter(writer, "    ").Print(ir)
-	err = writer.Flush()
-	if err != nil {
-		return fmt.Errorf("writing remaining buffer: %w", err)
-	}
+	panic("unimplemented")
+	// writer := bufio.NewWriter(file)
+	// ir := irconv.ConvertNode(ast)
+	// irfmt.NewPrettyPrinter(writer, "    ").Print(ir)
+	// err = writer.Flush()
+	// if err != nil {
+	// 	return fmt.Errorf("writing remaining buffer: %w", err)
+	// }
 
-	return nil
+	// return nil
 }
 
 func outPath(stubsDir string, outDir string, path string, version string) string {

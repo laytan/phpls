@@ -1,7 +1,8 @@
 package symbol
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/nodeident"
@@ -63,7 +64,7 @@ func (c *ClassLike) InheritsIter() InheritsIterFunc {
 			if sliceType == inheritTypeUses {
 				// A class can only extend one class, for easier logic, add it
 				// to a temporary slice.
-				slice = []*ir.Name{}
+				slice = []*ast.Name{}
 				if c.inheritor.Extends() != nil {
 					slice = append(slice, c.inheritor.Extends())
 				}
@@ -104,11 +105,12 @@ func (c *ClassLike) InheritsIter() InheritsIterFunc {
 }
 
 type inheritsTraverser struct {
+	visitor.Null
 	target *fqn.FQN
 
-	uses       []*ir.Name
-	extends    *ir.Name
-	implements []*ir.Name
+	uses       []*ast.Name
+	extends    *ast.Name
+	implements []*ast.Name
 
 	currNamespace string
 }
@@ -119,50 +121,43 @@ func newInheritsTraverser(target *fqn.FQN) *inheritsTraverser {
 	}
 }
 
-func (t *inheritsTraverser) EnterNode(node ir.Node) bool {
-	switch typedNode := node.(type) {
-	case *ir.Root:
+func (t *inheritsTraverser) EnterNode(node ast.Vertex) bool {
+	switch node.(type) {
+	case *ast.Root:
 		return true
 
-	case *ir.NamespaceStmt:
-		t.currNamespace = typedNode.NamespaceName.Value
+	case *ast.StmtNamespace:
+		t.currNamespace = nodeident.Get(node)
 		return t.currNamespace == t.target.Namespace()
 
 	default:
 		// Don't go into scopes that are not necessary.
-		if nodescopes.IsNonClassLikeScope(ir.GetNodeKind(node)) {
+		if nodescopes.IsNonClassLikeScope(node.GetType()) {
 			return false
 		}
 
 		// Don't go into classes that don't match target.
-		if nodescopes.IsClassLike(ir.GetNodeKind(node)) {
+		if nodescopes.IsClassLike(node.GetType()) {
 			if nodeident.Get(node) != t.target.Name() {
 				return false
 			}
 		}
 
 		switch typedNode := node.(type) {
-		case *ir.TraitUseStmt:
+		case *ast.StmtTraitUse:
 			t.uses = append(t.uses, functional.MapFilter(typedNode.Traits, nodeToName)...)
 			return false
-
-		case *ir.ClassExtendsStmt:
-			t.extends = typedNode.ClassName
+		case *ast.StmtClass:
+			t.implements = append(t.implements, functional.MapFilter(typedNode.Implements, nodeToName)...)
+			if typedNode.Extends != nil {
+				t.extends = typedNode.Extends.(*ast.Name)
+			}
 			return false
-
-		case *ir.ClassImplementsStmt:
-			t.implements = append(t.implements, functional.MapFilter(typedNode.InterfaceNames, nodeToName)...)
+		case *ast.StmtInterface:
+			t.implements = append(t.implements, functional.MapFilter(typedNode.Extends, nodeToName)...)
 			return false
-
-		case *ir.InterfaceExtendsStmt:
-			t.implements = append(t.implements, functional.MapFilter(typedNode.InterfaceNames, nodeToName)...)
-			return false
-
 		default:
 			return true
 		}
 	}
-}
-
-func (t *inheritsTraverser) LeaveNode(ir.Node) {
 }
