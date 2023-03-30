@@ -1,8 +1,10 @@
 package index
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/position"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
 )
@@ -12,26 +14,26 @@ type INode struct {
 	Path       string
 	Position   *position.Position
 	Identifier string
-	Kind       ir.NodeKind
+	Kind       ast.Type
 }
 
-func NewINode(fqns *fqn.FQN, path string, node ir.Node) *INode {
+func NewINode(fqns *fqn.FQN, path string, node ast.Vertex) *INode {
 	return &INode{
 		FQN:        fqns,
 		Path:       path,
-		Position:   ir.GetPosition(node),
+		Position:   node.GetPosition(),
 		Identifier: nodeident.Get(node),
-		Kind:       ir.GetNodeKind(node),
+		Kind:       node.GetType(),
 	}
 }
 
-func (i *INode) MatchesKind(kinds ...ir.NodeKind) bool {
+func (i *INode) MatchesKind(kinds ...ast.Type) bool {
 	if len(kinds) == 0 {
 		return true
 	}
 
 	for _, kind := range kinds {
-		if kind == ir.KindRoot {
+		if kind == ast.TypeRoot {
 			return true
 		}
 
@@ -43,26 +45,27 @@ func (i *INode) MatchesKind(kinds ...ir.NodeKind) bool {
 	return false
 }
 
-func (i *INode) ToIRNode(root ir.Node) ir.Node {
+func (i *INode) ToIRNode(root *ast.Root) ast.Vertex {
 	t := &toNodeTraverser{
 		Node: i,
 	}
-	root.Walk(t)
-
+	tv := traverser.NewTraverser(t)
+	root.Accept(tv)
 	return t.Result
 }
 
 type toNodeTraverser struct {
-	Result ir.Node
+	visitor.Null
+	Result ast.Vertex
 	Node   *INode
 }
 
-func (t *toNodeTraverser) EnterNode(node ir.Node) bool {
+func (t *toNodeTraverser) EnterNode(node ast.Vertex) bool {
 	if t.Result != nil {
 		return false
 	}
 
-	if ir.GetNodeKind(node) != t.Node.Kind {
+	if node.GetType() != t.Node.Kind {
 		return true
 	}
 
@@ -70,7 +73,7 @@ func (t *toNodeTraverser) EnterNode(node ir.Node) bool {
 		return true
 	}
 
-	nPos := ir.GetPosition(node)
+	nPos := node.GetPosition()
 	sPos := t.Node.Position
 	if sPos.StartPos != nPos.StartPos || sPos.EndPos != nPos.EndPos ||
 		sPos.StartLine != nPos.StartLine ||
@@ -81,5 +84,3 @@ func (t *toNodeTraverser) EnterNode(node ir.Node) bool {
 	t.Result = node
 	return false
 }
-
-func (t *toNodeTraverser) LeaveNode(ir.Node) {}

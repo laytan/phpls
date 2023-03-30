@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
 
@@ -17,10 +19,10 @@ type Variable struct {
 
 	*doxed
 
-	node *ir.SimpleVar
+	node *ast.ExprVariable
 }
 
-func NewVariable(root rooter, node *ir.SimpleVar) *Variable {
+func NewVariable(root rooter, node *ast.ExprVariable) *Variable {
 	return &Variable{
 		rooter: root,
 		doxed:  NewDoxed(node),
@@ -47,11 +49,12 @@ func (v *Variable) TypeCls(currFqn *fqn.FQN) ([]*phpdoxer.TypeClassLike, error) 
 	}
 
 	fqnt := fqn.NewTraverser()
-	v.Root().Walk(fqnt)
+	tv := traverser.NewTraverser(fqnt)
+	v.Root().Accept(tv)
 
 	return doxcontext.ApplyContext(fqnt, currFqn, v.node.Position, doc), nil
 }
 
 func (v *Variable) Name() string {
-	return v.node.Name
+	return nodeident.Get(v.node)
 }

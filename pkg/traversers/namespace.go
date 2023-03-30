@@ -1,38 +1,37 @@
 package traversers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
-func NewNamespace(row uint) *Namespace {
+func NewNamespace(row int) *Namespace {
 	return &Namespace{
 		row: row,
 	}
 }
 
-func NewNamespaceFromNode(node ir.Node) *Namespace {
-	return NewNamespace(uint(ir.GetPosition(node).StartLine))
+func NewNamespaceFromNode(node ast.Vertex) *Namespace {
+	return NewNamespace(node.GetPosition().StartLine)
 }
 
-// Namespace implements ir.Visitor.
 type Namespace struct {
-	row    uint
-	Result *ir.NamespaceStmt
+	visitor.Null
+	row    int
+	Result *ast.StmtNamespace
 }
 
-func (n *Namespace) EnterNode(node ir.Node) bool {
+func (n *Namespace) EnterNode(node ast.Vertex) bool {
 	// Stop after given row.
-	if ir.GetPosition(node).StartLine >= int(n.row) {
+	if node.GetPosition().StartLine >= int(n.row) {
 		return false
 	}
 
-	if ns, ok := node.(*ir.NamespaceStmt); ok {
-		n.Result = ns
-	}
-
 	// Don't go into scopes, namespace is always top level.
-	return !nodescopes.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(node.GetType())
 }
 
-func (n *Namespace) LeaveNode(ir.Node) {}
+func (n *Namespace) StmtNamespace(node *ast.StmtNamespace) {
+	n.Result = node
+}

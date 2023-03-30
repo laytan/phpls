@@ -7,7 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/parsing"
@@ -46,7 +47,7 @@ type Index interface {
 	//
 	// Giving this no kinds will return any kind.
 	// A max of 0 or passing ir.KindRoot will return everything.
-	FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*INode
+	FindPrefix(prefix string, max int, kind ...ast.Type) []*INode
 }
 
 type index struct {
@@ -89,7 +90,7 @@ func (i *index) Index(path string, content string) error {
 		}
 	}()
 
-	root, err := i.parser(path).Parse(content)
+	root, err := i.parser(path).Parse([]byte(content))
 	if err != nil {
 		return fmt.Errorf(errParseFmt, path, err)
 	}
@@ -106,11 +107,19 @@ func (i *index) Index(path string, content string) error {
 			}
 		}()
 
-		root.Walk(t)
+		tv := traverser.NewTraverser(t)
+		root.Accept(tv)
 	}()
 
 	for node := range nodes {
 		i.symbolTrie.Put(node.FQN, node)
+		// log.Printf(
+		// 	"[%s:%4d:%4d]: %s",
+		// 	node.Path[len(node.Path)-25:], // Panics with paths < 25ch
+		// 	node.Position.StartLine,
+		// 	node.Position.StartCol,
+		// 	node.FQN.String(),
+		// )
 	}
 
 	i.symbolTraversers.Put(t)
@@ -123,7 +132,7 @@ func (i *index) Find(key *fqn.FQN) (*INode, bool) {
 	return i.symbolTrie.SearchExact(key)
 }
 
-func (i *index) FindPrefix(prefix string, max int, kind ...ir.NodeKind) []*INode {
+func (i *index) FindPrefix(prefix string, max int, kind ...ast.Type) []*INode {
 	results := i.symbolTrie.SearchNames(prefix, max)
 
 	values := make([]*INode, 0, len(results))
@@ -156,7 +165,7 @@ func (i *index) Delete(path string) error {
 		return fmt.Errorf(errParseFmt, path, err)
 	}
 
-	prevRoot, err := parser.Parse(content)
+	prevRoot, err := parser.Parse([]byte(content))
 	if err != nil {
 		return fmt.Errorf(errParseFmt, path, err)
 	}
@@ -164,7 +173,8 @@ func (i *index) Delete(path string) error {
 	nodes := make(chan *INode, 25)
 	removeTraverser := i.symbolTraversers.Get().(*INodeTraverser)
 	removeTraverser.Reset(path, nodes)
-	prevRoot.Walk(removeTraverser)
+	tv := traverser.NewTraverser(removeTraverser)
+	prevRoot.Accept(tv)
 	i.symbolTraversers.Put(removeTraverser)
 
 	j := 0

@@ -3,7 +3,8 @@ package traversers
 import (
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/phprivacy"
@@ -21,67 +22,68 @@ func NewClassLikeConstant(
 	}
 }
 
-// ClassLikeConstant implements ir.Visitor.
 type ClassLikeConstant struct {
-	ClassLikeConstant *ir.ClassConstListStmt
+	visitor.Null
+	ClassLikeConstant *ast.StmtClassConstList
 	name              string
 	classLikeName     string
 	privacy           phprivacy.Privacy
 }
 
-func (m *ClassLikeConstant) EnterNode(node ir.Node) bool {
+func (m *ClassLikeConstant) EnterNode(node ast.Vertex) bool {
 	if m.ClassLikeConstant != nil {
 		return false
 	}
 
-	switch typedNode := node.(type) {
 	// Only parse a class-like node if the name matches (for multiple classes in a file).
-	case *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
+	if nodescopes.IsClassLike(node.GetType()) {
 		return nodeident.Get(node) == m.classLikeName
+	}
 
-	case *ir.ClassConstListStmt:
-		hasConst := false
-		for _, constNode := range typedNode.Consts {
-			typedConstNode, ok := constNode.(*ir.ConstantStmt)
-			if !ok {
-				log.Printf("Unexpected node type %T for constant, expecting *ir.ConstantStmt", constNode)
-				continue
-			}
+	return !nodescopes.IsScope(node.GetType())
+}
 
-			if typedConstNode.ConstantName.Value == m.name {
-				hasConst = true
-			}
+func (m *ClassLikeConstant) StmtClassConstList(constList *ast.StmtClassConstList) {
+	hasConst := false
+	for _, constNode := range constList.Consts {
+		typedConstNode, ok := constNode.(*ast.StmtConstant)
+		if !ok {
+			log.Printf(
+				"Unexpected node type %T for constant, expecting *ast.StmtConstant",
+				constNode,
+			)
+			continue
 		}
 
-		if !hasConst {
-			return false
-		}
-
-		hasPrivacy := false
-		for _, mod := range typedNode.Modifiers {
-			privacy, err := phprivacy.FromString(mod.Value)
-			if err != nil {
-				continue
-			}
-
-			hasPrivacy = true
-
-			if !m.privacy.CanAccess(privacy) {
-				continue
-			}
-
-			m.ClassLikeConstant = typedNode
-			return false
-		}
-
-		// No privacy, means public privacy, means accessible.
-		if !hasPrivacy {
-			m.ClassLikeConstant = typedNode
-			return false
+		if nodeident.Get(typedConstNode.Name) == m.name {
+			hasConst = true
 		}
 	}
 
-	return !nodescopes.IsScope(ir.GetNodeKind(node))
-}
+	if !hasConst {
+		return
+	}
 
-func (m *ClassLikeConstant) LeaveNode(ir.Node) {}
+	hasPrivacy := false
+	for _, mod := range constList.Modifiers {
+		privacy, err := phprivacy.FromString(nodeident.Get(mod))
+		if err != nil {
+			continue
+		}
+
+		hasPrivacy = true
+
+		if !m.privacy.CanAccess(privacy) {
+			continue
+		}
+
+		m.ClassLikeConstant = constList
+		return
+	}
+
+	// No privacy, means public privacy, means accessible.
+	if !hasPrivacy {
+		m.ClassLikeConstant = constList
+		return
+	}
+}

@@ -1,21 +1,22 @@
 package fqn
 
 import (
-	"fmt"
-	"log"
+	"strings"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/position"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
-// Traverser implements ir.Visitor.
 type Traverser struct {
+	visitor.Null
 	namespaces []*namespace
 
-	block      ir.Node
-	blockClass *ir.ClassStmt
+	block      ast.Vertex
+	blockClass *ast.StmtClass
 }
 
 func NewTraverser() *Traverser {
@@ -23,78 +24,80 @@ func NewTraverser() *Traverser {
 }
 
 // A FQNTraverser that handles keywords like self or static.
-func NewTraverserHandlingKeywords(block ir.Node) *Traverser {
+func NewTraverserHandlingKeywords(block ast.Vertex) *Traverser {
 	return &Traverser{block: block, namespaces: []*namespace{globalNamespace()}}
 }
 
-func (f *Traverser) ResultFor(name *ir.Name) *FQN {
+func (f *Traverser) ResultFor2(position *position.Position, name string) *FQN {
+	return f.ResultFor(&ast.Name{
+		Position: position,
+		Parts: functional.Map(
+			strings.Split(name, "\\"),
+			func(s string) ast.Vertex { return &ast.NamePart{Value: []byte(s)} },
+		),
+	})
+}
+
+func (f *Traverser) ResultFor(name ast.Vertex) *FQN {
+	nv := nodeident.Get(name)
 	// Handle self and static by returning the class the block is in.
 	if f.block != nil && f.blockClass != nil {
-		if name.Value == "self" || name.Value == "static" {
-			name.Value = f.blockClass.ClassName.Value
+		if nv == "self" || nv == "static" {
+			nv = nodeident.Get(f.blockClass)
 		}
 	}
 
-	if name.IsFullyQualified() {
-		return New(name.Value)
-	}
-
-	if name.Position == nil {
-		log.Panic(fmt.Errorf(
-			"[fqn.Traverser.ResultFor(%v)]: given a name without a position is discouraged because it could return wrong results if the file has multiple namespaces defined",
-			name,
-		))
+	if nv[0] == '\\' {
+		return New(nv)
 	}
 
 	// Default to first namespace.
 	ns := f.namespaces[0]
 
-	// If no position is defined, use the last namespace as the namespace.
-	// NOTE: This can be wrong if there are multiple namespaces defined in the file though.
-	if name.Position == nil {
-		ns = f.namespaces[len(f.namespaces)-1]
-	}
-
-	if name.Position != nil {
-		// If any other namespace contains the given name, use that one.
-		for _, possibleNs := range f.namespaces {
-			if possibleNs.Contains(name.Position) {
-				ns = possibleNs
-				break
-			}
+	// If any other namespace contains the given name, use that one.
+	for _, possibleNs := range f.namespaces {
+		if possibleNs.Contains(name.GetPosition()) {
+			ns = possibleNs
+			break
 		}
 	}
+
+	parts := strings.Split(nv, "\\")
+	cn := parts[len(parts)-1]
 
 	// If any use statement ends with the class name, use that.
 	for _, usage := range ns.uses {
+		useIdent := nodeident.Get(usage.Use)
 		if usage.Alias != nil {
-			if usage.Alias.Value == name.LastPart() {
-				return New(PartSeperator + usage.Use.Value)
+			if nodeident.Get(usage.Alias) == cn {
+				return New(PartSeperator + useIdent)
 			}
 		}
 
-		if usage.Use.LastPart() == name.LastPart() {
-			return New(PartSeperator + usage.Use.Value)
+		useParts := strings.Split(useIdent, "\\")
+		un := useParts[len(useParts)-1]
+		if un == cn {
+			return New(PartSeperator + useIdent)
 		}
 	}
 
 	// Else use namespace+class name.
 	if ns.ns != "" {
-		return New(PartSeperator + ns.ns + PartSeperator + name.LastPart())
+		return New(ns.ns + PartSeperator + cn)
 	}
 
 	// Else use class name.
-	return New(PartSeperator + name.LastPart())
+	return New(PartSeperator + cn)
 }
 
-func (f *Traverser) EnterNode(node ir.Node) bool {
+func (f *Traverser) EnterNode(node ast.Vertex) bool {
 	switch typedNode := node.(type) {
-	case *ir.ClassStmt:
+	case *ast.StmtClass:
 		if f.block == nil {
 			return false
 		}
 
-		bPos := ir.GetPosition(f.block)
+		bPos := f.block.GetPosition()
 		nPos := typedNode.Position
 
 		if posContainsPos(nPos, bPos) {
@@ -103,16 +106,16 @@ func (f *Traverser) EnterNode(node ir.Node) bool {
 
 		return false
 
-	case *ir.UseStmt:
+	case *ast.StmtUse:
 		currNs := f.namespaces[len(f.namespaces)-1]
 		currNs.uses = append(currNs.uses, typedNode)
 
 		return false
 
-	case *ir.NamespaceStmt:
+	case *ast.StmtNamespace:
 		ns := &namespace{
 			ns:   nodeident.Get(typedNode),
-			uses: []*ir.UseStmt{},
+			uses: []*ast.StmtUse{},
 			pos:  &position.Position{},
 		}
 
@@ -144,15 +147,13 @@ func (f *Traverser) EnterNode(node ir.Node) bool {
 		return true
 
 	default:
-		return !nodescopes.IsScope(ir.GetNodeKind(typedNode))
+		return !nodescopes.IsScope(typedNode.GetType())
 	}
 }
 
-func (f *Traverser) LeaveNode(ir.Node) {}
-
 type namespace struct {
 	ns   string
-	uses []*ir.UseStmt
+	uses []*ast.StmtUse
 	pos  *position.Position
 }
 
@@ -174,7 +175,7 @@ func posContainsPos(pos *position.Position, pos2 *position.Position) bool {
 func globalNamespace() *namespace {
 	return &namespace{
 		ns:   "",
-		uses: []*ir.UseStmt{},
+		uses: []*ast.StmtUse{},
 		pos:  &position.Position{},
 	}
 }

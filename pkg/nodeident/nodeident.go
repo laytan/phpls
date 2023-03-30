@@ -2,129 +2,140 @@ package nodeident
 
 import (
 	"log"
+	"strings"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/elephp/pkg/nodevar"
 )
 
 // Returns the identifier/value of a node.
 //
 // NOTE: To be extended when needed.
-func Get(n ir.Node) string {
-	switch n := n.(type) {
-	case *ir.Argument:
-		return n.Name.Value
-
-	case *ir.ClassConstFetchExpr:
-		return n.ConstantName.Value
-
-	case *ir.ClassExtendsStmt:
-		return n.ClassName.Value
-
-	case *ir.ClassMethodStmt:
-		return n.MethodName.Value
-
-	case *ir.ClassStmt:
-		return n.ClassName.Value
-
-	case *ir.ConstFetchExpr:
-		return n.Constant.Value
-
-	case *ir.ConstantStmt:
-		return n.ConstantName.Value
-
-	case *ir.FunctionCallExpr:
-		name, ok := n.Function.(*ir.Name)
-		if !ok {
-			return ""
-		}
-
-		return name.Value
-
-	case *ir.FunctionStmt:
-		return n.FunctionName.Value
-
-	case *ir.Identifier:
-		return n.Value
-
-	case *ir.InterfaceStmt:
-		return n.InterfaceName.Value
-
-	case *ir.MagicConstant:
-		return n.Value
-
-	case *ir.Name:
-		return n.Value
-
-	case *ir.NamespaceStmt:
-		if n.NamespaceName != nil {
-			return n.NamespaceName.Value
-		}
-
+// TODO: return bytes.
+func Get(n ast.Vertex) string {
+	if n == nil {
+		log.Println("Warning: nodeident.Get with nil node")
 		return ""
+	}
 
-	case *ir.Parameter:
-		return n.Variable.Name
+	if nodevar.IsAssignment(n.GetType()) {
+		assignment := nodevar.Assigned(n)
+		if len(assignment) > 1 {
+			log.Printf("Warning: nodeident.Get with assignment to multiple variables: %v", n)
+		}
 
-	case *ir.PropertyStmt:
-		return n.Variable.Name
+		return Get(assignment[0])
+	}
 
-	case *ir.PropertyListStmt:
-		if len(n.Properties) > 1 || len(n.Properties) == 0 {
+	switch n := n.(type) {
+	case *ast.Argument:
+		return Get(n.Name)
+
+	case *ast.ExprClassConstFetch:
+		return Get(n.Const)
+
+	case *ast.StmtClassMethod:
+		return Get(n.Name)
+
+	case *ast.StmtClass:
+		return Get(n.Name)
+
+	case *ast.ExprConstFetch:
+		return Get(n.Const)
+
+	case *ast.StmtConstant:
+		return Get(n.Name)
+
+	case *ast.ExprFunctionCall:
+		return Get(n.Function)
+
+	case *ast.StmtFunction:
+		return Get(n.Name)
+
+	case *ast.StmtInterface:
+		return Get(n.Name)
+
+	case *ast.Name:
+		return strings.Join(functional.Map(n.Parts, Get), "\\")
+
+	case *ast.NameFullyQualified:
+		return "\\" + strings.Join(functional.Map(n.Parts, Get), "\\")
+
+	case *ast.NameRelative:
+		return "\\" + strings.Join(functional.Map(n.Parts, Get), "\\")
+
+	case *ast.StmtNamespace:
+		if n.Name == nil {
+			return "\\"
+		}
+
+		return "\\" + Get(n.Name)
+
+	case *ast.Parameter:
+		return Get(n.Var)
+
+	case *ast.StmtProperty:
+		return Get(n.Var)
+
+	case *ast.StmtPropertyList:
+		if len(n.Props) > 1 || len(n.Props) == 0 {
 			log.Panicf("PropertyListStmt has > 1 || 0 properties, how does this work?")
 		}
 
-		return Get(n.Properties[0])
+		return Get(n.Props[0])
 
-	case *ir.ClassConstListStmt:
+	case *ast.StmtClassConstList:
 		if len(n.Consts) > 1 || len(n.Consts) == 0 {
 			log.Printf("Trying to get identifier of *ir.ClassConstListStmt but there are %d possibilities", len(n.Consts))
 		}
 
 		return Get(n.Consts[0])
 
-	case *ir.SimpleVar:
-		return n.Name
+	case *ast.ExprVariable:
+		return Get(n.Name)
 
-	case *ir.StaticVarStmt:
-		return n.Variable.Name
+	case *ast.StmtStaticVar:
+		return Get(n.Var)
 
-	case *ir.String:
-		return n.Value
+	case *ast.StmtTrait:
+		return Get(n.Name)
 
-	case *ir.TraitMethodRefStmt:
-		return n.Method.Value
+	case *ast.StmtTraitUseAlias:
+		return Get(n.Alias)
 
-	case *ir.TraitStmt:
-		return n.TraitName.Value
+	case *ast.StmtUse:
+		return Get(n.Use)
 
-	case *ir.TraitUseAliasStmt:
-		return n.Alias.Value
+	case *ast.ExprMethodCall:
+		return Get(n.Method)
 
-	case *ir.UseStmt:
-		return n.Use.Value
+	case *ast.ExprNullsafeMethodCall:
+		return Get(n.Method)
 
-	case *ir.Assign:
-		if a, ok := n.Variable.(*ir.SimpleVar); ok {
-			return a.Name
-		}
+	case *ast.ExprPropertyFetch:
+		return Get(n.Var)
 
-		return ""
+	case *ast.ExprNullsafePropertyFetch:
+		return Get(n.Var)
 
-	case *ir.MethodCallExpr:
-		if i, ok := n.Method.(*ir.Identifier); ok {
-			return i.Value
-		}
+	case *ast.ExprStaticCall:
+		return Get(n.Call)
 
-		return ""
+	case *ast.ScalarString:
+		return string(n.Value)
 
-	case *ir.StaticCallExpr:
-		if c, ok := n.Call.(*ir.Identifier); ok {
-			return c.Value
-		}
+	case *ast.ScalarMagicConstant:
+		return string(n.Value)
 
-		return ""
+	case *ast.Identifier:
+		return string(n.Value)
+
+	case *ast.NamePart:
+		return string(n.Value)
 
 	default:
+		log.Printf("Warning: unimplemented nodeident case for node type %T", n)
 		return ""
 	}
 }

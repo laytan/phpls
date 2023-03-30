@@ -1,7 +1,7 @@
 package expr
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/phprivacy"
 )
 
@@ -17,7 +17,7 @@ type iteration struct {
 // by PHP.
 func determinePrivacy(
 	startPrivacy phprivacy.Privacy,
-	currKind ir.NodeKind,
+	currKind ast.Type,
 	iteration *iteration,
 ) phprivacy.Privacy {
 	actPrivacy := startPrivacy
@@ -31,7 +31,7 @@ func determinePrivacy(
 	// If this is a trait, and it is used from the first class,
 	// private methods are also accessible.
 	if iteration.firstClass && actPrivacy == phprivacy.PrivacyProtected &&
-		currKind == ir.KindTraitStmt {
+		currKind == ast.TypeStmtTrait {
 		actPrivacy = phprivacy.PrivacyPrivate
 	}
 

@@ -4,13 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/noverify/src/ir"
-	"github.com/VKCOM/noverify/src/ir/irconv"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/VKCOM/php-parser/pkg/conf"
 	astErrors "github.com/VKCOM/php-parser/pkg/errors"
 	astParser "github.com/VKCOM/php-parser/pkg/parser"
@@ -32,7 +30,7 @@ var ErrNoContent = errors.New(
 // file system access and parsing file content into
 // IR for use everywhere else.
 type Parser interface {
-	Parse(content string) (*ir.Root, error)
+	Parse(content []byte) (*ast.Root, error)
 
 	Read(path string) (string, error)
 
@@ -58,9 +56,9 @@ func New(phpv *phpversion.PHPVersion) Parser {
 	}
 }
 
-func (p *parser) Parse(content string) (*ir.Root, error) {
-	ast, err := astParser.Parse([]byte(content), p.config)
-	if err != nil || ast == nil {
+func (p *parser) Parse(content []byte) (*ast.Root, error) {
+	a, err := astParser.Parse(content, p.config)
+	if err != nil || a == nil {
 		if err == nil {
 			return nil, ErrNoContent
 		}
@@ -68,15 +66,7 @@ func (p *parser) Parse(content string) (*ir.Root, error) {
 		return nil, fmt.Errorf(ErrASTFmt, err)
 	}
 
-	irNode := irconv.ConvertNode(ast)
-	root, ok := irNode.(*ir.Root)
-	if !ok {
-		what.Is(ast)
-		what.Is(root)
-		log.Panic(fmt.Errorf("Top level node is not the root, content: %s", content))
-	}
-
-	return root, nil
+	return a.(*ast.Root), nil
 }
 
 func (p *parser) Read(path string) (string, error) {

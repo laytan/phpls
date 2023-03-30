@@ -1,6 +1,7 @@
 package fqn
 
 import (
+	"log"
 	"strings"
 )
 
@@ -13,7 +14,11 @@ type FQN struct {
 
 func New(value string) *FQN {
 	if value[0:1] != PartSeperator {
-		panic("Trying to create FQN without a fully qualified input.")
+		value = PartSeperator + value
+		log.Printf(
+			"[TODO]: Find where no suffix of \\ is added: Trying to create FQN without a fully qualified input: %q.",
+			value,
+		) // TODO
 	}
 
 	r := &FQN{value: value}

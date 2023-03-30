@@ -1,7 +1,8 @@
 package providers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/pkg/nodeident"
@@ -16,14 +17,15 @@ func NewVariable() *VariableProvider {
 	return &VariableProvider{}
 }
 
-func (p *VariableProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
-	return kind == ir.KindSimpleVar
+func (p *VariableProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	return kind == ast.TypeExprVariable
 }
 
 // TODO: use DefineExpr.
 func (p *VariableProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
-	t := traversers.NewAssignment(ctx.Current().(*ir.SimpleVar))
-	ctx.Scope().Walk(t)
+	t := traversers.NewAssignment(ctx.Current().(*ast.ExprVariable))
+	tt := traverser.NewTraverser(t)
+	ctx.Scope().Accept(tt)
 
 	if t.Assignment == nil {
 		return nil, definition.ErrNoDefinitionFound

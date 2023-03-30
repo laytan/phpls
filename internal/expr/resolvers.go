@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
@@ -24,18 +24,18 @@ var resolvers = map[Type]ClassResolver{
 type propertyResolver struct{}
 
 func (p *propertyResolver) Down(
-	node ir.Node,
-) (*DownResolvement, ir.Node, bool) {
-	propNode, ok := node.(*ir.PropertyFetchExpr)
+	node ast.Vertex,
+) (*DownResolvement, ast.Vertex, bool) {
+	propNode, ok := node.(*ast.ExprPropertyFetch)
 	if !ok {
 		return nil, nil, false
 	}
 
 	return &DownResolvement{
 		ExprType:   TypeProperty,
-		Identifier: nodeident.Get(propNode.Property),
-		Position:   ir.GetPosition(propNode.Property),
-	}, propNode.Variable, true
+		Identifier: nodeident.Get(propNode.Prop),
+		Position:   propNode.Prop.GetPosition(),
+	}, propNode.Var, true
 }
 
 // Up finds the non-static property toResolve.Identifier inside the ctx class and
@@ -58,7 +58,7 @@ func (p *propertyResolver) Up(
 	}
 
 	prop := cls.FindProperty(
-		symbol.FilterName[*symbol.Property](toResolve.Identifier),
+		symbol.FilterName[*symbol.Property]("$"+toResolve.Identifier),
 		symbol.FilterNotStatic[*symbol.Property](),
 		symbol.FilterCanBeAccessedFrom[*symbol.Property](
 			determinePrivacy(privacy, cls.Kind(), &iteration{
@@ -81,7 +81,7 @@ func (p *propertyResolver) Up(
 		}
 
 		prop := inhCls.FindProperty(
-			symbol.FilterName[*symbol.Property](toResolve.Identifier),
+			symbol.FilterName[*symbol.Property]("$"+toResolve.Identifier),
 			symbol.FilterNotStatic[*symbol.Property](),
 			symbol.FilterCanBeAccessedFrom[*symbol.Property](
 				determinePrivacy(privacy, inhCls.Kind(), &iteration{
@@ -91,7 +91,7 @@ func (p *propertyResolver) Up(
 			),
 		)
 
-		if inhCls.Kind() == ir.KindClassStmt {
+		if inhCls.Kind() == ast.TypeStmtClass {
 			isFirstClass = false
 		}
 
@@ -107,9 +107,9 @@ func (p *propertyResolver) Up(
 type methodResolver struct{}
 
 func (p *methodResolver) Down(
-	node ir.Node,
-) (*DownResolvement, ir.Node, bool) {
-	propNode, ok := node.(*ir.MethodCallExpr)
+	node ast.Vertex,
+) (*DownResolvement, ast.Vertex, bool) {
+	propNode, ok := node.(*ast.ExprMethodCall)
 	if !ok {
 		return nil, nil, false
 	}
@@ -118,7 +118,7 @@ func (p *methodResolver) Down(
 		ExprType:   TypeMethod,
 		Identifier: nodeident.Get(propNode),
 		Position:   propNode.Position,
-	}, propNode.Variable, true
+	}, propNode.Var, true
 }
 
 // Up finds the non-static method toResolve.Identifier inside the ctx class and
@@ -141,9 +141,9 @@ func (p *methodResolver) Up(
 type staticMethodResolver struct{}
 
 func (p *staticMethodResolver) Down(
-	node ir.Node,
-) (*DownResolvement, ir.Node, bool) {
-	propNode, ok := node.(*ir.StaticCallExpr)
+	node ast.Vertex,
+) (*DownResolvement, ast.Vertex, bool) {
+	propNode, ok := node.(*ast.ExprStaticCall)
 	if !ok {
 		return nil, nil, false
 	}
@@ -187,9 +187,9 @@ func (p *staticMethodResolver) Up(
 type classConstResolver struct{}
 
 func (c *classConstResolver) Down(
-	node ir.Node,
-) (resolvement *DownResolvement, next ir.Node, done bool) {
-	constFetch, ok := node.(*ir.ClassConstFetchExpr)
+	node ast.Vertex,
+) (resolvement *DownResolvement, next ast.Vertex, done bool) {
+	constFetch, ok := node.(*ast.ExprClassConstFetch)
 	if !ok {
 		return nil, nil, false
 	}
@@ -197,17 +197,17 @@ func (c *classConstResolver) Down(
 	next = constFetch.Class
 
 	ident := nodeident.Get(constFetch.Class)
-	if ident == "self" || ident == "parent" || ident == "this" || ident == "static" {
-		next = &ir.SimpleVar{
-			Position: ir.GetPosition(next),
-			Name:     ident,
+	if ident == "self" || ident == "parent" || ident == "$this" || ident == "static" {
+		next = &ast.ExprVariable{
+			Position: next.GetPosition(),
+			Name:     &ast.Identifier{Value: []byte(ident)},
 		}
 	}
 
 	return &DownResolvement{
 		ExprType:   TypeClassConstant,
-		Identifier: constFetch.ConstantName.Value,
-		Position:   constFetch.ConstantName.Position,
+		Identifier: nodeident.Get(constFetch.Const),
+		Position:   constFetch.Const.GetPosition(),
 	}, next, true
 }
 
@@ -257,7 +257,7 @@ func (c *classConstResolver) Up(
 			),
 		)
 
-		if inhCls.Kind() == ir.KindClassStmt {
+		if inhCls.Kind() == ast.TypeStmtClass {
 			isFirstClass = false
 		}
 
@@ -305,7 +305,7 @@ func methodUp(
 			continue
 		}
 
-		if inhCls.Kind() == ir.KindClassStmt {
+		if inhCls.Kind() == ast.TypeStmtClass {
 			isFirstClass = false
 		}
 

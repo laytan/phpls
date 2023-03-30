@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/cache"
 	"github.com/laytan/elephp/pkg/parsing"
@@ -66,18 +66,18 @@ type Wrkspc interface {
 
 	// IROf returns the parsed root node of the given path.
 	// If an error occurs, it returns an empty root node, this NEVER returns nil.
-	IROf(path string) (*ir.Root, error)
+	IROf(path string) (*ast.Root, error)
 	// FIROf returns the root of the given path, if an error occurs, it logs it
 	// and returns an empty root node. This never returns nil.
 	// Use IROf for access to the error.
-	FIROf(path string) *ir.Root
+	FIROf(path string) *ast.Root
 
 	// AllOf returns the content & parsed root node of the given path.
 	// If an error occurs, it returns an empty root node, this NEVER returns nil.
-	AllOf(path string) (string, *ir.Root, error)
+	AllOf(path string) (string, *ast.Root, error)
 	// FAllOf returns both the content and root node of the given path.
 	// If an error occurs, it returns an empty root node and string after logging the error.
-	FAllOf(path string) (string, *ir.Root)
+	FAllOf(path string) (string, *ast.Root)
 
 	Refresh(path string) error
 
@@ -91,7 +91,7 @@ func New(phpv *phpversion.PHPVersion, root string, stubs string) Wrkspc {
 	stubParser := parsing.New(phpversion.EightOne())
 
 	files := cache.New[string, *file](contentCacheCapacity)
-	irs := cache.New[string, *ir.Root](irCacheCapacity)
+	irs := cache.New[string, *ast.Root](irCacheCapacity)
 
 	t := time.NewTicker(time.Second * 60)
 	go func() {
@@ -124,7 +124,7 @@ type wrkspc struct {
 	fileExtensions  []string
 	ignoredDirNames []string
 	files           *cache.Cache[string, *file]
-	irs             *cache.Cache[string, *ir.Root]
+	irs             *cache.Cache[string, *ast.Root]
 }
 
 func (w *wrkspc) Root() string {
@@ -212,9 +212,9 @@ func (w *wrkspc) FContentOf(path string) string {
 
 // IROf returns the parsed root node of the given path.
 // If an error occurs, it returns an empty root node, this NEVER returns nil.
-func (w *wrkspc) IROf(path string) (*ir.Root, error) {
-	root := w.irs.Cached(path, func() *ir.Root {
-		what.Happens("Getting fresh IR of %s", path)
+func (w *wrkspc) IROf(path string) (*ast.Root, error) {
+	root := w.irs.Cached(path, func() *ast.Root {
+		what.Happens("Getting fresh AST of %s", path)
 
 		content, err := w.ContentOf(path)
 		if err != nil {
@@ -222,7 +222,7 @@ func (w *wrkspc) IROf(path string) (*ir.Root, error) {
 			return nil
 		}
 
-		root, err := w.parser(path).Parse(content)
+		root, err := w.parser(path).Parse([]byte(content))
 		if err != nil {
 			log.Println(err)
 			return nil
@@ -232,7 +232,7 @@ func (w *wrkspc) IROf(path string) (*ir.Root, error) {
 	})
 
 	if root == nil {
-		return &ir.Root{}, ErrFileNotIndexed
+		return &ast.Root{}, ErrFileNotIndexed
 	}
 
 	return root, nil
@@ -241,7 +241,7 @@ func (w *wrkspc) IROf(path string) (*ir.Root, error) {
 // FIROf returns the root of the given path, if an error occurs, it logs it
 // and returns an empty root node. This never returns nil.
 // Use IROf for access to the error.
-func (w *wrkspc) FIROf(path string) *ir.Root {
+func (w *wrkspc) FIROf(path string) *ast.Root {
 	root, err := w.IROf(path)
 	if err != nil {
 		log.Println(err)
@@ -252,7 +252,7 @@ func (w *wrkspc) FIROf(path string) *ir.Root {
 
 // AllOf returns the content & parsed root node of the given path.
 // If an error occurs, it returns an empty root node, this NEVER returns nil.
-func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
+func (w *wrkspc) AllOf(path string) (string, *ast.Root, error) {
 	content, cErr := w.ContentOf(path)
 	root, rErr := w.IROf(path)
 
@@ -269,7 +269,7 @@ func (w *wrkspc) AllOf(path string) (string, *ir.Root, error) {
 
 // FAllOf returns both the content and root node of the given path.
 // If an error occurs, it returns an empty root node and string after logging the error.
-func (w *wrkspc) FAllOf(path string) (string, *ir.Root) {
+func (w *wrkspc) FAllOf(path string) (string, *ast.Root) {
 	content, root, err := w.AllOf(path)
 	if err != nil {
 		log.Println(err)
@@ -288,7 +288,7 @@ func (w *wrkspc) Refresh(path string) error {
 }
 
 func (w *wrkspc) RefreshFrom(path string, content string) error {
-	root, err := w.parser(path).Parse(content)
+	root, err := w.parser(path).Parse([]byte(content))
 	if err != nil {
 		return fmt.Errorf(ErrParseFmt, path, err)
 	}

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/nodescopes"
 )
 
@@ -13,8 +15,9 @@ type (
 )
 
 func (c *ClassLike) ConstantsIter() ConstantsIterFunc {
-	pt := &classConstsTraverser{Constants: []*ir.ClassConstListStmt{}}
-	c.node.Walk(pt)
+	pt := &classConstsTraverser{Constants: []*ast.StmtClassConstList{}}
+	tv := traverser.NewTraverser(pt)
+	c.node.Accept(tv)
 	i := 0
 
 	return func() (p *ClassConst, done bool, genErr error) {
@@ -50,13 +53,14 @@ ConstantsIter:
 }
 
 type classConstsTraverser struct {
-	Constants      []*ir.ClassConstListStmt
+	visitor.Null
+	Constants      []*ast.StmtClassConstList
 	firstTraversed bool
 }
 
-func (t *classConstsTraverser) EnterNode(node ir.Node) bool {
+func (t *classConstsTraverser) EnterNode(node ast.Vertex) bool {
 	if !t.firstTraversed {
-		if !nodescopes.IsClassLike(ir.GetNodeKind(node)) {
+		if !nodescopes.IsClassLike(node.GetType()) {
 			log.Panicf(
 				"[symbol.classConstsTraverser.EnterNode]: can only be used on class-like nodes, got %T",
 				node,
@@ -68,11 +72,9 @@ func (t *classConstsTraverser) EnterNode(node ir.Node) bool {
 		return true
 	}
 
-	if constant, ok := node.(*ir.ClassConstListStmt); ok {
-		t.Constants = append(t.Constants, constant)
-	}
-
-	return !nodescopes.IsScope(ir.GetNodeKind(node))
+	return !nodescopes.IsScope(node.GetType())
 }
 
-func (t *classConstsTraverser) LeaveNode(ir.Node) {}
+func (t *classConstsTraverser) StmtClassConstList(node *ast.StmtClassConstList) {
+	t.Constants = append(t.Constants, node)
+}

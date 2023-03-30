@@ -6,7 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
@@ -23,7 +25,7 @@ import (
 )
 
 type rooter interface {
-	Root() *ir.Root
+	Root() *ast.Root
 	Path() string
 }
 
@@ -36,12 +38,12 @@ type Throws struct {
 
 	doxed doxFinder
 
-	node ir.Node
+	node ast.Vertex
 
 	ignoreFirstFuncDoc bool
 }
 
-func NewResolver(root rooter, node ir.Node) *Throws {
+func NewResolver(root rooter, node ast.Vertex) *Throws {
 	return &Throws{
 		rooter: root,
 		doxed:  symbol.NewDoxed(node),
@@ -56,7 +58,7 @@ func NewResolverFromIndex(n *index.INode) *Throws {
 
 type Violation struct {
 	// Either a function or class method statement.
-	Node   ir.Node
+	Node   ast.Vertex
 	Throws []*fqn.FQN
 
 	message string
@@ -67,7 +69,7 @@ func (v *Violation) Message() string {
 		return v.message
 	}
 
-	typeStr := ie.IfElse(ir.GetNodeKind(v.Node) == ir.KindFunctionStmt, "function", "method")
+	typeStr := ie.IfElse(v.Node.GetType() == ast.TypeStmtFunction, "function", "method")
 	throwsStr := strings.Join(functional.Map(v.Throws, functional.ToString[*fqn.FQN]), ", ")
 
 	v.message = fmt.Sprintf(
@@ -84,7 +86,7 @@ func (v *Violation) Code() string {
 }
 
 func (v *Violation) Line() int {
-	return ir.GetPosition(v.Node).StartLine
+	return v.Node.GetPosition().StartLine
 }
 
 // Diagnose finds all the functions or methods in the given file that throw
@@ -94,7 +96,7 @@ func Diagnose(root rooter) (results []*Violation) {
 	// NOTE: might be a good idea to hold a map in the index, from path to fqns.
 	// That way we can easily get all the functions and methods of the file.
 
-	nodes := make(chan ir.Node)
+	nodes := make(chan ast.Vertex)
 	violations := make(chan *Violation)
 
 	go func() {
@@ -103,7 +105,7 @@ func Diagnose(root rooter) (results []*Violation) {
 		wg := sync.WaitGroup{}
 		for throwing := range nodes {
 			wg.Add(1)
-			go func(throwing ir.Node) {
+			go func(throwing ast.Vertex) {
 				defer wg.Done()
 
 				r := &Throws{
@@ -146,7 +148,8 @@ func Diagnose(root rooter) (results []*Violation) {
 
 	go func() {
 		t := newThrowingSymbolTraverser(nodes)
-		root.Root().Walk(t)
+		tv := traverser.NewTraverser(t)
+		root.Root().Accept(tv)
 	}()
 
 	for violation := range violations {
@@ -161,7 +164,7 @@ func (t *Throws) Throws() []*fqn.FQN {
 }
 
 func (t *Throws) seenHash() string {
-	pos := ir.GetPosition(t.node)
+	pos := t.node.GetPosition()
 	return fmt.Sprintf("%d%d%d%d", pos.StartLine, pos.StartPos, pos.EndLine, pos.EndPos)
 }
 
@@ -183,19 +186,20 @@ func (t *Throws) throws(seen *set.Set[string]) *set.Set[string] {
 
 	if !firstCall || !t.ignoreFirstFuncDoc {
 		switch t.node.(type) {
-		case *ir.FunctionStmt, *ir.ClassMethodStmt:
+		case *ast.StmtFunction, *ast.StmtClassMethod:
 			for _, throw := range t.phpDocThrows() {
 				thrownSet.Add(throw.String())
 			}
 		}
 	}
 
-	traverser := newThrowsTraverser()
-	t.node.Walk(traverser)
+	tv := newThrowsTraverser()
+	tvv := traverser.NewTraverser(tv)
+	t.node.Accept(tvv)
 
-	for _, result := range traverser.Result {
+	for _, result := range tv.Result {
 		switch typedRes := result.(type) {
-		case *ir.TryStmt:
+		case *ast.StmtTry:
 			tryThrows := set.New[string]()
 
 			blockThrows := &Throws{
@@ -211,17 +215,18 @@ func (t *Throws) throws(seen *set.Set[string]) *set.Set[string] {
 			// At the end, add all that is thrown in the finally to tryThrows.
 
 			for i := range typedRes.Catches {
-				catch := typedRes.Catches[i].(*ir.CatchStmt)
+				catch := typedRes.Catches[i].(*ast.StmtCatch)
 
 				fqnt := fqn.NewTraverser()
-				t.Root().Walk(fqnt)
+				fqntt := traverser.NewTraverser(fqnt)
+				t.Root().Accept(fqntt)
 
 				var toRemove []string
 				for tryThrow := range tryThrows.Iterator() {
 					checker := t.catches(fqn.New(tryThrow))
 
 					for j := range catch.Types {
-						catchedType := catch.Types[j].(*ir.Name)
+						catchedType := catch.Types[j].(*ast.Name)
 						qualified := fqnt.ResultFor(catchedType)
 
 						if checker(qualified) {
@@ -252,20 +257,17 @@ func (t *Throws) throws(seen *set.Set[string]) *set.Set[string] {
 
 			thrownSet = thrownSet.Union(tryThrows)
 
-		case *ir.ThrowStmt:
+		case *ast.StmtThrow: // *ast.ExprThrow, what is that?
 			resolvedRoot, resolvement, err := t.resolve(typedRes.Expr)
 			if err != nil {
 				log.Println(fmt.Errorf("[throws.Throws]: %w", err))
 				continue
 			}
 
-			key := fqner.FullyQualifyName(resolvedRoot, &ir.Name{
-				Position: ir.GetPosition(resolvement.Node),
-				Value:    nodeident.Get(resolvement.Node),
-			})
+			key := fqner.FullyQualifyName(resolvedRoot, resolvement.Node.(*ast.Name))
 			thrownSet.Add(key.String())
 
-		case *ir.FunctionCallExpr, *ir.MethodCallExpr, *ir.StaticCallExpr:
+		case *ast.ExprFunctionCall, *ast.ExprMethodCall, *ast.ExprStaticCall:
 			resolvedRoot, resolvement, err := t.resolve(result)
 			if err != nil {
 				log.Println(fmt.Errorf("[throws.throws]: %w", err))
@@ -298,12 +300,13 @@ func (t *Throws) phpDocThrows() (throws []*fqn.FQN) {
 
 			if fqnt == nil {
 				fqnt = fqn.NewTraverser()
-				t.Root().Walk(fqnt)
+				fqntt := traverser.NewTraverser(fqnt)
+				t.Root().Accept(fqntt)
 			}
 
-			resFqn := fqnt.ResultFor(&ir.Name{
-				Value:    typedRes.Name,
-				Position: ir.GetPosition(t.node),
+			resFqn := fqnt.ResultFor(&ast.Name{
+				Parts:    nameParts(typedRes.Name),
+				Position: t.node.GetPosition(),
 			})
 			throws = append(throws, resFqn)
 
@@ -315,9 +318,10 @@ func (t *Throws) phpDocThrows() (throws []*fqn.FQN) {
 	return throws
 }
 
-func (t *Throws) resolve(node ir.Node) (*ir.Root, *expr.Resolved, error) {
+func (t *Throws) resolve(node ast.Vertex) (*ast.Root, *expr.Resolved, error) {
 	scopes := traversers.NewScopesTraverser(node)
-	t.Root().Walk(scopes)
+	scopest := traverser.NewTraverser(scopes)
+	t.Root().Accept(scopest)
 	if !scopes.Done {
 		return nil, nil, fmt.Errorf("[throws.resolve]: could not find the node in the root node")
 	}
@@ -389,61 +393,59 @@ func (t *Throws) catches(thrown *fqn.FQN) func(catch *fqn.FQN) bool {
 }
 
 type throwsTraverser struct {
-	Result       []ir.Node
+	visitor.Null
+	Result       []ast.Vertex
 	visitedFirst bool
 }
 
-var _ ir.Visitor = &throwsTraverser{}
-
 func newThrowsTraverser() *throwsTraverser {
 	return &throwsTraverser{
-		Result: []ir.Node{},
+		Result: []ast.Vertex{},
 	}
 }
 
-func (t *throwsTraverser) EnterNode(node ir.Node) bool {
+func (t *throwsTraverser) EnterNode(node ast.Vertex) bool {
 	if !t.visitedFirst {
 		t.visitedFirst = true
 		return true
 	}
 
 	switch node.(type) {
-	case *ir.TryStmt, *ir.FunctionCallExpr, *ir.ThrowStmt, *ir.MethodCallExpr, *ir.StaticCallExpr:
+	case *ast.StmtTry, *ast.ExprFunctionCall, *ast.StmtThrow, *ast.ExprMethodCall, *ast.ExprStaticCall:
 		t.Result = append(t.Result, node)
 		return false
 
-		// PERF: we can probably get away with returning true in a couple of cases.
+		// PERF: we can probably get away with returning false in a couple of cases.
 	default:
 		return true
 	}
 }
 
-func (t *throwsTraverser) LeaveNode(node ir.Node) {}
-
-func newThrowingSymbolTraverser(nodes chan<- ir.Node) *throwingSymbolsTraverser {
+func newThrowingSymbolTraverser(nodes chan<- ast.Vertex) *throwingSymbolsTraverser {
 	return &throwingSymbolsTraverser{nodes: nodes}
 }
 
 type throwingSymbolsTraverser struct {
-	nodes            chan<- ir.Node
+	visitor.Null
+	nodes            chan<- ast.Vertex
 	currentNamespace string
 }
 
-func (t *throwingSymbolsTraverser) EnterNode(node ir.Node) bool {
+func (t *throwingSymbolsTraverser) EnterNode(node ast.Vertex) bool {
 	switch typedNode := node.(type) {
-	case *ir.NamespaceStmt:
-		if typedNode.NamespaceName != nil {
-			t.currentNamespace = "\\" + typedNode.NamespaceName.Value + "\\"
+	case *ast.StmtNamespace:
+		if typedNode.Name != nil {
+			t.currentNamespace = "\\" + nodeident.Get(typedNode.Name) + "\\"
 		}
 
 		return true
 
-	case *ir.FunctionStmt, *ir.ClassMethodStmt:
+	case *ast.StmtFunction, *ast.StmtClassMethod:
 		t.nodes <- node
 
 		return false
 
-	case *ir.Root, *ir.ClassStmt, *ir.TraitStmt:
+	case *ast.Root, *ast.StmtClass, *ast.StmtTrait:
 		return true
 
 	default:
@@ -451,8 +453,15 @@ func (t *throwingSymbolsTraverser) EnterNode(node ir.Node) bool {
 	}
 }
 
-func (t *throwingSymbolsTraverser) LeaveNode(node ir.Node) {
-	if _, ok := node.(*ir.Root); ok {
+func (t *throwingSymbolsTraverser) LeaveNode(node ast.Vertex) {
+	if _, ok := node.(*ast.Root); ok {
 		close(t.nodes)
 	}
+}
+
+func nameParts(name string) []ast.Vertex {
+	return functional.Map(
+		strings.Split(name, "\\"),
+		func(s string) ast.Vertex { return &ast.NamePart{Value: []byte(s)} },
+	)
 }

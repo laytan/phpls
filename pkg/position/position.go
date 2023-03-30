@@ -3,6 +3,7 @@ package position
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/VKCOM/php-parser/pkg/position"
@@ -71,6 +72,9 @@ func (p *Position) ToIRPosition(content string) *position.Position {
 }
 
 func PosToLoc(content string, pos uint) (row uint, col uint) {
+	log.Println(
+		"DEPRECATED: migrate from this to using the StartCol and EndCol provided by *position.Position",
+	)
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	linebreaks := 1
@@ -98,6 +102,9 @@ func PosToLoc(content string, pos uint) (row uint, col uint) {
 }
 
 func LocToPos(content string, row uint, col uint) uint {
+	log.Println(
+		"DEPRECATED: migrate from this to using the StartCol and EndCol provided by *position.Position",
+	)
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	linebreaks := 1

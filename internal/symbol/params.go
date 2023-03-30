@@ -3,7 +3,7 @@ package symbol
 import (
 	"fmt"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 )
@@ -14,7 +14,7 @@ type parametized struct {
 
 	*doxed
 
-	node ir.Node
+	node ast.Vertex
 }
 
 func (p *parametized) Parameters() ([]*Parameter, error) {
@@ -25,7 +25,7 @@ func (p *parametized) Parameters() ([]*Parameter, error) {
 
 	return functional.Map(
 		paramNodes,
-		func(pNode *ir.Parameter) *Parameter {
+		func(pNode *ast.Parameter) *Parameter {
 			return &Parameter{
 				funcOrMeth: p.node,
 				node:       pNode,
@@ -54,17 +54,17 @@ ParamsRange:
 	return nil, fmt.Errorf("no results: %w", ErrNoParam)
 }
 
-func (p *parametized) paramNodes() ([]*ir.Parameter, error) {
+func (p *parametized) paramNodes() ([]*ast.Parameter, error) {
 	switch typedNode := p.node.(type) {
-	case *ir.FunctionStmt:
+	case *ast.StmtFunction:
 		return functional.Map(
 			typedNode.Params,
-			func(p ir.Node) *ir.Parameter { return p.(*ir.Parameter) },
+			func(p ast.Vertex) *ast.Parameter { return p.(*ast.Parameter) },
 		), nil
-	case *ir.ClassMethodStmt:
+	case *ast.StmtClassMethod:
 		return functional.Map(
 			typedNode.Params,
-			func(p ir.Node) *ir.Parameter { return p.(*ir.Parameter) },
+			func(p ast.Vertex) *ast.Parameter { return p.(*ast.Parameter) },
 		), nil
 	default:
 		return nil, fmt.Errorf("Node with type %T is invalid inside *parametized", p.node)

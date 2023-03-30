@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/pkg/stack"
 	"go.uber.org/goleak"
@@ -19,14 +19,14 @@ func TestDown(t *testing.T) {
 
 	scenarios := []struct {
 		name  string
-		start ir.Node
+		start ast.Vertex
 		out   *stack.Stack[*expr.DownResolvement]
 	}{
 		{
 			name: "simple property fetch",
-			start: &ir.PropertyFetchExpr{
-				Variable: &ir.SimpleVar{Name: "$foo"},
-				Property: &ir.Identifier{Value: "bar"},
+			start: &ast.ExprPropertyFetch{
+				Var:  &ast.ExprVariable{Name: &ast.Identifier{Value: []byte("$foo")}},
+				Prop: &ast.Identifier{Value: []byte("bar")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeVariable, Identifier: "$foo"},
@@ -35,15 +35,15 @@ func TestDown(t *testing.T) {
 		},
 		{
 			name: "multi-level property fetch",
-			start: &ir.PropertyFetchExpr{
-				Variable: &ir.PropertyFetchExpr{
-					Variable: &ir.PropertyFetchExpr{
-						Variable: &ir.SimpleVar{Name: "$foo"},
-						Property: &ir.Identifier{Value: "bar"},
+			start: &ast.ExprPropertyFetch{
+				Var: &ast.ExprPropertyFetch{
+					Var: &ast.ExprPropertyFetch{
+						Var:  &ast.ExprVariable{Name: &ast.Identifier{Value: []byte("$foo")}},
+						Prop: &ast.Identifier{Value: []byte("bar")},
 					},
-					Property: &ir.Identifier{Value: "foobar"},
+					Prop: &ast.Identifier{Value: []byte("foobar")},
 				},
-				Property: &ir.Identifier{Value: "foobar2"},
+				Prop: &ast.Identifier{Value: []byte("foobar2")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeVariable, Identifier: "$foo"},
@@ -54,9 +54,9 @@ func TestDown(t *testing.T) {
 		},
 		{
 			name: "method",
-			start: &ir.MethodCallExpr{
-				Variable: &ir.SimpleVar{Name: "$foo"},
-				Method:   &ir.Identifier{Value: "bar"},
+			start: &ast.ExprMethodCall{
+				Var:    &ast.ExprVariable{Name: &ast.Identifier{Value: []byte("$foo")}},
+				Method: &ast.Identifier{Value: []byte("bar")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeVariable, Identifier: "$foo"},
@@ -65,12 +65,12 @@ func TestDown(t *testing.T) {
 		},
 		{
 			name: "method after property",
-			start: &ir.MethodCallExpr{
-				Variable: &ir.PropertyFetchExpr{
-					Variable: &ir.SimpleVar{Name: "$foo"},
-					Property: &ir.Identifier{Value: "foobar"},
+			start: &ast.ExprMethodCall{
+				Var: &ast.ExprPropertyFetch{
+					Var:  &ast.ExprVariable{Name: &ast.Identifier{Value: []byte("$foo")}},
+					Prop: &ast.Identifier{Value: []byte("foobar")},
 				},
-				Method: &ir.Identifier{Value: "bar"},
+				Method: &ast.Identifier{Value: []byte("bar")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeVariable, Identifier: "$foo"},
@@ -80,12 +80,12 @@ func TestDown(t *testing.T) {
 		},
 		{
 			name: "method inside property chain",
-			start: &ir.PropertyFetchExpr{
-				Variable: &ir.MethodCallExpr{
-					Variable: &ir.SimpleVar{Name: "$foo"},
-					Method:   &ir.Identifier{Value: "foobar"},
+			start: &ast.ExprPropertyFetch{
+				Var: &ast.ExprMethodCall{
+					Var:    &ast.ExprVariable{Name: &ast.Identifier{Value: []byte("$foo")}},
+					Method: &ast.Identifier{Value: []byte("foobar")},
 				},
-				Property: &ir.Identifier{Value: "bar"},
+				Prop: &ast.Identifier{Value: []byte("bar")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeVariable, Identifier: "$foo"},
@@ -95,15 +95,15 @@ func TestDown(t *testing.T) {
 		},
 		{
 			name: "static start",
-			start: &ir.MethodCallExpr{
-				Variable: &ir.PropertyFetchExpr{
-					Variable: &ir.StaticCallExpr{
-						Class: &ir.Name{Value: "Test"},
-						Call:  &ir.Identifier{Value: "foo"},
+			start: &ast.ExprMethodCall{
+				Var: &ast.ExprPropertyFetch{
+					Var: &ast.ExprStaticCall{
+						Class: &ast.Name{Parts: []ast.Vertex{&ast.NamePart{Value: []byte("Test")}}},
+						Call:  &ast.Identifier{Value: []byte("foo")},
 					},
-					Property: &ir.Identifier{Value: "foobar"},
+					Prop: &ast.Identifier{Value: []byte("foobar")},
 				},
-				Method: &ir.Identifier{Value: "bar"},
+				Method: &ast.Identifier{Value: []byte("bar")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeName, Identifier: "Test"},
@@ -114,9 +114,9 @@ func TestDown(t *testing.T) {
 		},
 		{
 			name: "static end",
-			start: &ir.StaticCallExpr{
-				Class: &ir.SimpleVar{Name: "$foo"},
-				Call:  &ir.Identifier{Value: "foo"},
+			start: &ast.ExprStaticCall{
+				Class: &ast.ExprVariable{Name: &ast.Identifier{Value: []byte("$foo")}},
+				Call:  &ast.Identifier{Value: []byte("foo")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeVariable, Identifier: "$foo"},
@@ -125,11 +125,11 @@ func TestDown(t *testing.T) {
 		},
 		{
 			name: "method call on function return",
-			start: &ir.MethodCallExpr{
-				Variable: &ir.FunctionCallExpr{
-					Function: &ir.Name{Value: "foo"},
+			start: &ast.ExprMethodCall{
+				Var: &ast.ExprFunctionCall{
+					Function: &ast.Name{Parts: []ast.Vertex{&ast.NamePart{Value: []byte("foo")}}},
 				},
-				Method: &ir.Identifier{Value: "bar"},
+				Method: &ast.Identifier{Value: []byte("bar")},
 			},
 			out: sliceStack([]*expr.DownResolvement{
 				{ExprType: expr.TypeFunction, Identifier: "foo"},

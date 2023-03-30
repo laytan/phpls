@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
@@ -44,14 +44,14 @@ func (s *Server) Completion(
 		}
 
 		switch res.Kind {
-		case ir.KindFunctionStmt:
+		case ast.TypeStmtFunction:
 			item.Kind = protocol.FunctionCompletion
-		case ir.KindClassStmt:
+		case ast.TypeStmtClass:
 			item.Kind = protocol.ClassCompletion
-		case ir.KindTraitStmt:
+		case ast.TypeStmtTrait:
 			// NOTE: there is no trait kind, module seems appropriate.
 			item.Kind = protocol.ModuleCompletion
-		case ir.KindInterfaceStmt:
+		case ast.TypeStmtInterface:
 			item.Kind = protocol.InterfaceCompletion
 		default:
 		}

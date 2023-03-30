@@ -3,12 +3,14 @@ package index
 import (
 	"log"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
 )
 
 type INodeTraverser struct {
+	visitor.Null
 	currentNamespace string
 	currentPath      string
 	nodes            chan<- *INode
@@ -18,47 +20,48 @@ func NewIndexTraverser() *INodeTraverser {
 	return &INodeTraverser{}
 }
 
-func (t *INodeTraverser) EnterNode(node ir.Node) bool {
+func (t *INodeTraverser) EnterNode(node ast.Vertex) bool {
 	switch typedNode := node.(type) {
-	case *ir.NamespaceStmt:
-		if typedNode.NamespaceName != nil {
-			t.currentNamespace = "\\" + typedNode.NamespaceName.Value + "\\"
+	case *ast.StmtNamespace:
+		t.currentNamespace = nodeident.Get(typedNode)
+		if t.currentNamespace != "\\" {
+			t.currentNamespace += "\\"
 		}
 
 		return true
 
-	case *ir.FunctionStmt, *ir.ClassStmt, *ir.InterfaceStmt, *ir.TraitStmt:
+	case *ast.StmtFunction, *ast.StmtClass, *ast.StmtInterface, *ast.StmtTrait:
 		fqn := fqn.New(t.currentNamespace + nodeident.Get(node))
 		t.nodes <- NewINode(fqn, t.currentPath, node)
 
 		return false
 
-	case *ir.FunctionCallExpr:
+	case *ast.ExprFunctionCall:
 		// Index a function call to define() as a constant.
-
-		if fn, ok := typedNode.Function.(*ir.Name); ok && fn.Value == "define" {
+		if nodeident.Get(typedNode) == "define" {
 			if len(typedNode.Args) == 0 {
 				return false
 			}
 
-			firstArg, ok := typedNode.Args[0].(*ir.Argument)
+			firstArg, ok := typedNode.Args[0].(*ast.Argument)
 			if !ok {
 				return false
 			}
 
-			ident, ok := firstArg.Expr.(*ir.String)
+			ident, ok := firstArg.Expr.(*ast.ScalarString)
 			if !ok {
 				log.Println("found define call without a string argument")
 				return false
 			}
 
-			fqn := fqn.New("\\" + ident.Value)
+			id := string(ident.Value[1 : len(ident.Value)-1])
+			fqn := fqn.New("\\" + id)
 			t.nodes <- &INode{
 				FQN:        fqn,
 				Path:       t.currentPath,
 				Position:   typedNode.Position,
-				Identifier: ident.Value,
-				Kind:       ir.KindConstantStmt,
+				Identifier: id,
+				Kind:       ast.TypeStmtConstant,
 			}
 		}
 
@@ -69,8 +72,8 @@ func (t *INodeTraverser) EnterNode(node ir.Node) bool {
 	}
 }
 
-func (t *INodeTraverser) LeaveNode(node ir.Node) {
-	if _, ok := node.(*ir.Root); ok {
+func (t *INodeTraverser) LeaveNode(node ast.Vertex) {
+	if _, ok := node.(*ast.Root); ok {
 		close(t.nodes)
 	}
 }

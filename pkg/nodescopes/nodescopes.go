@@ -1,41 +1,49 @@
 package nodescopes
 
-import "github.com/VKCOM/noverify/src/ir"
+import (
+	"github.com/VKCOM/php-parser/pkg/ast"
+)
 
 // Scopes are node kinds that declare a scope
 // where for example variables are scoped to.
 var (
-	Scopes = map[ir.NodeKind]any{
-		ir.KindFunctionStmt:      true,
-		ir.KindClosureExpr:       true,
-		ir.KindArrowFunctionExpr: true,
+	Scopes = map[ast.Type]bool{
+		ast.TypeStmtFunction:      true,
+		ast.TypeExprClosure:       true,
+		ast.TypeExprArrowFunction: true,
 
-		ir.KindClassStmt:       true,
-		ir.KindClassMethodStmt: true,
+		ast.TypeStmtClass:       true,
+		ast.TypeStmtClassMethod: true,
 
-		ir.KindTraitStmt:     true,
-		ir.KindInterfaceStmt: true,
+		ast.TypeStmtTrait:     true,
+		ast.TypeStmtInterface: true,
 	}
 
-	ClassLikeScopes = []ir.NodeKind{
-		ir.KindClassStmt,
-		ir.KindTraitStmt,
-		ir.KindInterfaceStmt,
+	ClassLikeScopes = map[ast.Type]bool{
+		ast.TypeStmtClass:     true,
+		ast.TypeStmtTrait:     true,
+		ast.TypeStmtInterface: true,
+	}
+
+	NameScopes = map[ast.Type]bool{
+		ast.TypeNameRelative:       true,
+		ast.TypeNameFullyQualified: true,
+		ast.TypeName:               true,
 	}
 )
 
-func IsScope(kind ir.NodeKind) bool {
-	_, ok := Scopes[kind]
-	return ok
+func IsScope(kind ast.Type) bool {
+	return Scopes[kind]
 }
 
-func IsClassLike(kind ir.NodeKind) bool {
-	return kind == ir.KindClassStmt ||
-		kind == ir.KindInterfaceStmt ||
-		kind == ir.KindTraitStmt
+func IsClassLike(kind ast.Type) bool {
+	return ClassLikeScopes[kind]
 }
 
-func IsNonClassLikeScope(kind ir.NodeKind) bool {
-	return kind == ir.KindFunctionStmt || kind == ir.KindClassMethodStmt ||
-		kind == ir.KindClosureExpr
+func IsNonClassLikeScope(kind ast.Type) bool {
+	return !IsClassLike(kind)
+}
+
+func IsName(kind ast.Type) bool {
+	return NameScopes[kind]
 }

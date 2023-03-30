@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/pkg/nodeident"
@@ -15,26 +15,21 @@ func NewThis() *ThisProvider {
 	return &ThisProvider{}
 }
 
-func (p *ThisProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
-	if kind != ir.KindSimpleVar {
+func (p *ThisProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	if kind != ast.TypeExprVariable {
 		return false
 	}
 
-	n := ctx.Current().(*ir.SimpleVar)
-	return n.Name == "this"
+	return nodeident.Get(ctx.Current()) == "$this"
 }
 
 // TODO: use DefineExpr.
 // TODO: merge with variable provider.
 func (p *ThisProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
-	if ir.GetNodeKind(ctx.Current()) == ir.KindRoot {
-		return nil, definition.ErrNoDefinitionFound
-	}
-
 	cls := ctx.ClassScope()
 	return []*definition.Definition{{
 		Path:       ctx.Start().Path,
-		Position:   ir.GetPosition(cls),
+		Position:   cls.GetPosition(),
 		Identifier: nodeident.Get(cls),
 	}}, nil
 }

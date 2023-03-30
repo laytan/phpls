@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 )
@@ -14,8 +14,8 @@ func NewProperty() *PropertyProvider {
 	return &PropertyProvider{}
 }
 
-func (p *PropertyProvider) CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool {
-	return kind == ir.KindPropertyFetchExpr
+func (p *PropertyProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	return kind == ast.TypeExprPropertyFetch
 }
 
 func (p *PropertyProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {

@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
@@ -19,12 +20,12 @@ var (
 type Parameter struct {
 	rooter
 
-	// Either a *ir.FunctionStmt, or a *ir.ClassMethodStmt.
-	funcOrMeth ir.Node
-	node       *ir.Parameter
+	// Either a *ast.StmtFunction, or a *ast.StmtClassMethod.
+	funcOrMeth ast.Vertex
+	node       *ast.Parameter
 }
 
-func NewParameter(root rooter, funcOrMeth ir.Node, param *ir.Parameter) *Parameter {
+func NewParameter(root rooter, funcOrMeth ast.Vertex, param *ast.Parameter) *Parameter {
 	return &Parameter{
 		rooter:     root,
 		funcOrMeth: funcOrMeth,
@@ -38,7 +39,7 @@ func NewParameter(root rooter, funcOrMeth ir.Node, param *ir.Parameter) *Paramet
 // If the funcOrMeth is a method, the containing class of method that had a type definition is
 // returned as the 2nd return. This is nil when the funcOrMeth is a function.
 func (p *Parameter) Type() (phpdoxer.Type, *ClassLike, error) {
-	method, isMethod := p.funcOrMeth.(*ir.ClassMethodStmt)
+	method, isMethod := p.funcOrMeth.(*ast.StmtClassMethod)
 
 	typ, err := p.ownType()
 	if err != nil && !errors.Is(err, ErrNoParam) {
@@ -108,26 +109,27 @@ func (p *Parameter) Type() (phpdoxer.Type, *ClassLike, error) {
 
 // TypeClass resolves and unpacks the raw type returned from Type into the classes it represents.
 // See doxcontext.ApplyContext for more.
-func (p *Parameter) TypeClass() ([]*phpdoxer.TypeClassLike, error) {
+func (p *Parameter) TypeClass() ([]*phpdoxer.TypeClassLike, error) { //nolint:dupl // Not really duplicated, could extract later.
 	typ, cls, err := p.Type()
 	if err != nil {
 		return nil, fmt.Errorf("getting type to apply context: %w", err)
 	}
 
 	fqnt := fqn.NewTraverser()
+	fqntt := traverser.NewTraverser(fqnt)
 	var currFqn *fqn.FQN
-	var node ir.Node
+	var node ast.Vertex
 
 	switch typedCallable := p.funcOrMeth.(type) {
-	case *ir.ClassMethodStmt:
+	case *ast.StmtClassMethod:
 		root := cls.Root()
-		root.Walk(fqnt)
+		root.Accept(fqntt)
 
 		currFqn = cls.GetFQN()
 		node = typedCallable
-	case *ir.FunctionStmt:
+	case *ast.StmtFunction:
 		root := p.Root()
-		root.Walk(fqnt)
+		root.Accept(fqntt)
 
 		// If we are not a method this one does not really matter for ApplyContext.
 		currFqn = fqn.New(fqn.PartSeperator)
@@ -136,12 +138,12 @@ func (p *Parameter) TypeClass() ([]*phpdoxer.TypeClassLike, error) {
 		return nil, fmt.Errorf("Parameter with invalid callable %T", typedCallable)
 	}
 
-	return doxcontext.ApplyContext(fqnt, currFqn, ir.GetPosition(node), typ), nil
+	return doxcontext.ApplyContext(fqnt, currFqn, node.GetPosition(), typ), nil
 }
 
 // class returns the class this method belongs to or nil if it is a function.
 func (p *Parameter) class() (*ClassLike, error) {
-	method, ok := p.funcOrMeth.(*ir.ClassMethodStmt)
+	method, ok := p.funcOrMeth.(*ast.StmtClassMethod)
 	if !ok {
 		return nil, ErrNotAMethod
 	}
@@ -158,7 +160,7 @@ func (p *Parameter) Name() string {
 	return nodeident.Get(p.node)
 }
 
-func (p *Parameter) Node() *ir.Parameter {
+func (p *Parameter) Node() *ast.Parameter {
 	return p.node
 }
 
@@ -170,8 +172,8 @@ func (p *Parameter) ownType() (phpdoxer.Type, error) {
 		return paramDoc.(*phpdoxer.NodeParam).Type, nil
 	}
 
-	if p.node.VariableType != nil {
-		parsedHint, err := TypeHintToDocType(p.node.VariableType)
+	if p.node.Type != nil {
+		parsedHint, err := TypeHintToDocType(p.node.Type)
 		if err != nil {
 			return nil, fmt.Errorf("parsing type hint for parameter %v: %w", p.node, err)
 		}

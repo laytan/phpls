@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/noverify/src/ir"
+	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/project/definition/providers"
@@ -36,7 +36,7 @@ var (
 )
 
 type DefinitionProvider interface {
-	CanDefine(ctx *context.Ctx, kind ir.NodeKind) bool
+	CanDefine(ctx *context.Ctx, kind ast.Type) bool
 	Define(ctx *context.Ctx) ([]*definition.Definition, error)
 }
 
@@ -47,7 +47,7 @@ func (p *Project) Definition(pos *position.Position) ([]*position.Position, erro
 	}
 
 	for advanced := true; advanced; advanced = ctx.Advance() {
-		kind := ir.GetNodeKind(ctx.Current())
+		kind := ctx.Current().GetType()
 
 		for _, provider := range definitionProviders {
 			if provider.CanDefine(ctx, kind) {
