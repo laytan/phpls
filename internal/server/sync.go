@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"appliedgo.net/what"
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/functional"

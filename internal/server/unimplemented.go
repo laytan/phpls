@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 
-	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 var errorUnimplemented = jsonrpc2.ErrMethodNotFound
@@ -16,11 +16,61 @@ func (s *Server) DidChangeWorkspaceFolders(
 	return errorUnimplemented
 }
 
+func (s *Server) DidChangeNotebookDocument(
+	context.Context,
+	*protocol.DidChangeNotebookDocumentParams,
+) error {
+	return errorUnimplemented
+}
+
+func (s *Server) DidCloseNotebookDocument(
+	context.Context,
+	*protocol.DidCloseNotebookDocumentParams,
+) error {
+	return errorUnimplemented
+}
+
+func (s *Server) DidOpenNotebookDocument(
+	context.Context,
+	*protocol.DidOpenNotebookDocumentParams,
+) error {
+	return errorUnimplemented
+}
+
+func (s *Server) DidSaveNotebookDocument(
+	context.Context,
+	*protocol.DidSaveNotebookDocumentParams,
+) error {
+	return errorUnimplemented
+}
+
 func (s *Server) WorkDoneProgressCancel(
 	context.Context,
 	*protocol.WorkDoneProgressCancelParams,
 ) error {
 	return errorUnimplemented
+}
+
+func (s *Server) InlayHint(
+	context.Context,
+	*protocol.InlayHintParams,
+) ([]protocol.InlayHint, error) {
+	return nil, errorUnimplemented
+}
+
+func (s *Server) InlineValue(
+	context.Context,
+	*protocol.InlineValueParams,
+) ([]protocol.Or_InlineValue, error) {
+	return nil, errorUnimplemented
+}
+
+func (s *Server) Progress(context.Context, *protocol.ProgressParams) error {
+	return errorUnimplemented
+}
+
+func (s *Server) Resolve(context.Context, *protocol.InlayHint) (*protocol.InlayHint, error) {
+	return nil, errorUnimplemented
 }
 
 func (s *Server) DidCreateFiles(context.Context, *protocol.CreateFilesParams) error {
@@ -68,14 +118,14 @@ func (s *Server) LogTrace(context.Context, *protocol.LogTraceParams) error {
 func (s *Server) Implementation(
 	context.Context,
 	*protocol.ImplementationParams,
-) (protocol.Definition, error) {
+) ([]protocol.Location, error) {
 	return nil, errorUnimplemented
 }
 
 func (s *Server) TypeDefinition(
 	context.Context,
 	*protocol.TypeDefinitionParams,
-) (protocol.Definition, error) {
+) ([]protocol.Location, error) {
 	return nil, errorUnimplemented
 }
 
@@ -103,7 +153,7 @@ func (s *Server) FoldingRange(
 func (s *Server) Declaration(
 	context.Context,
 	*protocol.DeclarationParams,
-) (protocol.Declaration, error) {
+) (*protocol.Or_textDocument_declaration, error) {
 	return nil, errorUnimplemented
 }
 
@@ -273,6 +323,13 @@ func (s *Server) Symbol(
 	return nil, errorUnimplemented
 }
 
+func (s *Server) ResolveWorkspaceSymbol(
+	context.Context,
+	*protocol.WorkspaceSymbol,
+) (*protocol.WorkspaceSymbol, error) {
+	return nil, errorUnimplemented
+}
+
 func (s *Server) CodeLens(context.Context, *protocol.CodeLensParams) ([]protocol.CodeLens, error) {
 	return nil, errorUnimplemented
 }
@@ -327,7 +384,7 @@ func (s *Server) Rename(context.Context, *protocol.RenameParams) (*protocol.Work
 func (s *Server) PrepareRename(
 	context.Context,
 	*protocol.PrepareRenameParams,
-) (*protocol.Range, error) {
+) (*protocol.Msg_PrepareRename2Gn, error) {
 	return nil, errorUnimplemented
 }
 

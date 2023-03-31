@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/lsperrors"
@@ -16,7 +16,7 @@ import (
 func (s *Server) Definition(
 	ctx context.Context,
 	params *protocol.DefinitionParams,
-) (protocol.Definition, error) {
+) ([]protocol.Location, error) {
 	start := time.Now()
 	defer func() { log.Printf("Retrieving definition took %s\n", time.Since(start)) }()
 

@@ -11,8 +11,8 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.2
-	github.com/jdbaldry/go-language-server-protocol v0.0.0-20211013214444-3022da0884b2
 	github.com/jessevdk/go-flags v1.5.0
+	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5
 	github.com/matryer/is v1.4.1
 	github.com/samber/do v1.6.0
 	github.com/shivamMg/trie v0.0.1
@@ -29,7 +29,6 @@ require (
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )
 
 replace github.com/VKCOM/php-parser => github.com/laytan/php-parser v0.9.1-0.20230330002012-92d341cbb570

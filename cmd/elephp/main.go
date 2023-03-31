@@ -9,16 +9,16 @@ import (
 	"os"
 
 	"github.com/arl/statsviz"
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/logging"
 	"github.com/laytan/elephp/internal/server"
 	"github.com/laytan/elephp/pkg/connection"
 	"github.com/laytan/elephp/pkg/processwatch"
-	"github.com/samber/do"
 
-	// TODO: Check the difference between v1 and v2 of this.
-	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
+	// TODO: what is the difference between jsonrpc2 and jsonrpc2_v2?
+	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/samber/do"
 )
 
 func main() {

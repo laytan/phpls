@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/VKCOM/php-parser/pkg/position"
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 // file://

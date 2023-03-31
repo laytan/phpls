@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/lsprogress"
+	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/samber/do"
 )
 
@@ -31,6 +31,8 @@ type Server struct {
 	project        *project.Project
 	progress       *lsprogress.Tracker
 }
+
+var _ protocol.Server = &Server{}
 
 // OPTIM: Might make sense to use the state design pattern, eliminating the call
 // to this method in every handler.

@@ -10,13 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/processwatch"
 	"github.com/laytan/elephp/pkg/stubs"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/samber/do"
 	"golang.org/x/exp/slices"
 )
@@ -96,17 +96,14 @@ func (s *Server) Initialize(
 				Change:    protocol.Full,
 				OpenClose: true,
 			},
-			DefinitionProvider: true,
-			CompletionProvider: protocol.CompletionOptions{
+			DefinitionProvider: &protocol.Or_ServerCapabilities_definitionProvider{Value: true},
+			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{"$", "-", ">"},
 				ResolveProvider:   true,
 			},
-			HoverProvider: true,
+			HoverProvider: &protocol.Or_ServerCapabilities_hoverProvider{Value: true},
 		},
-		ServerInfo: struct {
-			Name    string `json:"name"`
-			Version string `json:"version,omitempty"`
-		}{
+		ServerInfo: &protocol.PServerInfoMsg_initialize{
 			Name:    Config().Name(),
 			Version: Config().Version(),
 		},

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 func (s *Server) Completion(
@@ -76,7 +76,7 @@ func (s *Server) Completion(
 // Completion will return basic information about the result,
 // Resolve adds to that with documentation, importing etc.
 // This is called when the completion item from Complete is selected/hovered.
-func (s *Server) Resolve(
+func (s *Server) ResolveCompletionItem(
 	ctx context.Context,
 	item *protocol.CompletionItem,
 ) (*protocol.CompletionItem, error) {
@@ -103,7 +103,9 @@ func (s *Server) Resolve(
 	}
 
 	item.AdditionalTextEdits = s.additionalTextEdits(item, pos)
-	item.Documentation = s.documentation(item, pos)
+	item.Documentation = &protocol.Or_CompletionItem_documentation{
+		Value: s.documentation(item, pos),
+	}
 
 	return item, nil
 }
@@ -142,12 +144,4 @@ func (s *Server) additionalTextEdits(
 
 func (s *Server) documentation(item *protocol.CompletionItem, pos *position.Position) string {
 	return ""
-}
-
-// This looks like a duplicate of Resolve, what's the difference?
-func (s *Server) ResolveCompletionItem(
-	context.Context,
-	*protocol.CompletionItem,
-) (*protocol.CompletionItem, error) {
-	return nil, errorUnimplemented
 }

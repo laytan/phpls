@@ -1,6 +1,6 @@
 package lsperrors
 
-import "github.com/jdbaldry/go-language-server-protocol/jsonrpc2"
+import "github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
 
 var (
 	// Error code indicating that a server received a notification or

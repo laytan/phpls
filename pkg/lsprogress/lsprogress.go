@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 type Tracker struct {
