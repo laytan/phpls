@@ -102,6 +102,9 @@ func (s *Server) Initialize(
 				ResolveProvider:   true,
 			},
 			HoverProvider: &protocol.Or_ServerCapabilities_hoverProvider{Value: true},
+			DocumentFormattingProvider: &protocol.Or_ServerCapabilities_documentFormattingProvider{
+				Value: true,
+			},
 		},
 		ServerInfo: &protocol.PServerInfoMsg_initialize{
 			Name:    config.Current.Name(),
@@ -179,22 +182,22 @@ func (s *Server) index() {
 		time.Millisecond*100,
 	)
 	if err != nil {
-		s.showAndLogErr(ctx, protocol.Error, err)
+		s.showAndLog(ctx, protocol.Error, err)
 		return
 	}
 
 	err = s.project.Parse(done, total, totalDoneChan)
 	if err != nil {
 		if err := stop(err); err != nil {
-			s.showAndLogErr(ctx, protocol.Error, fmt.Errorf("stopping progress: %w", err))
+			s.showAndLog(ctx, protocol.Error, fmt.Errorf("stopping progress: %w", err))
 			return
 		}
 
-		s.showAndLogErr(ctx, protocol.Info, err)
+		s.showAndLog(ctx, protocol.Info, err)
 	}
 
 	if err := stop(nil); err != nil {
-		s.showAndLogErr(ctx, protocol.Error, err)
+		s.showAndLog(ctx, protocol.Error, err)
 	}
 }
 

@@ -39,6 +39,10 @@ func FromIRPosition(path, content string, index int) *Position {
 	}
 }
 
+func URIToFile(uri string) string {
+	return string(uri)[URIFilePrefixLength:]
+}
+
 func (p *Position) String() string {
 	return fmt.Sprintf("%s(%d:%d)", p.Path, p.Row, p.Col)
 }

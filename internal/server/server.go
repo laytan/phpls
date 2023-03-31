@@ -54,13 +54,13 @@ func (s *Server) isMethodAllowed(method string) error {
 	return nil
 }
 
-func (s *Server) showAndLogErr(ctx context.Context, t protocol.MessageType, err error) {
+func (s *Server) showAndLog(ctx context.Context, t protocol.MessageType, msg any) {
 	if err := s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
 		Type:    t,
-		Message: fmt.Sprintf("%v", err),
+		Message: fmt.Sprintf("%v", msg),
 	}); err != nil {
 		log.Println(err)
 	}
 
-	log.Println(err)
+	log.Println(msg)
 }

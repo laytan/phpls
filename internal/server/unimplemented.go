@@ -356,13 +356,6 @@ func (s *Server) ResolveDocumentLink(
 	return nil, errorUnimplemented
 }
 
-func (s *Server) Formatting(
-	context.Context,
-	*protocol.DocumentFormattingParams,
-) ([]protocol.TextEdit, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *Server) RangeFormatting(
 	context.Context,
 	*protocol.DocumentRangeFormattingParams,
