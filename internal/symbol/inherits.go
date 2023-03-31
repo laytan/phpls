@@ -64,7 +64,7 @@ func (c *ClassLike) InheritsIter() InheritsIterFunc {
 			if sliceType == inheritTypeUses {
 				// A class can only extend one class, for easier logic, add it
 				// to a temporary slice.
-				slice = []*ast.Name{}
+				slice = []ast.Vertex{}
 				if c.inheritor.Extends() != nil {
 					slice = append(slice, c.inheritor.Extends())
 				}
@@ -108,9 +108,9 @@ type inheritsTraverser struct {
 	visitor.Null
 	target *fqn.FQN
 
-	uses       []*ast.Name
-	extends    *ast.Name
-	implements []*ast.Name
+	uses       []ast.Vertex
+	extends    ast.Vertex
+	implements []ast.Vertex
 
 	currNamespace string
 }
@@ -140,14 +140,14 @@ func (t *inheritsTraverser) EnterNode(node ast.Vertex) bool {
 
 		switch typedNode := node.(type) {
 		case *ast.StmtTraitUse:
-			t.uses = append(t.uses, functional.MapFilter(typedNode.Traits, nodeToName)...)
+			t.uses = append(t.uses, functional.Map(typedNode.Traits, nodeToName)...)
 		case *ast.StmtClass:
-			t.implements = append(t.implements, functional.MapFilter(typedNode.Implements, nodeToName)...)
+			t.implements = append(t.implements, functional.Map(typedNode.Implements, nodeToName)...)
 			if typedNode.Extends != nil {
 				t.extends = typedNode.Extends.(*ast.Name)
 			}
 		case *ast.StmtInterface:
-			t.implements = append(t.implements, functional.MapFilter(typedNode.Extends, nodeToName)...)
+			t.implements = append(t.implements, functional.Map(typedNode.Extends, nodeToName)...)
 		}
 
 		// Don't go into scopes that are not necessary.

@@ -48,7 +48,7 @@ func NewClassLike(root rooter, node ast.Vertex) *ClassLike {
 	}
 }
 
-func NewClassLikeFromName(nameRoot *ast.Root, n *ast.Name) (*ClassLike, error) {
+func NewClassLikeFromName(nameRoot *ast.Root, n ast.Vertex) (*ClassLike, error) {
 	iNode, ok := fqner.FindFullyQualifiedName(nameRoot, n)
 	if !ok {
 		return nil, fmt.Errorf("[symbol.NewClassLikeFromName]: can't find %v in index", n)
@@ -148,17 +148,17 @@ func (i *inheritor) ensureTraversed() {
 	i.Root().Accept(tv)
 }
 
-func (i *inheritor) Uses() []*ast.Name {
+func (i *inheritor) Uses() []ast.Vertex {
 	i.ensureTraversed()
 	return i.traverser.uses
 }
 
-func (i *inheritor) Extends() *ast.Name {
+func (i *inheritor) Extends() ast.Vertex {
 	i.ensureTraversed()
 	return i.traverser.extends
 }
 
-func (i *inheritor) Implements() []*ast.Name {
+func (i *inheritor) Implements() []ast.Vertex {
 	i.ensureTraversed()
 	return i.traverser.implements
 }
