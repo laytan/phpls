@@ -15,8 +15,8 @@ import (
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/matryer/is"
 	"github.com/samber/do"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
@@ -30,42 +30,41 @@ func TestMain(m *testing.M) {
 
 func TestClass(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	err := setup(
 		filepath.Join(pathutils.Root(), "internal", "symbol", "testdata"),
 		phpversion.EightOne(),
 	)
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	root, err := wrkspc.FromContainer().
 		IROf(filepath.Join(pathutils.Root(), "internal", "symbol", "testdata", "test.php"))
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	n := root.Stmts[0].(*ast.StmtExpression).Expr.(*ast.ExprNew).Class.(*ast.Name)
 
 	c, err := symbol.NewClassLikeFromName(root, n)
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	iter := c.InheritsIter()
 
 	cls, done, err := iter()
-	is.Equal(done, false)
-	is.NoErr(err)
-	is.Equal(cls.GetFQN().Name(), "TestTrait")
+	require.False(t, done)
+	require.NoError(t, err)
+	require.Equal(t, cls.GetFQN().Name(), "TestTrait")
 
 	methIter := cls.MethodsIter()
 	meth, done, err := methIter()
 	what.Is(meth)
-	is.Equal(done, false)
-	is.NoErr(err)
-	is.Equal(meth.Name(), "test")
-	is.Equal(meth.Privacy(), phprivacy.PrivacyPublic)
-	is.True(meth.CanBeAccessedFrom(phprivacy.PrivacyPublic))
-	is.True(meth.CanBeAccessedFrom(phprivacy.PrivacyProtected))
-	is.True(meth.CanBeAccessedFrom(phprivacy.PrivacyPrivate))
-	is.Equal(meth.IsStatic(), false)
-	is.Equal(meth.IsFinal(), false)
+	require.False(t, done)
+	require.NoError(t, err)
+	require.Equal(t, meth.Name(), "test")
+	require.Equal(t, meth.Privacy(), phprivacy.PrivacyPublic)
+	require.True(t, meth.CanBeAccessedFrom(phprivacy.PrivacyPublic))
+	require.True(t, meth.CanBeAccessedFrom(phprivacy.PrivacyProtected))
+	require.True(t, meth.CanBeAccessedFrom(phprivacy.PrivacyPrivate))
+	require.False(t, meth.IsStatic())
+	require.False(t, meth.IsFinal())
 
 	// zero := iter()
 	// is.Equal(zero.FullyQualifier.Get().Name(), "TestBase")

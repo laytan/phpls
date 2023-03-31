@@ -21,8 +21,8 @@ import (
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/matryer/is"
 	"github.com/samber/do"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
@@ -37,12 +37,11 @@ func TestMain(m *testing.M) {
 func TestAnnotateThrows(t *testing.T) {
 	t.SkipNow()
 	t.Parallel()
-	is := is.New(t)
 
 	root := filepath.Join(pathutils.Root(), "internal", "throws", "testdata")
 
 	err := setup(root, phpversion.EightOne())
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	scenarios := annotated.Aggregate(t, root)
 	for categoryName, category := range scenarios {
@@ -54,7 +53,6 @@ func TestAnnotateThrows(t *testing.T) {
 				name, scenario := name, scenario
 				t.Run(name, func(t *testing.T) {
 					t.Parallel()
-					is := is.New(t)
 
 					if scenario.ShouldSkip {
 						t.SkipNow()
@@ -62,7 +60,7 @@ func TestAnnotateThrows(t *testing.T) {
 
 					if scenario.IsDump {
 						root, err := wrkspc.FromContainer().IROf(scenario.In.Path)
-						is.NoErr(err)
+						require.NoError(t, err)
 						what.Is(root)
 						return
 					}
@@ -72,7 +70,7 @@ func TestAnnotateThrows(t *testing.T) {
 					}
 
 					ctx, err := context.New(&scenario.In)
-					is.NoErr(err)
+					require.NoError(t, err)
 
 					// Get the first method or function in the context.
 					var scope ast.Vertex
@@ -98,7 +96,6 @@ func TestAnnotateThrows(t *testing.T) {
 						scenario.Out,
 						func(pos *position.Position) *fqn.FQN {
 							ctx, err := context.New(pos)
-							is.NoErr(err)
 
 							cls := ctx.Current()
 							if !nodescopes.IsClassLike(cls.GetType()) {
@@ -106,7 +103,7 @@ func TestAnnotateThrows(t *testing.T) {
 							}
 
 							root, err := wrkspc.FromContainer().IROf(pos.Path)
-							is.NoErr(err)
+							require.NoError(t, err)
 
 							fqn := fqner.FullyQualifyName(
 								root,

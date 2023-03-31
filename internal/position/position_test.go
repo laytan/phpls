@@ -9,12 +9,11 @@ import (
 
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPosition(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	expectations := map[uint][]uint{
 		74: {7, 5},
@@ -45,17 +44,16 @@ func TestPosition(t *testing.T) {
 			"position.php",
 		),
 	)
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	for pos, loc := range expectations {
 		pos, loc := pos, loc
 		t.Run(fmt.Sprint(pos), func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
 
 			row, col := position.PosToLoc(string(content), pos)
-			is.Equal(row, loc[0])
-			is.Equal(col, loc[1])
+			require.Equal(t, row, loc[0])
+			require.Equal(t, col, loc[1])
 		})
 	}
 
@@ -63,10 +61,9 @@ func TestPosition(t *testing.T) {
 		want, loc := want, loc
 		t.Run(fmt.Sprint(want), func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
 
 			pos := position.LocToPos(string(content), loc[0], loc[1])
-			is.Equal(pos, want)
+			require.Equal(t, pos, want)
 		})
 	}
 }

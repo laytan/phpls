@@ -10,7 +10,7 @@ import (
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/position"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFQN(t *testing.T) {
@@ -47,12 +47,10 @@ func TestFQN(t *testing.T) {
 		i, test := i, test
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
-
 			f := fqn.New(test.FQN)
-			is.Equal(f.String(), test.FQN)
-			is.Equal(f.Name(), test.Name)
-			is.Equal(f.Namespace(), test.Namespace)
+			require.Equal(t, f.String(), test.FQN)
+			require.Equal(t, f.Name(), test.Name)
+			require.Equal(t, f.Namespace(), test.Namespace)
 		})
 	}
 }
@@ -222,17 +220,15 @@ func TestFQNTraverser(t *testing.T) {
 		name, test := name, test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
-
 			root, err := parser.Parse([]byte(test.code))
-			is.NoErr(err)
+			require.NoError(t, err)
 
 			fqnt := fqn.NewTraverser()
 			fqntt := traverser.NewTraverser(fqnt)
 			root.Accept(fqntt)
 
 			result := fqnt.ResultFor(test.name)
-			is.Equal(result.String(), test.expect)
+			require.Equal(t, result.String(), test.expect)
 		})
 	}
 }

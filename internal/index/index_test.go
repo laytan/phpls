@@ -20,8 +20,8 @@ import (
 	"github.com/laytan/elephp/pkg/datasize"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/matryer/is"
 	"github.com/samber/do"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkIndex(b *testing.B) {
@@ -31,8 +31,6 @@ func BenchmarkIndex(b *testing.B) {
 	// 	profile.NoShutdownHook,
 	// )
 	// defer prof.Stop()
-
-	is := is.New(b)
 
 	do.OverrideValue(nil, index.New(phpversion.EightOne()))
 	do.OverrideValue(nil, config.Default())
@@ -49,7 +47,7 @@ func BenchmarkIndex(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		err := p.ParseWithoutProgress()
-		is.NoErr(err)
+		require.NoError(b, err)
 
 		stats := runtime.MemStats{}
 		runtime.ReadMemStats(&stats)
@@ -60,8 +58,6 @@ func BenchmarkIndex(b *testing.B) {
 var root = os.Getenv("ROOT")
 
 func BenchmarkCountWalk(b *testing.B) {
-	is := is.New(b)
-
 	count := 0
 	for i := 0; i < b.N; i++ {
 		count = 0
@@ -78,15 +74,13 @@ func BenchmarkCountWalk(b *testing.B) {
 			return nil
 		})
 
-		is.NoErr(err)
+		require.NoError(b, err)
 	}
 
 	b.Logf("BenchmarkCountWalk: %d\n", count)
 }
 
 func BenchmarkCountWalkDir(b *testing.B) {
-	is := is.New(b)
-
 	count := 0
 	for i := 0; i < b.N; i++ {
 		count = 0
@@ -103,15 +97,13 @@ func BenchmarkCountWalkDir(b *testing.B) {
 			return nil
 		})
 
-		is.NoErr(err)
+		require.NoError(b, err)
 	}
 
 	b.Logf("BenchmarkCountWalkDir: %d\n", count)
 }
 
 func BenchmarkCountFindShell(b *testing.B) {
-	is := is.New(b)
-
 	count := 0
 	for i := 0; i < b.N; i++ {
 		c1 := exec.Command("find", root, "-type", "f")
@@ -125,23 +117,23 @@ func BenchmarkCountFindShell(b *testing.B) {
 		c2.Stdout = &b2
 
 		err := c1.Start()
-		is.NoErr(err)
+		require.NoError(b, err)
 
 		err = c2.Start()
-		is.NoErr(err)
+		require.NoError(b, err)
 
 		err = c1.Wait()
-		is.NoErr(err)
+		require.NoError(b, err)
 
 		err = w.Close()
-		is.NoErr(err)
+		require.NoError(b, err)
 
 		err = c2.Wait()
-		is.NoErr(err)
+		require.NoError(b, err)
 
 		countStr := strings.TrimSpace(b2.String())
 		c, err := strconv.Atoi(countStr)
-		is.NoErr(err)
+		require.NoError(b, err)
 		count = c
 	}
 

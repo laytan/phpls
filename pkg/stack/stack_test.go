@@ -4,23 +4,22 @@ import (
 	"testing"
 
 	"github.com/laytan/elephp/pkg/stack"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueue(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	q := stack.New[int]()
 
 	v := q.Pop()
-	is.Equal(v, 0)
+	require.Equal(t, v, 0)
 
 	q.Push(1)
-	is.Equal(q.Length(), 1)
+	require.Equal(t, q.Length(), 1, "equal length")
 
 	v = q.Pop()
-	is.Equal(v, 1)
+	require.Equal(t, v, 1)
 
 	items := []int{
 		1,
@@ -34,11 +33,11 @@ func TestQueue(t *testing.T) {
 	}
 	for i, item := range items {
 		q.Push(item)
-		is.Equal(q.Length(), i+1)
+		require.Equal(t, q.Length(), i+1)
 	}
 
 	for i := len(items) - 1; i >= 0; i-- {
 		v := q.Pop()
-		is.Equal(v, items[i])
+		require.Equal(t, v, items[i])
 	}
 }
