@@ -59,7 +59,7 @@ func (s *Server) DidChange(
 	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
 	newContent := params.ContentChanges[len(params.ContentChanges)-1]
 
-	prevContent := wrkspc.FromContainer().FContentOf(path)
+	prevContent := wrkspc.Current.FContentOf(path)
 	if strutil.RemoveWhitespace(newContent.Text) == strutil.RemoveWhitespace(prevContent) {
 		what.Happens("Skipping file update (only whitespace change) of %s", path)
 		return nil

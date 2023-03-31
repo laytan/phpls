@@ -14,7 +14,6 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/samber/do"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
@@ -224,7 +223,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 					}
 
 					if scenario.IsDump {
-						root, err := wrkspc.FromContainer().IROf(scenario.In.Path)
+						root, err := wrkspc.Current.IROf(scenario.In.Path)
 						require.NoError(t, err)
 						what.Is(root)
 						return
@@ -250,9 +249,9 @@ func TestAnnotatedDefinitions(t *testing.T) {
 }
 
 func setup(root string, phpv *phpversion.PHPVersion) *project.Project {
-	do.OverrideValue(nil, config.Default())
-	do.OverrideValue(nil, index.New(phpv))
-	do.OverrideValue(nil, wrkspc.New(phpv, root, stubsDir))
+	config.Current = config.Default()
+	index.Current = index.New(phpv)
+	wrkspc.Current = wrkspc.New(phpv, root, stubsDir)
 
 	return project.New()
 }

@@ -39,7 +39,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 				defer done.Add(1)
 				defer wg.Done()
 
-				if err := index.FromContainer().Index(file.Path, file.Content); err != nil {
+				if err := index.Current.Index(file.Path, file.Content); err != nil {
 					log.Println(
 						fmt.Errorf("Could not index the symbols in %s: %w", file.Path, err),
 					)
@@ -49,7 +49,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 		}
 	}()
 
-	w := wrkspc.FromContainer()
+	w := wrkspc.Current
 	if err := w.Index(files, total, totalDone); err != nil {
 		log.Println(
 			fmt.Errorf(
@@ -82,14 +82,14 @@ func (p *Project) ParseWithoutProgress() error {
 }
 
 func (p *Project) ParseFileUpdate(path string, content string) error {
-	w := wrkspc.FromContainer()
+	w := wrkspc.Current
 
 	// NOTE: order is important here.
 	if err := w.RefreshFrom(path, content); err != nil {
 		return fmt.Errorf("Could not refresh indexed content of %s: %w", path, err)
 	}
 
-	if err := index.FromContainer().Refresh(path, content); err != nil {
+	if err := index.Current.Refresh(path, content); err != nil {
 		return fmt.Errorf("Could not refresh indexed symbols of %s: %w", path, err)
 	}
 

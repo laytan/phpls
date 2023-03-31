@@ -12,7 +12,6 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5
 	github.com/laytan/php-parser v0.9.1-0.20230331145008-68ac672368c7
-	github.com/samber/do v1.6.0
 	github.com/shivamMg/trie v0.0.1
 	github.com/stretchr/testify v1.8.2
 	go.uber.org/goleak v1.2.1
@@ -22,6 +21,7 @@ require (
 
 require (
 	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shivamMg/ppds v0.0.1 // indirect
 	golang.org/x/mod v0.9.0 // indirect

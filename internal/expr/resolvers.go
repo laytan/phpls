@@ -388,7 +388,7 @@ func resolveConst(
 }
 
 func expandCtx(ctx *fqn.FQN) *symbol.ClassLike {
-	iNode, ok := index.FromContainer().Find(ctx)
+	iNode, ok := index.Current.Find(ctx)
 	if !ok {
 		log.Println(fmt.Errorf("[expr.expandCtx(%v)]: can't find in index", ctx))
 		return nil

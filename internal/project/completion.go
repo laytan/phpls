@@ -26,12 +26,12 @@ func (p *Project) Complete(
 		return nil
 	}
 
-	return index.FromContainer().FindPrefix(query, maxCompletionResults)
+	return index.Current.FindPrefix(query, maxCompletionResults)
 }
 
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.
 func (p *Project) getCompletionQuery(pos *position.Position) string {
-	content := wrkspc.FromContainer().FContentOf(pos.Path)
+	content := wrkspc.Current.FContentOf(pos.Path)
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	for i := 0; scanner.Scan(); i++ {
 		// The target line:
@@ -86,7 +86,7 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 
 // Returns the position for the namespace statement that matches the given position.
 func (p *Project) Namespace(pos *position.Position) *position.Position {
-	content, root := wrkspc.FromContainer().FAllOf(pos.Path)
+	content, root := wrkspc.Current.FAllOf(pos.Path)
 	t := traversers.NewNamespace(int(pos.Row))
 	tv := traverser.NewTraverser(t)
 	root.Accept(tv)

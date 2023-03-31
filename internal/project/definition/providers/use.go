@@ -27,7 +27,7 @@ func (p *UseProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
 
 func (p *UseProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	key := fqn.New(fqn.PartSeperator + nodeident.Get(ctx.Current()))
-	res, ok := index.FromContainer().Find(key)
+	res, ok := index.Current.Find(key)
 	if !ok {
 		log.Println(fmt.Errorf("[providers.UseProvider.Define]: can't find %s in index", key))
 		return nil, definition.ErrNoDefinitionFound

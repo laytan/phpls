@@ -18,7 +18,6 @@ import (
 	// TODO: what is the difference between jsonrpc2 and jsonrpc2_v2?
 	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
-	"github.com/samber/do"
 )
 
 func main() {
@@ -36,7 +35,7 @@ func main() {
 	}
 
 	conf := config.New()
-	do.ProvideValue(nil, conf)
+	config.Current = conf
 
 	disregardErr, err := conf.Initialize()
 	if disregardErr {

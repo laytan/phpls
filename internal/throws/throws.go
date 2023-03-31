@@ -338,7 +338,7 @@ func (t *Throws) resolve(node ast.Vertex) (*ast.Root, *expr.Resolved, error) {
 		)
 	}
 
-	resolvedRoot := wrkspc.FromContainer().FIROf(resolvement.Path)
+	resolvedRoot := wrkspc.Current.FIROf(resolvement.Path)
 
 	return resolvedRoot, resolvement, nil
 }
@@ -346,7 +346,7 @@ func (t *Throws) resolve(node ast.Vertex) (*ast.Root, *expr.Resolved, error) {
 func (t *Throws) catches(thrown *fqn.FQN) func(catch *fqn.FQN) bool {
 	defaultChecker := func(_ *fqn.FQN) bool { return false }
 
-	throwNode, ok := index.FromContainer().Find(thrown)
+	throwNode, ok := index.Current.Find(thrown)
 	if !ok {
 		log.Println(
 			fmt.Errorf(

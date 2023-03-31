@@ -32,7 +32,7 @@ func FullyQualifyName(root *ast.Root, name ast.Vertex) *fqn.FQN {
 
 func FindFullyQualifiedName(root *ast.Root, name ast.Vertex) (*index.INode, bool) {
 	qualified := FullyQualifyName(root, name)
-	return index.FromContainer().Find(qualified)
+	return index.Current.Find(qualified)
 }
 
 type rooter interface {

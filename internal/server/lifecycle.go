@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
@@ -17,7 +18,6 @@ import (
 	"github.com/laytan/elephp/pkg/processwatch"
 	"github.com/laytan/elephp/pkg/stubs"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
-	"github.com/samber/do"
 	"golang.org/x/exp/slices"
 )
 
@@ -104,8 +104,8 @@ func (s *Server) Initialize(
 			HoverProvider: &protocol.Or_ServerCapabilities_hoverProvider{Value: true},
 		},
 		ServerInfo: &protocol.PServerInfoMsg_initialize{
-			Name:    Config().Name(),
-			Version: Config().Version(),
+			Name:    config.Current.Name(),
+			Version: config.Current.Version(),
 		},
 	}, nil
 }
@@ -199,7 +199,7 @@ func (s *Server) index() {
 }
 
 func (s *Server) createProject(stubsDir string) (*project.Project, error) {
-	phpv, err := Config().PHPVersion()
+	phpv, err := config.Current.PHPVersion()
 	if err != nil {
 		return nil, fmt.Errorf("creating project: %w", err)
 	}
@@ -208,19 +208,19 @@ func (s *Server) createProject(stubsDir string) (*project.Project, error) {
 
 	i := index.New(phpv)
 	w := wrkspc.New(phpv, string(s.root), stubsDir)
-	do.ProvideValue(nil, i)
-	do.ProvideValue(nil, w)
+	index.Current = i
+	wrkspc.Current = w
 
 	return project.New(), nil
 }
 
 func (s *Server) initStubs(ctx context.Context) (string, error) {
-	phpv, err := Config().PHPVersion()
+	phpv, err := config.Current.PHPVersion()
 	if err != nil {
 		return "", fmt.Errorf("initializing stubs, getting php version: %w", err)
 	}
 
-	stubsDir, err := stubs.Path(Config().StubsDir(), phpv)
+	stubsDir, err := stubs.Path(config.Current.StubsDir(), phpv)
 	if err == nil {
 		return stubsDir, nil
 	}
@@ -241,7 +241,7 @@ func (s *Server) initStubs(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("started tracking stub progress: %w", err)
 	}
 
-	stubsDir, err = stubs.Generate(Config().StubsDir(), phpv, done)
+	stubsDir, err = stubs.Generate(config.Current.StubsDir(), phpv, done)
 
 	if err != nil {
 		err = fmt.Errorf("generating stubs: %w", err)
