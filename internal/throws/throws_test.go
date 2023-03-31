@@ -96,6 +96,7 @@ func TestAnnotateThrows(t *testing.T) {
 						scenario.Out,
 						func(pos *position.Position) *fqn.FQN {
 							ctx, err := context.New(pos)
+							require.NoError(t, err)
 
 							cls := ctx.Current()
 							if !nodescopes.IsClassLike(cls.GetType()) {
