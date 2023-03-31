@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/conf"
-	"github.com/VKCOM/php-parser/pkg/errors"
-	"github.com/VKCOM/php-parser/pkg/parser"
-	"github.com/VKCOM/php-parser/pkg/version"
-	"github.com/VKCOM/php-parser/pkg/visitor/printer"
 	"github.com/andreyvit/diff"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/strutil"
 	"github.com/laytan/elephp/pkg/stubs/stubtransform"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/conf"
+	"github.com/laytan/php-parser/pkg/errors"
+	"github.com/laytan/php-parser/pkg/parser"
+	"github.com/laytan/php-parser/pkg/version"
+	"github.com/laytan/php-parser/pkg/visitor/printer"
 )
 
 type scenario struct {

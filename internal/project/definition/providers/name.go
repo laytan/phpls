@@ -1,11 +1,11 @@
 package providers
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // NameProvider resolves the definition of a class-like name.

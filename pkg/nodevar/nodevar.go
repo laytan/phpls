@@ -3,7 +3,7 @@ package nodevar
 import (
 	"log"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 func IsAssignment(t ast.Type) bool {

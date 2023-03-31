@@ -3,11 +3,11 @@ package symbol
 import (
 	"fmt"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 type Function struct {

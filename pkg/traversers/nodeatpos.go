@@ -3,9 +3,9 @@ package traversers
 import (
 	"log"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/token"
-	"github.com/VKCOM/php-parser/pkg/visitor"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/token"
+	"github.com/laytan/php-parser/pkg/visitor"
 )
 
 func NewNodeAtPos(pos int) *NodeAtPos {

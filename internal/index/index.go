@@ -7,14 +7,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/symboltrie"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/samber/do"
 )
 

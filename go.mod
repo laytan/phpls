@@ -5,7 +5,6 @@ go 1.20
 require (
 	appliedgo.net/what v0.1.5
 	github.com/DmitriyVTitov/size v1.5.0
-	github.com/VKCOM/php-parser v0.8.2
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/arl/statsviz v0.5.2
 	github.com/davecgh/go-spew v1.1.1
@@ -13,6 +12,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5
+	github.com/laytan/php-parser v0.9.1-0.20230331145008-68ac672368c7
 	github.com/matryer/is v1.4.1
 	github.com/samber/do v1.6.0
 	github.com/shivamMg/trie v0.0.1

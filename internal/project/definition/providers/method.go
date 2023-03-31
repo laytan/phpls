@@ -1,9 +1,9 @@
 package providers
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // MethodProvider resolves the definition of a method call.

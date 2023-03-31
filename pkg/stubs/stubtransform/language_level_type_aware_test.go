@@ -3,9 +3,9 @@ package stubtransform_test
 import (
 	"testing"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/stubs/stubtransform"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 func TestLanguageLevelTypeAware(t *testing.T) {

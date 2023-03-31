@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // targetter keeps track of the use statements and namespace, ultimately checking

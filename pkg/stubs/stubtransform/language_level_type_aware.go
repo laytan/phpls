@@ -3,11 +3,11 @@ package stubtransform
 import (
 	"fmt"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/token"
-	"github.com/VKCOM/php-parser/pkg/visitor"
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/token"
+	"github.com/laytan/php-parser/pkg/visitor"
 	"golang.org/x/exp/slices"
 )
 

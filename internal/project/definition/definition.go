@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/VKCOM/php-parser/pkg/position"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/php-parser/pkg/position"
 )
 
 const (

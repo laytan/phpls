@@ -1,9 +1,9 @@
 package providers
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // StaticProvider provides definitions for static method calls like Foo::bar().

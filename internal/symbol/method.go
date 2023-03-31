@@ -1,8 +1,8 @@
 package symbol
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 type Method struct {

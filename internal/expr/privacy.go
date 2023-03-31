@@ -1,8 +1,8 @@
 package expr
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/phprivacy"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // Context about the iteration for determining privacy.

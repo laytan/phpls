@@ -3,13 +3,13 @@ package fqner
 import (
 	"strings"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 func FullyQualifyName(root *ast.Root, name ast.Vertex) *fqn.FQN {

@@ -6,8 +6,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/symbol"
@@ -21,6 +19,8 @@ import (
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 var starters = map[Type]StartResolver{

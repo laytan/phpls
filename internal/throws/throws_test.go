@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/fqner"
@@ -21,6 +20,7 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/matryer/is"
 	"github.com/samber/do"
 	"go.uber.org/goleak"

@@ -3,9 +3,9 @@ package symbol
 import (
 	"fmt"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 type parametized struct {

@@ -6,8 +6,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/VKCOM/php-parser/pkg/position"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/php-parser/pkg/position"
 )
 
 // file://

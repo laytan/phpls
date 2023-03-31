@@ -6,13 +6,13 @@ import (
 	"log"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/internal/project/definition/providers"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 var (

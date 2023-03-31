@@ -3,7 +3,7 @@ package wrkspc
 import (
 	"log"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // Rooter is a common way of passing around the root and path of a file/symbol.

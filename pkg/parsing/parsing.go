@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 
 	"appliedgo.net/what"
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/conf"
-	astErrors "github.com/VKCOM/php-parser/pkg/errors"
-	astParser "github.com/VKCOM/php-parser/pkg/parser"
-	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/conf"
+	astErrors "github.com/laytan/php-parser/pkg/errors"
+	astParser "github.com/laytan/php-parser/pkg/parser"
+	"github.com/laytan/php-parser/pkg/version"
 )
 
 const (

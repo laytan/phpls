@@ -9,12 +9,12 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/conf"
-	"github.com/VKCOM/php-parser/pkg/errors"
-	"github.com/VKCOM/php-parser/pkg/parser"
-	"github.com/VKCOM/php-parser/pkg/version"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/conf"
+	"github.com/laytan/php-parser/pkg/errors"
+	"github.com/laytan/php-parser/pkg/parser"
+	"github.com/laytan/php-parser/pkg/version"
 	"golang.org/x/sync/errgroup"
 )
 

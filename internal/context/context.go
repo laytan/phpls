@@ -3,13 +3,13 @@ package context
 import (
 	"fmt"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/token"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/token"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 type Ctx struct {

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/phprivacy"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 var resolvers = map[Type]ClassResolver{

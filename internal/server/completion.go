@@ -7,10 +7,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 func (s *Server) Completion(

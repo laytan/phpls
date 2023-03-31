@@ -3,8 +3,6 @@ package providers
 import (
 	"fmt"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/internal/index"
@@ -12,6 +10,8 @@ import (
 	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 type CommentsProvider struct{}

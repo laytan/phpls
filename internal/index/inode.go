@@ -1,12 +1,12 @@
 package index
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/position"
-	"github.com/VKCOM/php-parser/pkg/visitor"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/position"
+	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 type INode struct {

@@ -1,7 +1,7 @@
 package nodescopes
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // Scopes are node kinds that declare a scope

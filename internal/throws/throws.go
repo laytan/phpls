@@ -6,9 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
-	"github.com/VKCOM/php-parser/pkg/visitor"
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/internal/fqner"
 	"github.com/laytan/elephp/internal/index"
@@ -21,6 +18,9 @@ import (
 	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/elephp/pkg/set"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"golang.org/x/exp/slices"
 )
 

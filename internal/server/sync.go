@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"appliedgo.net/what"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/strutil"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {

@@ -1,10 +1,10 @@
 package providers
 
 import (
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/project/definition"
 	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // ThisProvider resolves the definition of the current class scope for '$this'

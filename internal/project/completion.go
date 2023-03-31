@@ -7,11 +7,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/VKCOM/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 const maxCompletionResults = 20

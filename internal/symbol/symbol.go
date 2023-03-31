@@ -3,8 +3,8 @@ package symbol
 import (
 	"log"
 
-	"github.com/VKCOM/php-parser/pkg/ast"
 	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/php-parser/pkg/ast"
 )
 
 func nodeToName(node ast.Vertex) *ast.Name {
