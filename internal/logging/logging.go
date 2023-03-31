@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/laytan/elephp/internal/config"
-	"github.com/samber/do"
 )
 
 const (
@@ -22,8 +21,6 @@ const (
 	dirPerms  = 0o755
 	filePerms = 0o666
 )
-
-var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
 
 func Configure(root string) (stop func()) {
 	logsPath := LogsPath(root)
@@ -50,14 +47,14 @@ func Configure(root string) (stop func()) {
 }
 
 func LogsPath(root string) string {
-	name := Config().Name()
+	name := config.Current.Name()
 
 	filename := name + "-" + time.Now().Format(dateLayout) + fileType
 	return filepath.Join(root, filename)
 }
 
 func cleanLogs(root string) {
-	name := Config().Name()
+	name := config.Current.Name()
 
 	minTime := time.Now().Add(-(time.Hour * hoursInDay * daysToKeep))
 

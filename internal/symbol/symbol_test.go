@@ -15,7 +15,6 @@ import (
 	"github.com/laytan/elephp/pkg/phprivacy"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/samber/do"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
@@ -37,7 +36,7 @@ func TestClass(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	root, err := wrkspc.FromContainer().
+	root, err := wrkspc.Current.
 		IROf(filepath.Join(pathutils.Root(), "internal", "symbol", "testdata", "test.php"))
 	require.NoError(t, err)
 
@@ -77,12 +76,12 @@ func TestClass(t *testing.T) {
 }
 
 func setup(root string, phpv *phpversion.PHPVersion) error {
-	i := index.New(phpv)
-	do.OverrideValue(nil, config.Default())
-	do.OverrideValue(nil, i)
-	do.OverrideValue(
-		nil,
-		wrkspc.New(phpv, root, filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")),
+	config.Current = config.Default()
+	index.Current = index.New(phpv)
+	wrkspc.Current = wrkspc.New(
+		phpv,
+		root,
+		filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs"),
 	)
 
 	p := project.New()

@@ -5,16 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/lsprogress"
 	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
-	"github.com/samber/do"
 )
-
-var Config = func() config.Config { return do.MustInvoke[config.Config](nil) }
 
 func NewServer(client protocol.ClientCloser) *Server {
 	return &Server{client: client, progress: lsprogress.NewTracker(client)}

@@ -26,7 +26,7 @@ func (c *ConstantProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
 // TODO: return non-array.
 func (c *ConstantProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
 	key := fqn.New(fqn.PartSeperator + nodeident.Get(ctx.Current().(*ast.ExprConstFetch).Const))
-	result, ok := index.FromContainer().Find(key)
+	result, ok := index.Current.Find(key)
 	if !ok {
 		log.Println(
 			fmt.Errorf("[providers.ConstantProvider.Define]: unable to find %s in index", key),

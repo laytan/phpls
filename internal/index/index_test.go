@@ -20,7 +20,6 @@ import (
 	"github.com/laytan/elephp/pkg/datasize"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/samber/do"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,16 +31,13 @@ func BenchmarkIndex(b *testing.B) {
 	// )
 	// defer prof.Stop()
 
-	do.OverrideValue(nil, index.New(phpversion.EightOne()))
-	do.OverrideValue(nil, config.Default())
+	index.Current = index.New(phpversion.EightOne())
+	config.Current = config.Default()
 
 	stubsDir := filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 	// NOTE: manually change this to some bigger projects for benching.
-	do.OverrideValue(
-		nil,
-		wrkspc.New(phpversion.EightOne(), stubsDir, "/Users/laytan/sites/dance-fever"),
-	)
+	wrkspc.Current = wrkspc.New(phpversion.EightOne(), stubsDir, stubsDir)
 
 	p := project.New()
 

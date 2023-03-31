@@ -15,7 +15,6 @@ import (
 	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
-	"github.com/samber/do"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 var (
 	ErrNotFound = fmt.Errorf(errNotFoundFmt, "", "")
 	ErrParse    = fmt.Errorf(errParseFmt, "", nil)
-	Config      = func() config.Config { return do.MustInvoke[config.Config](nil) }
+	Current     Index
 )
 
 type Index interface {
@@ -77,10 +76,6 @@ func New(phpv *phpversion.PHPVersion) Index {
 	}
 
 	return ind
-}
-
-func FromContainer() Index {
-	return do.MustInvoke[Index](nil)
 }
 
 func (i *index) Index(path string, content string) error {
@@ -191,7 +186,7 @@ func (i *index) Delete(path string) error {
 var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 func (i *index) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, Config().StubsDir()) || strings.HasPrefix(path, stubsDir) {
+	if strings.HasPrefix(path, config.Current.StubsDir()) || strings.HasPrefix(path, stubsDir) {
 		return i.stubParser
 	}
 

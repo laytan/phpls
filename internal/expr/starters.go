@@ -51,7 +51,7 @@ func (p *variableResolver) Up(
 	scopes *Scopes,
 	toResolve *DownResolvement,
 ) (*Resolved, *fqn.FQN, phprivacy.Privacy, bool) {
-	wrk := wrkspc.FromContainer()
+	wrk := wrkspc.Current
 	switch toResolve.Identifier {
 	case "$this", "self", "static":
 		if node, ok := fqner.FindFullyQualifiedName(scopes.Root, &ast.Name{
@@ -194,13 +194,13 @@ func (p *nameResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	res, ok := index.FromContainer().Find(qualified)
+	res, ok := index.Current.Find(qualified)
 	if !ok {
 		log.Printf("[expr.nameResolver.Up]: unable to find %s in index", qualified)
 		return nil, nil, 0, false
 	}
 
-	return &Resolved{Path: res.Path, Node: res.ToIRNode(wrkspc.FromContainer().FIROf(res.Path))},
+	return &Resolved{Path: res.Path, Node: res.ToIRNode(wrkspc.Current.FIROf(res.Path))},
 		qualified,
 		privacy,
 		true
@@ -313,7 +313,7 @@ func (p *functionResolver) Up(
 		Position: toResolve.Position,
 		Parts:    nameParts(toResolve.Identifier),
 	}); ok {
-		n := def.ToIRNode(wrkspc.FromContainer().FIROf(def.Path))
+		n := def.ToIRNode(wrkspc.Current.FIROf(def.Path))
 		return &Resolved{
 			Node: n,
 			Path: def.Path,
@@ -322,13 +322,13 @@ func (p *functionResolver) Up(
 
 	// Check for global functions.
 	key := fqn.New(fqn.PartSeperator + toResolve.Identifier)
-	def, ok := index.FromContainer().Find(key)
+	def, ok := index.Current.Find(key)
 	if !ok {
 		log.Println(fmt.Errorf("[expr.functionResolver.Up]: unable to find %s in index", key))
 		return nil, nil, 0, false
 	}
 
-	n := def.ToIRNode(wrkspc.FromContainer().FIROf(def.Path))
+	n := def.ToIRNode(wrkspc.Current.FIROf(def.Path))
 	return &Resolved{
 		Node: n,
 		Path: def.Path,
@@ -370,7 +370,7 @@ func (newresolver *newResolver) Up(
 		scopes.Root,
 		&ast.Name{Position: toResolve.Position, Parts: nameParts(toResolve.Identifier)},
 	); qualified != nil {
-		def, ok := index.FromContainer().Find(qualified)
+		def, ok := index.Current.Find(qualified)
 		if !ok {
 			log.Println(fmt.Errorf("[expr.newResolver.Up]: unable to find %s in index", qualified))
 			return nil, nil, 0, false
@@ -378,7 +378,7 @@ func (newresolver *newResolver) Up(
 
 		return &Resolved{
 				Path: def.Path,
-				Node: def.ToIRNode(wrkspc.FromContainer().FIROf(def.Path)),
+				Node: def.ToIRNode(wrkspc.Current.FIROf(def.Path)),
 			},
 			qualified,
 			phprivacy.PrivacyPublic,

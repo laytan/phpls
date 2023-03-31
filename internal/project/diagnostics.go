@@ -13,7 +13,7 @@ import (
 )
 
 func (p *Project) Diagnose(path string, content string) (issues []Issue, changed bool, err error) {
-	if strings.HasPrefix(path, config.FromContainer().StubsDir()) {
+	if strings.HasPrefix(path, config.Current.StubsDir()) {
 		return
 	}
 

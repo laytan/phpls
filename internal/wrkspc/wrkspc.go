@@ -18,7 +18,6 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/samber/do"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -34,7 +33,7 @@ const (
 var (
 	ErrFileNotIndexed    = errors.New("File is not indexed in the workspace")
 	indexGoRoutinesLimit = 64
-	Config               = func() config.Config { return do.MustInvoke[config.Config](nil) }
+	Current              Wrkspc
 )
 
 type file struct {
@@ -106,15 +105,11 @@ func New(phpv *phpversion.PHPVersion, root string, stubs string) Wrkspc {
 		normalParser:    normalParser,
 		stubParser:      stubParser,
 		roots:           []string{root, stubs},
-		fileExtensions:  Config().FileExtensions(),
-		ignoredDirNames: Config().IgnoredDirNames(),
+		fileExtensions:  config.Current.FileExtensions(),
+		ignoredDirNames: config.Current.IgnoredDirNames(),
 		files:           files,
 		irs:             irs,
 	}
-}
-
-func FromContainer() Wrkspc {
-	return do.MustInvoke[Wrkspc](nil)
 }
 
 type wrkspc struct {
@@ -363,7 +358,7 @@ func (w *wrkspc) shouldParse(d fs.DirEntry) (bool, error) {
 var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 func (w *wrkspc) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, Config().StubsDir()) || strings.HasPrefix(path, stubsDir) {
+	if strings.HasPrefix(path, config.Current.StubsDir()) || strings.HasPrefix(path, stubsDir) {
 		return w.stubParser
 	}
 

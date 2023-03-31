@@ -83,7 +83,7 @@ func (p *CommentsProvider) Define(ctx *context.Ctx) ([]*definition.Definition, e
 	clsses := doxcontext.ApplyContext(fqnt, currFQN, ctx.Current().GetPosition(), typ)
 	for _, cls := range clsses {
 		// After ApplyContext, the returned types are all fully qualified.
-		if iNode, ok := index.FromContainer().Find(fqn.New(cls.Name)); ok {
+		if iNode, ok := index.Current.Find(fqn.New(cls.Name)); ok {
 			results = append(results, definition.IndexNodeToDef(iNode))
 		}
 	}

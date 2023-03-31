@@ -11,7 +11,6 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/laytan/elephp/pkg/connection"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/samber/do"
 )
 
 var ErrIncorrectConnTypeAmt = errors.New(
@@ -26,9 +25,7 @@ empty   Run the language server
 logs    Output the directory where logs are stored
 stubs   Output the directory where generated stubs are stored`
 
-func FromContainer() Config {
-	return do.MustInvoke[Config](nil)
-}
+var Current Config
 
 func New() Config {
 	return &lsConfig{Args: os.Args}
