@@ -29,5 +29,3 @@ require (
 	golang.org/x/tools v0.7.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/VKCOM/php-parser => github.com/laytan/php-parser v0.9.1-0.20230330002012-92d341cbb570
