@@ -6,15 +6,13 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/laytan/elephp/pkg/connection"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTcp(t *testing.T) {
 	t.Parallel()
 	// TODO: fix this test.
 	t.Skip("This does not consistently succeed")
-
-	is := is.New(t)
 
 	connChan := make(chan net.Conn)
 	listeningChann := make(chan bool)
@@ -23,20 +21,20 @@ func TestTcp(t *testing.T) {
 	}()
 
 	listening, ok := <-listeningChann
-	is.True(listening)
-	is.True(ok)
+	require.True(t, listening, "server should be listening")
+	require.True(t, ok, "server should be listening")
 
 	// Channel should be closed.
 	listening, ok = <-listeningChann
-	is.Equal(listening, false)
-	is.Equal(ok, false)
+	require.False(t, listening, "server should not be listening")
+	require.False(t, ok, "server should not be listening")
 
 	conn, err := net.Dial("tcp", ":1112")
-	is.NoErr(err)
+	require.NoError(t, err)
 	defer conn.Close()
 
 	_, ok = <-connChan
-	is.True(ok)
+	require.True(t, ok)
 
 	// Should not be accepting connections anymore.
 	conn, err = net.Dial("tcp", ":1112")
@@ -46,15 +44,13 @@ func TestTcp(t *testing.T) {
 	}
 
 	_, ok = <-connChan
-	is.Equal(ok, false)
+	require.False(t, ok)
 }
 
 func TestWs(t *testing.T) {
 	t.Parallel()
 	// TODO: fix this test.
 	t.Skip("This does not consistently succeed")
-
-	is := is.New(t)
 
 	connChan := make(chan net.Conn)
 	listeningChann := make(chan bool)
@@ -63,20 +59,20 @@ func TestWs(t *testing.T) {
 	}()
 
 	listening, ok := <-listeningChann
-	is.True(listening)
-	is.True(ok)
+	require.True(t, listening)
+	require.True(t, ok)
 
 	// Channel should be closed.
 	listening, ok = <-listeningChann
-	is.Equal(listening, false)
-	is.Equal(ok, false)
+	require.False(t, listening)
+	require.False(t, ok)
 
 	conn, _, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:1113", nil)
-	is.NoErr(err)
+	require.NoError(t, err)
 	defer conn.Close()
 
 	_, ok = <-connChan
-	is.True(ok)
+	require.True(t, ok)
 
 	conn, _, err = websocket.DefaultDialer.Dial("ws://127.0.0.1:1113", nil)
 	if err == nil {
@@ -85,5 +81,5 @@ func TestWs(t *testing.T) {
 	}
 
 	_, ok = <-connChan
-	is.Equal(ok, false)
+	require.False(t, ok)
 }

@@ -4,21 +4,20 @@ import (
 	"testing"
 
 	"github.com/laytan/elephp/pkg/queue"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueue(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	q := queue.New[int]()
 
 	v := q.Dequeue()
-	is.Equal(v, 0)
+	require.Equal(t, v, 0)
 
 	q.Enqueue(1)
 	v = q.Dequeue()
-	is.Equal(v, 1)
+	require.Equal(t, v, 1)
 
 	items := []int{
 		1,
@@ -36,6 +35,6 @@ func TestQueue(t *testing.T) {
 
 	for _, item := range items {
 		v := q.Dequeue()
-		is.Equal(v, item)
+		require.Equal(t, v, item)
 	}
 }

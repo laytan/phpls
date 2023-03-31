@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/andreyvit/diff"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseDoc(t *testing.T) {
@@ -379,7 +379,7 @@ func TestDoc_String(t *testing.T) {
 				Nodes:       tt.fields.Nodes,
 			}
 			if got := d.String(); got != tt.want {
-				t.Errorf("Results don't match:\n%v", diff.CharacterDiff(got, tt.want))
+				require.Equal(t, tt.want, got)
 			}
 		})
 	}

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 // out is nil when isNoDef is true.
@@ -27,7 +27,6 @@ var annotationRgx = regexp.MustCompile(`@t_(\w+)\(([\w\s]+), (\d+)\)`)
 
 func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario {
 	t.Helper()
-	is := is.New(t)
 
 	scenarios := make(map[string]map[string]*AnnotedScenario)
 	var scenarioLen uint
@@ -39,7 +38,7 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 		}
 
 		content, rErr := os.ReadFile(path)
-		is.NoErr(rErr)
+		require.NoError(t, rErr)
 
 		strcontent := string(content)
 
@@ -49,10 +48,10 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 		}
 
 		matches := annotationRgx.FindAllStringSubmatch(strcontent, -1)
-		is.Equal(len(indexes), len(matches))
+		require.Equal(t, len(indexes), len(matches), "indexes and matches must have equal length")
 
 		for i, match := range matches {
-			is.True(len(match) > 3)
+			require.Greater(t, len(match), 3)
 
 			row, _ := position.PosToLoc(strcontent, uint(indexes[i][0]))
 			function := match[1]
@@ -60,7 +59,7 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 			col := match[3]
 
 			colint, err := strconv.Atoi(col)
-			is.NoErr(err)
+			require.NoError(t, err)
 
 			group, name, ok := strings.Cut(name, "_")
 			if !ok {
@@ -131,7 +130,7 @@ func Aggregate(t *testing.T, root string) map[string]map[string]*AnnotedScenario
 
 		return nil
 	})
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	t.Logf(
 		"aggregated %d test scenarios from annotations in %s, running now",

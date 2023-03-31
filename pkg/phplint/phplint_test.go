@@ -7,7 +7,7 @@ import (
 
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phplint"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 var _, isCI = os.LookupEnv("CI")
@@ -27,11 +27,10 @@ func TestPhpLint(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
-		is := is.New(t)
 		skipCI(t)
 
 		out, err := phplint.LintString([]byte(""))
-		is.NoErr(err)
+		require.NoError(t, err)
 		if len(out) != 0 {
 			t.Errorf(
 				"Empty string passed to lint should return 0 issues but returned %d, got: %v",
@@ -43,11 +42,10 @@ func TestPhpLint(t *testing.T) {
 
 	t.Run("one line incomplete", func(t *testing.T) {
 		t.Parallel()
-		is := is.New(t)
 		skipCI(t)
 
 		out, err := phplint.LintString([]byte("<?php echo ?>"))
-		is.NoErr(err)
+		require.NoError(t, err)
 		if len(out) == 0 || out[0].Line() != 1 {
 			t.Errorf(
 				"Error linting string '<?php echo ?>', should return an issue on line 1, got: %v",
@@ -58,7 +56,6 @@ func TestPhpLint(t *testing.T) {
 
 	t.Run("multi line weird whiles", func(t *testing.T) {
 		t.Parallel()
-		is := is.New(t)
 		skipCI(t)
 
 		out, err := phplint.LintString([]byte(`
@@ -68,7 +65,7 @@ func TestPhpLint(t *testing.T) {
     while (false);
 ?>`,
 		))
-		is.NoErr(err)
+		require.NoError(t, err)
 		if len(out) == 0 {
 			t.Errorf(
 				"Error linting string, should return an issue, got: %v",
@@ -89,7 +86,6 @@ func TestPhpLintFile(t *testing.T) {
 
 	t.Run("syntax_errors.php", func(t *testing.T) {
 		t.Parallel()
-		is := is.New(t)
 		skipCI(t)
 
 		out, err := phplint.LintFile(
@@ -101,7 +97,7 @@ func TestPhpLintFile(t *testing.T) {
 				"syntax_errors.php",
 			),
 		)
-		is.NoErr(err)
+		require.NoError(t, err)
 		if len(out) == 0 {
 			t.Errorf(
 				"Error linting string, should return an issue, got: %v",
@@ -112,13 +108,12 @@ func TestPhpLintFile(t *testing.T) {
 
 	t.Run("bad_whiles.php", func(t *testing.T) {
 		t.Parallel()
-		is := is.New(t)
 		skipCI(t)
 
 		out, err := phplint.LintFile(
 			filepath.Join(pathutils.Root(), "pkg", "phplint", "testdata", "bad_whiles.php"),
 		)
-		is.NoErr(err)
+		require.NoError(t, err)
 		if len(out) == 0 {
 			t.Errorf(
 				"Error linting string, should return an issue, got: %v",

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/andreyvit/diff"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/strutil"
@@ -17,6 +16,7 @@ import (
 	"github.com/laytan/php-parser/pkg/parser"
 	"github.com/laytan/php-parser/pkg/version"
 	"github.com/laytan/php-parser/pkg/visitor/printer"
+	"github.com/stretchr/testify/require"
 )
 
 type scenario struct {
@@ -65,12 +65,7 @@ func runScenarios(
 			cExpected := strutil.RemoveWhitespace(scenario.expected)
 			cOut := strutil.RemoveWhitespace(out.String())
 			if cExpected != cOut {
-				t.Errorf(
-					"Result not as expected:\nWant: %v\nGot : %v\nDiff: %v",
-					cExpected,
-					cOut,
-					diff.CharacterDiff(cExpected, cOut),
-				)
+				require.Equal(t, cExpected, cOut)
 			}
 		})
 	}

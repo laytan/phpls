@@ -1,7 +1,6 @@
 package project_test
 
 import (
-	"errors"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -15,8 +14,8 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/matryer/is"
 	"github.com/samber/do"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
@@ -62,8 +61,6 @@ type stdlibScenario struct {
 
 //nolint:paralleltest,tparallel // Causes data race (indexing while testing?)
 func TestStdlibDefinitions(t *testing.T) {
-	is := is.New(t)
-
 	stdlibPath := filepath.Join(stdlibRoot, "stdlib.php")
 
 	scenarios := map[string]*stdlibScenario{
@@ -167,18 +164,16 @@ func TestStdlibDefinitions(t *testing.T) {
 
 	project := setup(stdlibRoot, phpversion.EightOne())
 	err := project.ParseWithoutProgress()
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	for name, scenario := range scenarios {
 		name, scenario := name, scenario
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
 
 			out, err := project.Definition(scenario.in)
-			is.NoErr(err)
-
-			is.Equal(len(out), 1)
+			require.NoError(t, err)
+			require.Len(t, out, 1)
 
 			if !reflect.DeepEqual(out[0], scenario.out) {
 				what.Is(out)
@@ -191,8 +186,6 @@ func TestStdlibDefinitions(t *testing.T) {
 
 //nolint:paralleltest,tparallel // Causes data race (indexing while testing?)
 func TestParserPanicIsRecovered(t *testing.T) {
-	is := is.New(t)
-
 	project := setup(
 		syntaxErrRoot,
 		&phpversion.PHPVersion{
@@ -202,16 +195,14 @@ func TestParserPanicIsRecovered(t *testing.T) {
 	)
 
 	err := project.ParseWithoutProgress()
-	is.NoErr(err)
+	require.NoError(t, err)
 }
 
 //nolint:paralleltest,tparallel // Causes data race (indexing while testing?)
 func TestAnnotatedDefinitions(t *testing.T) {
-	is := is.New(t)
-
 	proj := setup(annotatedRoot, phpversion.EightOne())
 	err := proj.ParseWithoutProgress()
-	is.NoErr(err)
+	require.NoError(t, err)
 
 	scenarios := annotated.Aggregate(t, annotatedRoot)
 	for group, gscenarios := range scenarios {
@@ -223,7 +214,6 @@ func TestAnnotatedDefinitions(t *testing.T) {
 				name, scenario := name, scenario
 				t.Run(name, func(t *testing.T) {
 					t.Parallel()
-					is := is.New(t)
 
 					if scenario.ShouldSkip {
 						t.SkipNow()
@@ -235,7 +225,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 
 					if scenario.IsDump {
 						root, err := wrkspc.FromContainer().IROf(scenario.In.Path)
-						is.NoErr(err)
+						require.NoError(t, err)
 						what.Is(root)
 						return
 					}
@@ -247,12 +237,12 @@ func TestAnnotatedDefinitions(t *testing.T) {
 					out, err := proj.Definition(&scenario.In)
 
 					if scenario.IsNoDef {
-						is.True(errors.Is(err, project.ErrNoDefinitionFound))
+						require.ErrorIs(t, err, project.ErrNoDefinitionFound)
 						return
 					}
 
-					is.NoErr(err)
-					is.True(reflect.DeepEqual(out, scenario.Out))
+					require.NoError(t, err)
+					require.Equal(t, out, scenario.Out)
 				})
 			}
 		})

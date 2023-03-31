@@ -6,7 +6,7 @@ import (
 
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/pkg/connection"
-	"github.com/matryer/is"
+	"github.com/stretchr/testify/require"
 )
 
 func newTestConfig(args []string) config.Config {
@@ -21,7 +21,6 @@ type connTypeTestInput struct {
 
 func TestConfigConnType(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	expectations := []connTypeTestInput{
 		{
@@ -54,15 +53,14 @@ func TestConfigConnType(t *testing.T) {
 		i, test := i, test
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
 			c := newTestConfig(test.args)
 			shownHelp, err := c.Initialize()
-			is.Equal(shownHelp, false)
-			is.NoErr(err)
+			require.False(t, shownHelp)
+			require.NoError(t, err)
 
 			connType, err := c.ConnType()
-			is.Equal(connType, test.connType)
-			is.Equal(err, test.err)
+			require.Equal(t, connType, test.connType)
+			require.Equal(t, err, test.err)
 		})
 	}
 }
@@ -76,7 +74,6 @@ type pidTestInput struct {
 
 func TestClientPid(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	expectations := []pidTestInput{
 		{
@@ -108,59 +105,55 @@ func TestClientPid(t *testing.T) {
 		i, test := i, test
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
 			config := newTestConfig(test.args)
 			shownHelp, err := config.Initialize()
-			is.Equal(shownHelp, false)
+			require.False(t, shownHelp)
 
 			if !test.error {
-				is.NoErr(err)
+				require.NoError(t, err)
 			}
 
 			pid, ok := config.ClientPid()
-			is.Equal(pid, test.pid)
-			is.Equal(ok, test.ok)
+			require.Equal(t, pid, test.pid)
+			require.Equal(t, ok, test.ok)
 		})
 	}
 }
 
 func TestStatsviz(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	config := newTestConfig([]string{"--statsviz"})
 	shownHelp, err := config.Initialize()
-	is.Equal(shownHelp, false)
-	is.NoErr(err)
-	is.True(config.UseStatsviz())
+	require.False(t, shownHelp)
+	require.NoError(t, err)
+	require.True(t, config.UseStatsviz())
 
 	config = newTestConfig([]string{})
 	shownHelp, err = config.Initialize()
-	is.Equal(shownHelp, false)
-	is.NoErr(err)
-	is.Equal(config.UseStatsviz(), false)
+	require.False(t, shownHelp)
+	require.NoError(t, err)
+	require.False(t, config.UseStatsviz())
 }
 
 func TestConnUrl(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	config := newTestConfig([]string{})
 	shownHelp, err := config.Initialize()
-	is.Equal(shownHelp, false)
-	is.NoErr(err)
-	is.Equal(config.ConnURL(), "127.0.0.1:2001")
+	require.False(t, shownHelp)
+	require.NoError(t, err)
+	require.Equal(t, config.ConnURL(), "127.0.0.1:2001")
 
 	config = newTestConfig([]string{"--url=\"127.0.0.1:2003\""})
 	shownHelp, err = config.Initialize()
-	is.Equal(shownHelp, false)
-	is.NoErr(err)
-	is.Equal(config.ConnURL(), "127.0.0.1:2003")
+	require.False(t, shownHelp)
+	require.NoError(t, err)
+	require.Equal(t, config.ConnURL(), "127.0.0.1:2003")
 }
 
 func TestHelp(t *testing.T) {
 	t.Parallel()
-	is := is.New(t)
 
 	expectations := [][]string{
 		{"--help"},
@@ -171,10 +164,9 @@ func TestHelp(t *testing.T) {
 		i, test := i, test
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
 			config := newTestConfig(test)
 			shownHelp, _ := config.Initialize()
-			is.Equal(shownHelp, true)
+			require.True(t, shownHelp)
 		})
 	}
 }
