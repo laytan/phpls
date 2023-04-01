@@ -12,3 +12,6 @@ gotestbuild:
 
 build-unsafenil:
 	cd third_party/unsafenil && go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
+
+build-formatter:
+	cd tools/formatter && composer install && box compile

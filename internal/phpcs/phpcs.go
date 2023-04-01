@@ -3,96 +3,169 @@ package phpcs
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os/exec"
+	"path/filepath"
+	"sync"
+	"time"
 
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/sourcegraph/go-diff/diff"
 )
 
-//go:generate stringer -type fixerExitCode
-type fixerExitCode int
+// TODO: Temporary, maybe a pool of them.
+var instance = &phpcs{}
 
-const (
-	Ok             fixerExitCode = 0
-	GeneralErr     fixerExitCode = 1
-	InvalidSyntax  fixerExitCode = 4
-	NeedsFixing    fixerExitCode = 8
-	AppConfigErr   fixerExitCode = 16
-	FixerConfigErr fixerExitCode = 32
-	PHPException   fixerExitCode = 64
-)
+var phar = filepath.Join(pathutils.Root(), "tools", "formatter", "index.phar")
 
-type fixResult struct {
-	Files []struct {
-		Name string
-		Diff string
+type phpcs struct {
+	connectErr error
+
+	cmd     *exec.Cmd
+	stdin   io.WriteCloser
+	stdoutC chan []byte // Line delimited stdout.
+	stderrC chan []byte // Line delimited stderr.
+
+	cancelFunc context.CancelFunc // The cancel for the command, called in Disconnect.
+
+	mu sync.Mutex // Should not send new code to format before other is done.
+}
+
+func (p *phpcs) Connect() (err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.cmd != nil {
+		return nil
 	}
-	Time struct {
-		Total float64
+
+	if p.connectErr != nil {
+		return p.connectErr
 	}
-	Memory float64
+
+	defer func() {
+		p.connectErr = err
+	}()
+
+	// TODO: context should be passed in here, ideally from the start,
+	// so that this stops when elephp stops.
+	ctx, c := context.WithCancel(context.Background())
+	p.cancelFunc = c
+	cmd := exec.CommandContext(ctx, phar)
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("connecting stdin: %w", err)
+	}
+	p.stdin = stdin
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("connecting stdout: %w", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("connecting stderr: %w", err)
+	}
+
+	p.stderrC = make(chan []byte)
+	go func() {
+		s := bufio.NewScanner(stderr)
+		for s.Scan() {
+			log.Printf("PHPCS Fixer stderr: %s", s.Bytes())
+			p.stderrC <- s.Bytes()
+		}
+	}()
+
+	p.stdoutC = make(chan []byte)
+	go func() {
+		s := bufio.NewScanner(stdout)
+		for s.Scan() {
+			log.Printf("PHPCS Fixer stdout: %s", s.Bytes())
+			p.stdoutC <- s.Bytes()
+		}
+	}()
+
+	if err = cmd.Start(); err != nil {
+		return fmt.Errorf("stating formatter: %w", err)
+	}
+
+	p.cmd = cmd
+	return nil
+}
+
+func (p *phpcs) Disconnect() {
+	if p.cmd == nil {
+		return
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.cancelFunc()
+	if err := p.cmd.Wait(); err != nil {
+		log.Println(err)
+	}
+	p.cmd = nil
+}
+
+func (p *phpcs) Format(code string) (string, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	enc, err := json.Marshal(code)
+	if err != nil {
+		return "", fmt.Errorf("json encoding code: %w", err)
+	}
+
+	enc = append(enc, byte('\n'))
+	if _, err := p.stdin.Write(enc); err != nil {
+		return "", fmt.Errorf("writing code to stdin: %w", err)
+	}
+
+	timeout := time.NewTimer(time.Second * 5)
+	select {
+	case errMsg := <-p.stderrC:
+		return "", fmt.Errorf("formatter returned error: %s", errMsg)
+	case outMsg := <-p.stdoutC:
+		var res string
+		if err := json.Unmarshal(outMsg, &res); err != nil {
+			return "", fmt.Errorf("decoding json response: %w", err)
+		}
+		return res, nil
+	case <-timeout.C:
+		// 5 seconds no response, maybe daemon is fucked?
+		go CloseDaemon()
+		return "", fmt.Errorf("formatting exceeded timeout of 5s")
+	}
+}
+
+func CloseDaemon() {
+	instance.Disconnect()
 }
 
 func FormatFileDiff(path string) (*diff.FileDiff, error) {
-	return FormatCodeDiff([]byte(wrkspc.Current.FContentOf(path)))
+	return FormatCodeDiff(wrkspc.Current.FContentOf(path))
 }
 
-func FormatCodeDiff(code []byte) (*diff.FileDiff, error) {
-	cmd := exec.Command("php-cs-fixer", "fix", "--diff", "--format=json", "-")
-	stdin, err := cmd.StdinPipe()
+func FormatCodeDiff(code string) (*diff.FileDiff, error) {
+	if err := instance.Connect(); err != nil {
+		return nil, fmt.Errorf("connecting to formatter: %w", err)
+	}
+
+	formatted, err := instance.Format(code)
 	if err != nil {
-		return nil, fmt.Errorf("running php-cs-fixer: %w", err)
+		return nil, fmt.Errorf("formatting code: %w", err)
 	}
 
-	var stdinErr error
-	go func() {
-		defer stdin.Close()
-		_, stdinErr = stdin.Write(code) // This blocks until run/output, so needs goroutine.
-	}()
-
-	out, err := cmd.Output()
-	cmd.ProcessState.ExitCode()
-	if err == nil { // If something can be fixed, an error is returned.
-		return nil, nil
-	}
-
-	if stdinErr != nil {
-		return nil, fmt.Errorf("writing to stdin: %w", stdinErr)
-	}
-
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		return nil, fmt.Errorf("command err was not the expected type *exec.ExitError: %w", err)
-	}
-
-	ecode := fixerExitCode(exitErr.ExitCode())
-	if ecode != NeedsFixing {
-		return nil, fmt.Errorf(
-			"expected exit code %d (needs fixing), got %d (%s)",
-			NeedsFixing,
-			ecode,
-			ecode,
-		)
-	}
-
-	var result fixResult
-	if err := json.Unmarshal(out, &result); err != nil {
-		return nil, fmt.Errorf("could not parse JSON output %q: %w", out, err)
-	}
-	if len(result.Files) != 1 {
-		return nil, fmt.Errorf(
-			"expected 1 file to be returned by php-cs-fixer, but got %v back",
-			result.Files,
-		)
-	}
-
-	d, err := diff.ParseFileDiff([]byte(result.Files[0].Diff))
+	d, err := diff.ParseFileDiff([]byte(formatted))
 	if err != nil {
 		return nil, fmt.Errorf("parsing php-cs-fixer diff: %w", err)
 	}
@@ -109,7 +182,7 @@ func FormatFileEdits(path string) ([]protocol.TextEdit, error) {
 	return functional.Map(diff.Hunks, HunkToEdit), nil
 }
 
-func FormatCodeEdits(code []byte) ([]protocol.TextEdit, error) {
+func FormatCodeEdits(code string) ([]protocol.TextEdit, error) {
 	diff, err := FormatCodeDiff(code)
 	if err != nil {
 		return nil, fmt.Errorf("computing code edits: %w", err)

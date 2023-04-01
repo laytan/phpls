@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/laytan/elephp/internal/phpcs"
 	"github.com/laytan/elephp/pkg/lsperrors"
@@ -13,6 +15,11 @@ func (s *Server) Formatting(
 	ctx context.Context,
 	params *protocol.DocumentFormattingParams,
 ) ([]protocol.TextEdit, error) {
+	start := time.Now()
+	defer func() {
+		go s.showAndLog(ctx, protocol.Info, fmt.Errorf("formatting took %s", time.Since(start)))
+	}()
+
 	edits, err := phpcs.FormatFileEdits(position.URIToFile(string(params.TextDocument.URI)))
 	if err != nil {
 		err := lsperrors.ErrRequestFailed(err.Error())

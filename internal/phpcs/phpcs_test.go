@@ -6,10 +6,16 @@ import (
 	"github.com/laytan/elephp/internal/phpcs"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestFormatFile(t *testing.T) {
 	t.Parallel()
+	t.Cleanup(phpcs.CloseDaemon)
 	type tcase struct {
 		name     string
 		code     string
@@ -60,7 +66,7 @@ add('shared_files', [
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			eds, err := phpcs.FormatCodeEdits([]byte(tt.code))
+			eds, err := phpcs.FormatCodeEdits(tt.code)
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, eds)
 		})
