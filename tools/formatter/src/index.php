@@ -15,15 +15,22 @@ use PhpCsFixer\Runner\Runner;
 use PhpCsFixer\FileReader;
 
 try {
+	$cwd = getcwd();
+
+	// TODO: automatically set indentation configuration based on passed
+	// in params in the LSP format request.
+	$customConfig = (new ConfigurationResolver(new Config(), ['path' => ['-']], $cwd, new ToolInfo()))
+		->getConfig(); // This will return the config in cwd if there is one.
+
     $resolver = new ConfigurationResolver(
-        new Config(),
-        [
+        $customConfig, // Use the user's config as a default.
+        [ // Overwrite the necessary config for the daemon.
             'path' => ['-'], // stdin
             'diff' => true,
             'format' => 'json',
             'stop-on-violation' => true,
         ],
-        getcwd(),
+        '/ajskdhaskbscajskdjashascbcnajdk', // just a non existing path.
         new ToolInfo(),
     );
 
@@ -70,8 +77,13 @@ try {
             continue;
         }
 
+		if (!isset($changed['php://stdin']['diff'])) {
+			$changed['php://stdin']['diff'] = '';
+		}
+
         echo json_encode($changed['php://stdin']['diff']) . PHP_EOL; // Just as string, but json encode so it's one line.
     }
 } catch (\Throwable $e) {
-    fwrite(STDERR, json_encode($e->getMessage()) . PHP_EOL);
+	$msg = sprintf('%s:%s - %s', $e->getFile(), $e->getLine(), $e->getMessage());
+    fwrite(STDERR, json_encode($msg . PHP_EOL));
 }

@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -204,6 +205,10 @@ func FormatCodeDiff(code string) (*diff.FileDiff, error) {
 	formatted, err := instance.Format(code)
 	if err != nil {
 		return nil, fmt.Errorf("formatting code: %w", err)
+	}
+
+	if strings.TrimSpace(formatted) == "" {
+		return &diff.FileDiff{}, nil
 	}
 
 	d, err := diff.ParseFileDiff([]byte(formatted))
