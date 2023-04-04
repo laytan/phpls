@@ -10,12 +10,14 @@ on:
       - '**/*.go'
       - 'third-party'
       - '.github/workflows/go-test.yml'
+      - 'tools/formatter/**/*'
 
   pull_request:
     paths:
       - '**/*.go'
       - 'third-party'
       - '.github/workflows/go-test.yml'
+      - 'tools/formatter/**/*'
 
 permissions:
   contents: read
