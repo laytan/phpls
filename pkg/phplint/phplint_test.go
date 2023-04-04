@@ -1,6 +1,7 @@
 package phplint_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -9,11 +10,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var _, isCI = os.LookupEnv("CI")
+
+func skipCI(t *testing.T) {
+	t.Helper()
+
+	if isCI {
+		t.Skip(
+			"Requires PHP to be installed, which I don't want to do on CI for this one test suite",
+		)
+	}
+}
+
 func TestPhpLint(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
+		skipCI(t)
 
 		out, err := phplint.LintString([]byte(""))
 		require.NoError(t, err)
@@ -28,6 +42,7 @@ func TestPhpLint(t *testing.T) {
 
 	t.Run("one line incomplete", func(t *testing.T) {
 		t.Parallel()
+		skipCI(t)
 
 		out, err := phplint.LintString([]byte("<?php echo ?>"))
 		require.NoError(t, err)
@@ -41,6 +56,7 @@ func TestPhpLint(t *testing.T) {
 
 	t.Run("multi line weird whiles", func(t *testing.T) {
 		t.Parallel()
+		skipCI(t)
 
 		out, err := phplint.LintString([]byte(`
 <?php
@@ -62,8 +78,15 @@ func TestPhpLint(t *testing.T) {
 func TestPhpLintFile(t *testing.T) {
 	t.Parallel()
 
+	if isCI {
+		t.Skip(
+			"Requires PHP to be installed, which I don't want to do on CI for this one test suite",
+		)
+	}
+
 	t.Run("syntax_errors.php", func(t *testing.T) {
 		t.Parallel()
+		skipCI(t)
 
 		out, err := phplint.LintFile(
 			filepath.Join(
@@ -85,6 +108,7 @@ func TestPhpLintFile(t *testing.T) {
 
 	t.Run("bad_whiles.php", func(t *testing.T) {
 		t.Parallel()
+		skipCI(t)
 
 		out, err := phplint.LintFile(
 			filepath.Join(pathutils.Root(), "pkg", "phplint", "testdata", "bad_whiles.php"),
