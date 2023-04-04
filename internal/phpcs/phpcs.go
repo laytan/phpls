@@ -172,9 +172,9 @@ func ExtractBinary() error {
 
 		return fmt.Errorf("creating file %q: %w", path, err)
 	}
+    defer f.Close()
 
 	log.Printf("Extracting %q", path)
-
 	r, err := gzip.NewReader(bytes.NewReader(formatterSourceGzipped))
 	if err != nil {
 		return fmt.Errorf("creating gzip reader: %w", err)
