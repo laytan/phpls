@@ -1,3 +1,4 @@
 /elephp
 /unsafenil.so
-bin
+bin/*
+!bin/.gitkeep

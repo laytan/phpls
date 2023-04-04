@@ -41,7 +41,7 @@ tasks:
     lint:
         deps: [generate, build-unsafenil]
         cmds:
-            - golangci-lint run -timeout=60s
+            - golangci-lint run --timeout=60s
 
     generate:
         cmds:
