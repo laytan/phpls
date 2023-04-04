@@ -54,8 +54,6 @@ try {
         if ($input === false) break; // Error happened, probably STDIN closed, so just exit.
         if (empty($input)) continue;
 
-        file_put_contents('phpcsinputs', $input . PHP_EOL, FILE_APPEND);
-
         $input = json_decode($input);
         if (empty($input)) {
             fwrite(STDERR, json_encode('the input: "'.$input.'" is not valid JSON') . PHP_EOL);
@@ -71,8 +69,6 @@ try {
             $errs->errors = [];
             continue;
         }
-
-        file_put_contents('phpcsoutputs', $changed['php://stdin']['diff'] . PHP_EOL, FILE_APPEND);
 
         echo json_encode($changed['php://stdin']['diff']) . PHP_EOL; // Just as string, but json encode so it's one line.
     }
