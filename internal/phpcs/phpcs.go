@@ -157,6 +157,10 @@ func (p *phpcs) Format(code string) (string, error) {
 // ExtractBinary extracts and unzips the formatter binary into `daemonPath()`.
 func ExtractBinary() error {
 	defer func() { formatterSourceGzipped = nil }() // No need to keep in memory.
+    if formatterSourceGzipped == nil {
+        log.Printf("php-cs-fixer-daemon has already been extracted.")
+        return nil
+    }
 
 	path := daemonPath()
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0770)
