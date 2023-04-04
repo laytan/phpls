@@ -76,7 +76,13 @@ jobs:
       run: composer global require humbug/box
 
     - name: Test
-      run: ./bin/task test
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          .\\bin\\task test
+        else
+          ./bin/task test
+        fi
+      shell: bash
       env:
         RICHGO_FORCE_COLOR: 1
         CI: true
