@@ -65,7 +65,7 @@ type Config interface {
 	IgnoredDirNames() []string
 	StubsDir() string
 	LogsDir() string
-    BinDir() string
+	BinDir() string
 	PHPVersion() (*phpversion.PHPVersion, error)
 }
 
@@ -78,7 +78,7 @@ type lsConfig struct {
 
 	stubsDirMu sync.Mutex
 	logsDirMu  sync.Mutex
-    binDirMu sync.Mutex
+	binDirMu   sync.Mutex
 }
 
 func (c *lsConfig) Initialize() (disregardErr bool, err error) {
@@ -187,14 +187,14 @@ func (c *lsConfig) LogsDir() string {
 }
 
 func (c *lsConfig) BinDir() string {
-    c.binDirMu.Lock()
-    defer c.binDirMu.Unlock()
+	c.binDirMu.Lock()
+	defer c.binDirMu.Unlock()
 
-    if c.opts.BinDir == "" {
-        c.opts.BinDir = c.cacheDir("bin")
-    }
+	if c.opts.BinDir == "" {
+		c.opts.BinDir = c.cacheDir("bin")
+	}
 
-    return c.opts.BinDir
+	return c.opts.BinDir
 }
 
 func (c *lsConfig) PHPVersion() (*phpversion.PHPVersion, error) {

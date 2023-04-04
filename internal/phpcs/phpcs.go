@@ -27,6 +27,7 @@ import (
 
 var instance = &phpcs{}
 
+//nolint:typecheck // File created during build.
 //go:embed formatter.gz
 var formatterSourceGzipped []byte
 
