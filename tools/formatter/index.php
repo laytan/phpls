@@ -49,28 +49,30 @@ $errs = invade($errorsManager);
 // Make fgets below block.
 stream_set_blocking(STDIN, true);
 
-// TODO: try catch everything.
 while (true) {
-    $input = fgets(STDIN); // Read next line.
-    if (empty($input)) {
-        continue;
+    try {
+        $input = fgets(STDIN); // Read next line.
+        if ($input === false) break; // Error happened, probably STDIN closed, so just exit.
+        if (empty($input)) continue;
+
+        $input = json_decode($input);
+        if (empty($input)) {
+            fwrite(STDERR, json_encode('the input: "'.$input.'" is not valid JSON') . PHP_EOL);
+            continue;
+        }
+
+        invade($fileReader)->stdinContent = $input; // Pretty cool hack to manipulate what PHP CS Fixer fixes.
+
+        $changed = $runner->fix();
+
+        if (count($errs->errors) > 0) {
+            fwrite(STDERR, json_encode($errs->errors[0]->getSource()->getMessage()) . PHP_EOL); // Just as string, but json encode so it's one line.
+            $errs->errors = [];
+            continue;
+        }
+
+        echo json_encode($changed['php://stdin']['diff']) . PHP_EOL; // Just as string, but json encode so it's one line.
+    } catch (\Throwable $e) {
+        fwrite(STDERR, json_encode($e->getMessage()) . PHP_EOL);
     }
-
-    $input = json_decode($input);
-    if (empty($input)) {
-        fwrite(STDERR, json_encode('the input: "'.$input.'" is not valid JSON') . PHP_EOL);
-        continue;
-    }
-
-    invade($fileReader)->stdinContent = $input; // Pretty cool hack to manipulate what PHP CS Fixer fixes.
-
-    $changed = $runner->fix();
-
-    if (count($errs->errors) > 0) {
-        fwrite(STDERR, json_encode($errs->errors[0]->getSource()->getMessage()) . PHP_EOL); // Just as string, but json encode so it's one line.
-        $errs->errors = [];
-        continue;
-    }
-
-    echo json_encode($changed['php://stdin']['diff']) . PHP_EOL; // Just as string, but json encode so it's one line.
 }
