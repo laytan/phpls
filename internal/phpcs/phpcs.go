@@ -95,7 +95,7 @@ func (p *phpcs) Connect() (err error) {
 	}()
 
 	if err = cmd.Start(); err != nil {
-		return fmt.Errorf("stating formatter: %w", err)
+		return fmt.Errorf("starting formatter: %w", err)
 	}
 
 	p.cmd = cmd
