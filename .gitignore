@@ -1,4 +1,2 @@
 /elephp
-bin/*
-!bin/.gitkeep
 .task

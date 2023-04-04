@@ -18,7 +18,7 @@ import (
 // Instance is a wrapper around the 'phpcbf' cli for formatting code.
 // This implementation preemptively starts an instance of the command,
 // So that each call to Format does not need to wait for php and the phpcbf bootstrap.
-// This does mean that there will always be 'phpcbf' process instance running.
+// This does mean that there will always be a 'phpcbf' process instance running.
 type Instance struct {
 	startErr   error
 	cmd        *exec.Cmd
@@ -70,7 +70,6 @@ func (p *Instance) Close() {
 
 func (p *Instance) Format(code []byte) ([]byte, error) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	if p.executable == "" {
 		return nil, fmt.Errorf("no phpcbf executable found")
@@ -80,7 +79,12 @@ func (p *Instance) Format(code []byte) ([]byte, error) {
 		return nil, p.startErr
 	}
 
-	defer func() { go p.reset() }()
+	defer func() {
+		go func() {
+			defer p.mu.Unlock()
+			p.reset()
+		}()
+	}()
 
 	var stdinErr error
 	go func() {

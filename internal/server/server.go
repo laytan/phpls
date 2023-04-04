@@ -15,9 +15,9 @@ import (
 
 func NewServer(client protocol.ClientCloser) *Server {
 	return &Server{
-		client: client,
+		client:   client,
 		progress: lsprogress.NewTracker(client),
-		phpcbf: phpcbf.NewInstance(),
+		phpcbf:   phpcbf.NewInstance(),
 	}
 }
 

@@ -13,7 +13,6 @@ require (
 	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5
 	github.com/laytan/php-parser v0.9.1-0.20230331145008-68ac672368c7
 	github.com/shivamMg/trie v0.0.1
-	github.com/sourcegraph/go-diff v0.7.0
 	github.com/stretchr/testify v1.8.2
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
