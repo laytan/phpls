@@ -31,6 +31,10 @@ func main() {
 			defaultConf := config.Default()
 			_, _ = fmt.Println(defaultConf.StubsDir())
 			return
+        case "bin":
+            defaultConf := config.Default()
+            _, _ = fmt.Println(defaultConf.BinDir())
+            return
 		}
 	}
 

@@ -3,6 +3,7 @@ package phpcs_test
 import (
 	"testing"
 
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/phpcs"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/stretchr/testify/require"
@@ -61,6 +62,8 @@ add('shared_files', [
 			}},
 		},
 	}
+
+    config.Current = config.Default()
 
 	for _, tt := range cases {
 		tt := tt

@@ -50,29 +50,30 @@ tasks:
     build-formatter:
         deps: [compile-formatter, get-micro]
         cmds:
-            - cat bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx tools/formatter/index.phar > bin/formatter
-            - chmod +x bin/formatter
+            - cat bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx bin/formatter.phar > bin/formatter
+            - gzip --best --stdout bin/formatter > internal/phpcs/formatter.gz
         sources:
-            - tools/formatter/index.phar
+            - bin/formatter.phar
             - bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx
         generates:
             - bin/formatter
+            - internal/phpcs/formatter.gz
 
     compile-formatter:
         deps: [formatter-composer]
         cmds:
             - cd tools/formatter && box compile
-            - mv tools/formatter/src/index.phar tools/formatter/index.phar
+            - mv tools/formatter/src/index.phar bin/formatter.phar
         sources:
             - tools/formatter/vendor/**/*
             - tools/formatter/src/**/*
             - tools/formatter/box.json
         generates:
-            - tools/formatter/index.phar
+            - bin/formatter.phar
 
     formatter-composer:
         cmds:
-            - cd tools/formatter && composer install
+            - cd tools/formatter && composer install --no-dev
         sources:
             - tools/formatter/composer.json
             - tools/formatter/composer.lock

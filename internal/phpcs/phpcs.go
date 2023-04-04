@@ -1,30 +1,34 @@
+// nolint:gosec // Lots of false positives.
 package phpcs
 
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
 
+	_ "embed"
+
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/sourcegraph/go-diff/diff"
 )
 
-// TODO: Temporary, maybe a pool of them.
 var instance = &phpcs{}
 
-// TODO: won't work when only got the executable, needs work.
-var phar = filepath.Join(pathutils.Root(), "bin", "formatter")
+//go:embed formatter.gz
+var formatterSourceGzipped []byte
 
 type phpcs struct {
 	connectErr error
@@ -55,11 +59,13 @@ func (p *phpcs) Connect() (err error) {
 		p.connectErr = err
 	}()
 
-	// TODO: context should be passed in here, ideally from the start,
-	// so that this stops when elephp stops.
+	if err := ExtractBinary(); err != nil {
+		return fmt.Errorf("extracting php-cs-fixer-daemon binary: %w", err)
+	}
+
 	ctx, c := context.WithCancel(context.Background())
 	p.cancelFunc = c
-	cmd := exec.CommandContext(ctx, phar)
+	cmd := exec.CommandContext(ctx, daemonPath())
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -148,6 +154,35 @@ func (p *phpcs) Format(code string) (string, error) {
 	}
 }
 
+// ExtractBinary extracts and unzips the formatter binary into `daemonPath()`.
+func ExtractBinary() error {
+	defer func() { formatterSourceGzipped = nil }() // No need to keep in memory.
+
+	path := daemonPath()
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0770)
+	if err != nil {
+		if os.IsExist(err) { // Binary exists, that's ok.
+			log.Printf("%q exists, not extracting formatter binary.", path)
+			return nil
+		}
+
+		return fmt.Errorf("creating file %q: %w", path, err)
+	}
+
+	log.Printf("Extracting %q", path)
+
+	r, err := gzip.NewReader(bytes.NewReader(formatterSourceGzipped))
+	if err != nil {
+		return fmt.Errorf("creating gzip reader: %w", err)
+	}
+
+	if _, err := io.Copy(f, r); err != nil {
+		return fmt.Errorf("unzipping and writing binary to %q: %w", path, err)
+	}
+
+	return nil
+}
+
 func CloseDaemon() {
 	instance.Disconnect()
 }
@@ -228,4 +263,9 @@ func HunkToEdit(hunk *diff.Hunk) protocol.TextEdit {
 		},
 		NewText: text.String(),
 	}
+}
+
+func daemonPath() string {
+	dir := config.Current.BinDir()
+	return filepath.Join(dir, "php-cs-fixer-daemon")
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/phpcs"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/lsperrors"
@@ -82,6 +83,14 @@ func (s *Server) Initialize(
 	s.project = proj
 
 	go s.index()
+
+	// Extract phpcs binary, so we don't wait for that the first time,
+	// the user tries to format something.
+	go func() {
+		if err := phpcs.ExtractBinary(); err != nil {
+			s.showAndLog(context.Background(), protocol.Error, err)
+		}
+	}()
 
 	if params.ProcessID != 0 {
 		processwatch.NewExiter(uint(params.ProcessID))
