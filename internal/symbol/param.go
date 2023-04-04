@@ -55,7 +55,7 @@ func (p *Parameter) Type() (phpdoxer.Type, *ClassLike, error) {
 			return typ, cls, nil
 		}
 
-		return typ, nil, nil //nolint:unsafenil // First return is the result, rest is documented.
+		return typ, nil, nil
 	}
 
 	if !isMethod {

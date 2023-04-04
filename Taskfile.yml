@@ -20,7 +20,7 @@ vars:
 
 tasks:
     build:
-        deps: [generate, build-formatter, build-unsafenil]
+        deps: [generate, build-formatter]
         cmds:
             - go build -o elephp cmd/elephp/main.go
         sources:
@@ -39,7 +39,7 @@ tasks:
             - richgo test ./... -shuffle=on -race -cover -timeout=60s -tags what
 
     lint:
-        deps: [generate, build-unsafenil]
+        deps: [generate]
         cmds:
             - golangci-lint run --timeout=60s
 
@@ -88,11 +88,3 @@ tasks:
             - mv micro.sfx bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx
         status:
             - test -f bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx
-
-    build-unsafenil:
-        cmds:
-            - cd third_party/unsafenil && go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
-        sources:
-            - third_party/unsafenil/**/*
-        generates:
-            - unsafenil.so

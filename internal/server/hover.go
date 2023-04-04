@@ -19,7 +19,7 @@ func (s *Server) Hover(ctx context.Context, params *protocol.HoverParams) (*prot
 	content := s.project.Hover(pos)
 
 	if content == "" {
-		return nil, nil // nolint:unsafenil // No result and not an error, protocol package accepts this.
+		return nil, nil
 	}
 
 	return &protocol.Hover{

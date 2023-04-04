@@ -33,39 +33,9 @@ jobs:
         with:
           go-version-file: go.mod
           check-latest: true
-          cache: true
-
-      - name: Get gobin
-        id: get-gobin
-        run: echo ::set-output name=gobin::$(go env GOPATH)/bin
-
-      - name: Install task
-        run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
-
-      - name: Cache unsafenil & golangci-lint
-        uses: actions/cache@v3
-        id: cache-others
-        with:
-          path: |
-              unsafenil.so
-              ${{ steps.get-gobin.outputs.gobin }}
-              ~/.cache/golangci-lint
-
-          key: ${{ runner.os }}-go-lint-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-lint-
-
-      - name: Build unsafenil
-        if: ${{ steps.cache-others.outputs.cache-hit != 'true' }}
-        run: task build-unsafenil
-
-      # In order to use unsafenil, we need to build from source so CGO is used.
-      # See https://github.com/golangci/golangci-lint-action/issues/540
-      # See https://github.com/golangci/golangci-lint/issues/1276
-      - name: Install golangci-lint
-        if: ${{ steps.cache-others.outputs.cache-hit != 'true' }}
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          cache: false # Caching is done by the lint action.
 
       - name: Lint
-        run: task lint
-
+        uses: golangci/golangci-lint-action@v3
+        with:
+          args: --timeout=60s

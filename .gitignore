@@ -1,5 +1,4 @@
 /elephp
-/unsafenil.so
 bin/*
 !bin/.gitkeep
 .task
