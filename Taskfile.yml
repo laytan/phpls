@@ -1,0 +1,97 @@
+# All requirements used in these tasks:
+#
+# Only works on unix based shells.
+#
+# - go (1.20+)
+# - richgo
+# - golangci-lint
+# - stringer (https://pkg.go.dev/golang.org/x/tools/cmd/stringer)
+#
+# - php (see MICRO_PHP_VERSION variable)
+# - composer
+# - box (https://github.com/box-project/box)
+
+version: '3'
+
+vars:
+    MICRO_OS: # (windows|linux|macos)
+        sh: case "{{OS}}" in windows) echo "windows";; linux) echo "linux";; darwin) echo "macos";; esac
+    MICRO_PHP_VERSION: 8.1.17 # (8.0.28|8.1.17|8.2.4) at the time of writing, see build artifacts in easysoft/phpmicro for possible versions.
+
+tasks:
+    build:
+        deps: [generate, build-formatter, build-unsafenil]
+        cmds:
+            - go build -o elephp cmd/elephp/main.go
+        sources:
+            - cmd/**/*
+            - internal/**/*
+            - pkg/**/*
+            - third_party/phpstorm-stubs/**/*
+            - go.mod
+            - go.sum
+        generates:
+            - elephp
+
+    test:
+        deps: [generate, build-formatter]
+        cmds:
+            - richgo test ./... -shuffle=on -race -cover -timeout=60s -tags what
+
+    lint:
+        deps: [generate, build-unsafenil]
+        cmds:
+            - golangci-lint run -timeout=60s
+
+    generate:
+        cmds:
+            - go generate ./...
+
+    build-formatter:
+        deps: [compile-formatter, get-micro]
+        cmds:
+            - cat bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx tools/formatter/index.phar > bin/formatter
+            - chmod +x bin/formatter
+        sources:
+            - tools/formatter/index.phar
+            - bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx
+        generates:
+            - bin/formatter
+
+    compile-formatter:
+        deps: [formatter-composer]
+        cmds:
+            - cd tools/formatter && box compile
+            - mv tools/formatter/src/index.phar tools/formatter/index.phar
+        sources:
+            - tools/formatter/vendor/**/*
+            - tools/formatter/src/**/*
+            - tools/formatter/box.json
+        generates:
+            - tools/formatter/index.phar
+
+    formatter-composer:
+        cmds:
+            - cd tools/formatter && composer install
+        sources:
+            - tools/formatter/composer.json
+            - tools/formatter/composer.lock
+        generates:
+            - tools/formatter/vendor/**/*
+
+    get-micro:
+        cmds:
+            - wget "https://nightly.link/easysoft/phpmicro/workflows/tests/master/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.zip"
+            - unzip micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.zip
+            - rm micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.zip
+            - mv micro.sfx bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx
+        status:
+            - test -f bin/micro_{{.MICRO_OS}}_{{.MICRO_PHP_VERSION}}.sfx
+
+    build-unsafenil:
+        cmds:
+            - cd third_party/unsafenil && go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
+        sources:
+            - third_party/unsafenil/**/*
+        generates:
+            - unsafenil.so

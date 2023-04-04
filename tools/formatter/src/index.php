@@ -5,8 +5,7 @@
 
 declare(strict_types=1);
 
-// TODO: dynamic:
-require '/Users/laytan/projects/elephp/tools/formatter/vendor/autoload.php';
+require '../vendor/autoload.php';
 
 use PhpCsFixer\Console\ConfigurationResolver;
 use PhpCsFixer\Config;
@@ -15,45 +14,47 @@ use PhpCsFixer\Error\ErrorsManager;
 use PhpCsFixer\Runner\Runner;
 use PhpCsFixer\FileReader;
 
-$resolver = new ConfigurationResolver(
-    new Config(),
-    [
-        'path' => ['-'], // stdin
-        'diff' => true,
-        'format' => 'json',
-        'stop-on-violation' => true,
-    ],
-    getcwd(),
-    new ToolInfo(),
-);
+try {
+    $resolver = new ConfigurationResolver(
+        new Config(),
+        [
+            'path' => ['-'], // stdin
+            'diff' => true,
+            'format' => 'json',
+            'stop-on-violation' => true,
+        ],
+        getcwd(),
+        new ToolInfo(),
+    );
 
-$errorsManager = new ErrorsManager();
+    $errorsManager = new ErrorsManager();
 
-$fileReader = FileReader::createSingleton();
+    $fileReader = FileReader::createSingleton();
 
-$runner = new Runner(
-    $resolver->getFinder(),
-    $resolver->getFixers(),
-    $resolver->getDiffer(),
-    null,
-    $errorsManager,
-    $resolver->getLinter(),
-    $resolver->isDryRun(),
-    $resolver->getCacheManager(),
-    $resolver->getDirectory(),
-    $resolver->shouldStopOnViolation(),
-);
+    $runner = new Runner(
+        $resolver->getFinder(),
+        $resolver->getFixers(),
+        $resolver->getDiffer(),
+        null,
+        $errorsManager,
+        $resolver->getLinter(),
+        $resolver->isDryRun(),
+        $resolver->getCacheManager(),
+        $resolver->getDirectory(),
+        $resolver->shouldStopOnViolation(),
+    );
 
-$errs = invade($errorsManager);
+    $errs = invade($errorsManager);
 
-// Make fgets below block.
-stream_set_blocking(STDIN, true);
+    // Make fgets below block.
+    stream_set_blocking(STDIN, true);
 
-while (true) {
-    try {
+    while (true) {
         $input = fgets(STDIN); // Read next line.
         if ($input === false) break; // Error happened, probably STDIN closed, so just exit.
         if (empty($input)) continue;
+
+        file_put_contents('phpcsinputs', $input . PHP_EOL, FILE_APPEND);
 
         $input = json_decode($input);
         if (empty($input)) {
@@ -71,8 +72,10 @@ while (true) {
             continue;
         }
 
+        file_put_contents('phpcsoutputs', $changed['php://stdin']['diff'] . PHP_EOL, FILE_APPEND);
+
         echo json_encode($changed['php://stdin']['diff']) . PHP_EOL; // Just as string, but json encode so it's one line.
-    } catch (\Throwable $e) {
-        fwrite(STDERR, json_encode($e->getMessage()) . PHP_EOL);
     }
+} catch (\Throwable $e) {
+    fwrite(STDERR, json_encode($e->getMessage()) . PHP_EOL);
 }

@@ -33,16 +33,6 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Check changes
-      uses: dorny/paths-filter@v2
-      id: changes
-      with:
-        base: main
-        filters: |
-          gen:
-            - '**/*_gen.go'
-        token: ${{ secrets.PRIVATE_GITHUB_TOKEN }}
-
     - name: Set up Go
       id: set-up-go
       uses: actions/setup-go@v4
@@ -61,6 +51,9 @@ jobs:
         fi
       shell: bash
 
+    - name: Install task
+      run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+
     - name: Cache richgo
       uses: actions/cache@v3
       id: cache-richgo
@@ -74,12 +67,8 @@ jobs:
       if: ${{ steps.cache-richgo.outputs.cache-hit != 'true' }}
       run: go install github.com/kyoh86/richgo@latest
 
-    - name: Generate
-      if: ${{ steps.changes.outputs.gen == 'true' }}
-      run: go generate ./...
-
     - name: Test
-      run: richgo test -cover -race -shuffle=on -timeout=60s ./...
+      run: task test
       env:
         RICHGO_FORCE_COLOR: 1
         CI: true

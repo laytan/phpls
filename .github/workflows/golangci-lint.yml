@@ -39,6 +39,9 @@ jobs:
         id: get-gobin
         run: echo ::set-output name=gobin::$(go env GOPATH)/bin
 
+      - name: Install task
+        run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+
       - name: Cache unsafenil & golangci-lint
         uses: actions/cache@v3
         id: cache-others
@@ -54,9 +57,7 @@ jobs:
 
       - name: Build unsafenil
         if: ${{ steps.cache-others.outputs.cache-hit != 'true' }}
-        run: go build -o ../../unsafenil.so -buildmode=plugin plugin/unsafenil.go
-        working-directory: ./third_party/unsafenil
-
+        run: task build-unsafenil
 
       # In order to use unsafenil, we need to build from source so CGO is used.
       # See https://github.com/golangci/golangci-lint-action/issues/540
@@ -66,5 +67,5 @@ jobs:
         run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
       - name: Lint
-        run: golangci-lint run --timeout 5m
+        run: task lint
 

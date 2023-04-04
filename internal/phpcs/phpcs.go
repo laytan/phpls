@@ -23,7 +23,8 @@ import (
 // TODO: Temporary, maybe a pool of them.
 var instance = &phpcs{}
 
-var phar = filepath.Join(pathutils.Root(), "tools", "formatter", "index.phar")
+// TODO: won't work when only got the executable, needs work.
+var phar = filepath.Join(pathutils.Root(), "bin", "formatter")
 
 type phpcs struct {
 	connectErr error
