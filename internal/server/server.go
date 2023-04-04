@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/laytan/elephp/internal/phpcs/phpcbf"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/lsprogress"
@@ -13,7 +14,11 @@ import (
 )
 
 func NewServer(client protocol.ClientCloser) *Server {
-	return &Server{client: client, progress: lsprogress.NewTracker(client)}
+	return &Server{
+		client: client,
+		progress: lsprogress.NewTracker(client),
+		phpcbf: phpcbf.NewInstance(),
+	}
 }
 
 type Server struct {
@@ -26,6 +31,8 @@ type Server struct {
 	root           string
 	project        *project.Project
 	progress       *lsprogress.Tracker
+
+	phpcbf *phpcbf.Instance
 }
 
 var _ protocol.Server = &Server{}
