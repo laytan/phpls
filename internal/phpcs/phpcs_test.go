@@ -63,7 +63,7 @@ add('shared_files', [
 		},
 	}
 
-    config.Current = config.Default()
+	config.Current = config.Default()
 
 	for _, tt := range cases {
 		tt := tt

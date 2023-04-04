@@ -164,7 +164,7 @@ func ExtractBinary() error {
 	}
 
 	path := daemonPath()
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0770)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o770)
 	if err != nil {
 		if os.IsExist(err) { // Binary exists, that's ok.
 			log.Printf("%q exists, not extracting formatter binary.", path)
