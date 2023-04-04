@@ -67,6 +67,9 @@ jobs:
       if: ${{ steps.cache-richgo.outputs.cache-hit != 'true' }}
       run: go install github.com/kyoh86/richgo@latest
 
+    - name: Install box
+      run: composer global require humbug/box
+
     - name: Test
       run: task test
       env:
