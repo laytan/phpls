@@ -22,11 +22,7 @@ permissions:
 
 jobs:
   test:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -48,16 +44,11 @@ jobs:
 
     - name: Get gobin
       id: get-gobin
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          echo ::set-output name=gobin::$(go env GOPATH)\\bin
-        else
-          echo ::set-output name=gobin::$(go env GOPATH)/bin
-        fi
+      run: echo ::set-output name=gobin::$(go env GOPATH)/bin
       shell: bash
 
     - name: Install task
-      run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+      run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
 
     - name: Cache richgo
       uses: actions/cache@v3
@@ -76,13 +67,7 @@ jobs:
       run: composer global require humbug/box
 
     - name: Test
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          .\\bin\\task test
-        else
-          ./bin/task test
-        fi
-      shell: bash
+      run: task test
       env:
         RICHGO_FORCE_COLOR: 1
         CI: true
