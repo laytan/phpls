@@ -7,7 +7,7 @@
 # - golangci-lint
 # - stringer (https://pkg.go.dev/golang.org/x/tools/cmd/stringer)
 
-version: '3'
+version: "3"
 
 tasks:
     build:
@@ -41,3 +41,8 @@ tasks:
         run: once
         cmds:
             - go generate ./...
+
+    # Tail the latest log file from wherever you are.
+    logs:
+        cmds:
+            - tail -f $(ls -cl $(elephp logs)/* | tail -n 1 | rev | cut -d' ' -f1 | rev)
