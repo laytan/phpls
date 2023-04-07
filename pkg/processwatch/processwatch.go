@@ -1,6 +1,7 @@
 package processwatch
 
 import (
+	"errors"
 	"log"
 	"os"
 	"runtime"
@@ -68,7 +69,7 @@ func IsProcessRunning(pid uint) bool {
 		return false
 	}
 
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" { // If we find a process on windows, it is always running.
 		return true
 	}
 
@@ -77,12 +78,12 @@ func IsProcessRunning(pid uint) bool {
 		return true
 	}
 
-	if err.Error() == "os: process already finished" {
+	if errors.Is(err, os.ErrProcessDone) {
 		return false
 	}
 
-	errno, ok := err.(syscall.Errno) // nolint:errorlint // False positive, we are retrieving the number, not the typed error.
-	if !ok {
+	var errno syscall.Errno
+	if !errors.As(err, &errno) {
 		return false
 	}
 
