@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/laytan/elephp/internal/phpcs/phpcbf"
+	"github.com/laytan/elephp/internal/diagnostics"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/lsprogress"
+	"github.com/laytan/elephp/pkg/phpcs/phpcbf"
 	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
@@ -17,7 +18,11 @@ func NewServer(client protocol.ClientCloser) *Server {
 	return &Server{
 		client:   client,
 		progress: lsprogress.NewTracker(client),
-		phpcbf:   phpcbf.NewInstance(),
+		diag: diagnostics.NewRunner(client, []diagnostics.Analyzer{
+			diagnostics.MakePhpcs(),
+			&diagnostics.PhpstanAnalyzer{},
+		}),
+		phpcbf: phpcbf.NewInstance(),
 	}
 }
 
@@ -31,8 +36,8 @@ type Server struct {
 	root           string
 	project        *project.Project
 	progress       *lsprogress.Tracker
-
-	phpcbf *phpcbf.Instance
+	diag           *diagnostics.Runner
+	phpcbf         *phpcbf.Instance
 }
 
 var _ protocol.Server = &Server{}

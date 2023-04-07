@@ -2,14 +2,11 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strings"
-	"time"
 
-	"appliedgo.net/what"
-	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/strutil"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
@@ -21,18 +18,10 @@ func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 	}
 
 	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
-	issues, isUpdated, err := s.project.DiagnoseFile(path)
-	if err != nil {
-		log.Println(err)
-	} else if isUpdated {
-		log.Printf("Opened file %s, found %d diagnostics", path, len(issues))
-
-		err := s.client.PublishDiagnostics(
-			ctx,
-			s.convertIssuesToDiagnostics(issues, params.TextDocument.URI, params.TextDocument.Version),
-		)
-		if err != nil {
-			log.Println(err)
+	code := wrkspc.Current.FContentOf(path)
+	if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(code)); err != nil {
+		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+			s.showAndLog(ctx, protocol.Error, err)
 		}
 	}
 
@@ -57,36 +46,25 @@ func (s *Server) DidChange(
 	}
 
 	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
-	newContent := params.ContentChanges[len(params.ContentChanges)-1]
-
+	newContent := params.ContentChanges[len(params.ContentChanges)-1].Text
 	prevContent := wrkspc.Current.FContentOf(path)
-	if strutil.RemoveWhitespace(newContent.Text) == strutil.RemoveWhitespace(prevContent) {
-		what.Happens("Skipping file update (only whitespace change) of %s", path)
+	if strutil.RemoveWhitespace(prevContent) == strutil.RemoveWhitespace(newContent) {
 		return nil
 	}
 
-	start := time.Now()
-	defer func() { log.Printf("File update took %s\n", time.Since(start)) }()
-
-	if err := s.project.ParseFileUpdate(path, newContent.Text); err != nil {
-		log.Println(err)
-		return lsperrors.ErrRequestFailed(err.Error())
-	}
-
-	issues, isUpdated, err := s.project.Diagnose(path, newContent.Text)
-	if err != nil {
-		log.Println(err)
-	} else if isUpdated {
-		log.Printf("File change of %s resulted in %d updated diagnostics, pushing", path, len(issues))
-
-		err := s.client.PublishDiagnostics(
-			ctx,
-			s.convertIssuesToDiagnostics(issues, params.TextDocument.URI, params.TextDocument.Version),
-		)
-		if err != nil {
-			log.Println(err)
+	go func() {
+		if err := s.project.ParseFileUpdate(path, newContent); err != nil {
+			s.showAndLog(ctx, protocol.Warning, err)
 		}
-	}
+	}()
+
+	go func() {
+		if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(newContent)); err != nil {
+			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+				s.showAndLog(ctx, protocol.Error, err)
+			}
+		}
+	}()
 
 	return nil
 }
@@ -95,50 +73,6 @@ func (s *Server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocu
 	if err := s.isMethodAllowed("DidClose"); err != nil {
 		return err
 	}
-
-	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
-	if s.project.HasDiagnostics(path) {
-		log.Printf("File %s closed, clearing diagnostics", path)
-
-		s.project.ClearDiagnostics(path)
-
-		err := s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument.URI,
-			Diagnostics: []protocol.Diagnostic{},
-		})
-		if err != nil {
-			log.Println(err)
-		}
-	}
-
+	// noop, we could remove the diagnostics for this file, but I don't think that has a big memory footprint.
 	return nil
-}
-
-func (s *Server) convertIssuesToDiagnostics(
-	issues []project.Issue,
-	documentURI protocol.DocumentURI,
-	documentVersion int32,
-) *protocol.PublishDiagnosticsParams {
-	return &protocol.PublishDiagnosticsParams{
-		URI:     documentURI,
-		Version: documentVersion,
-		Diagnostics: functional.Map(issues, func(issue project.Issue) protocol.Diagnostic {
-			return protocol.Diagnostic{
-				Range: protocol.Range{
-					Start: protocol.Position{
-						Line:      uint32(issue.Line()) - 1,
-						Character: 0,
-					},
-					End: protocol.Position{
-						Line:      uint32(issue.Line()),
-						Character: 0,
-					},
-				},
-				Severity: protocol.SeverityError,
-				Code:     issue.Code(),
-				Source:   "PHP",
-				Message:  issue.Message(),
-			}
-		}),
-	}
 }

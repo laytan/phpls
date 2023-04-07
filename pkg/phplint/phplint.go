@@ -2,6 +2,8 @@ package phplint
 
 // package phplint wraps `php -l` into a nice interface.
 
+// TODO: remove this package, use php-parser parsing errors for these kind of diagnostics.
+
 import (
 	"bufio"
 	"errors"

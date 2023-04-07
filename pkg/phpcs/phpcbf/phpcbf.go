@@ -8,10 +8,10 @@ import (
 	"log"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/strutil"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
@@ -118,9 +118,10 @@ func (p *Instance) Format(code []byte) ([]byte, error) {
 	return out, nil
 }
 
+// TODO: should probably not be in this package.
 func (p *Instance) FormatFileEdits(path string) ([]protocol.TextEdit, error) {
 	code := wrkspc.Current.FContentOf(path)
-	lines := len(strings.Split(code, "\n")) // TODO: ewh.
+	lines := len(strutil.Lines(code))
 	formatted, err := p.Format([]byte(code))
 	if err != nil {
 		return nil, fmt.Errorf("formatting %q code: %w", path, err)
