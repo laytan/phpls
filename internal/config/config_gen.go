@@ -95,6 +95,8 @@ func removeOmitEmpty(obj any) map[string]any {
 		if jsonTag != "" {
 			if jsonName, _, ok := strings.Cut(jsonTag, ","); ok && jsonName != "" {
 				key = jsonName
+			} else if jsonTag == "-" {
+				continue
 			}
 		}
 

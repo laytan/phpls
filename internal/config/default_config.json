@@ -1,11 +1,4 @@
 {
-    "LogsPath": "",
-    "PhpVersion": {
-        "Major": 0,
-        "Minor": 0,
-        "Patch": 0
-    },
-    "StubsPath": "",
     "cache_path": "",
     "diagnostics": {
         "enabled": true,
