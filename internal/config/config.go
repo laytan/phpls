@@ -1,239 +1,391 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
+	"strconv"
 	"strings"
-	"sync"
 
-	"github.com/jessevdk/go-flags"
-	"github.com/laytan/elephp/pkg/connection"
+	"github.com/cristalhq/aconfig"
+	"github.com/cristalhq/aconfig/aconfigyaml"
+	"github.com/danielgtaylor/huma/schema"
 	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/xeipuuv/gojsonschema"
 )
 
-var ErrIncorrectConnTypeAmt = errors.New(
-	"Elephp requires exactly one connection type to be selected",
+//go:generate go run config_gen.go
+
+var Current *Schema
+
+const (
+	Name           = "elephp"
+	Version        = "dev-0.0.0"
+	SchemaLocation = "https://raw.githubusercontent.com/laytan/elephp/main/internal/config/elephp.schema.json"
+	ok             = 0
+	err            = 1
+	invalid        = 2
 )
 
-const Usage = `<command> [-options]
+// filenames are the files we check for in each of the directories that are checked.
+var filenames = []string{
+	"./elephp.json",
+	"./.elephp.json",
+	"./elephp.yml",
+	"./.elephp.yml",
+	"./elephp.yaml",
+	"./.elephp.yaml",
+}
+
+// Parse loads the configuration from all the config files, environment variables, cli flags, and defaults.
+// Validates it and sets it co Current.
+// Parse exits on its own when there were errors or invalid configuration values.
+// args should be all the flags, not the program name or any subcommand name.
+func Parse(args []string) {
+	cfg := loadConfig(args)
+	maybeDumpConfig(cfg)
+	applyComputedDefaults(cfg)
+	validate(cfg)
+	setComputed(cfg)
+	Current = cfg
+}
+
+func DefaultWithoutComputed() *Schema {
+	cfg := &Schema{}
+	loader := aconfig.LoaderFor(cfg, aconfig.Config{
+		SkipFiles: true,
+		SkipEnv:   true,
+		SkipFlags: true,
+	})
+	if err := loader.Load(); err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
+func Default() *Schema {
+	cfg := DefaultWithoutComputed()
+	applyComputedDefaults(cfg)
+	setComputed(cfg)
+	return cfg
+}
+
+func wrapUsage(flags *flag.FlagSet) {
+	var files strings.Builder
+	for _, fn := range filenames {
+		f := strings.TrimPrefix(fn, "./")
+		_, _ = files.WriteString("  ")
+		_, _ = files.WriteString(f)
+		_, _ = files.WriteRune('\n')
+	}
+
+	var dirs strings.Builder
+	for _, dir := range configDirs() {
+		_, _ = dirs.WriteString("  ")
+		_, _ = dirs.WriteString(dir)
+		_, _ = dirs.WriteRune('\n')
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+	} else {
+		_, _ = dirs.WriteString("  ")
+		_, _ = dirs.WriteString(cwd)
+		_, _ = dirs.WriteString(" (Your current working directory)\n")
+	}
+
+	usage := flags.Usage
+	flags.Usage = func() {
+		o := flags.Output()
+		_, _ = fmt.Fprintf(
+			o,
+			`
+ElePHP - The PHP language server
 
 Available commands:
+  default  Runs the language server
+  logs     Outputs the directory where logs are saved
+  stubs    Outputs the directory where stubs are saved
 
-empty   Run the language server
-logs    Output the directory where logs are stored
-stubs   Output the directory where generated stubs are stored`
+The following file names are seen as ElePHP configuration files:
+%s
+These files are recognized when they are in any of the following directories:
+%s
+These files are checked top to bottom, with later files overwriting the former.
+See %s for the configuration schema.
 
-var Current Config
+Configuration files are then overwritten by environment variables, with the prefix 'ELEPHP_',
+so setting the php version can for example be done with 'ELEPHP_PHP_VERSION=8'.
 
-func New() Config {
-	return &lsConfig{Args: os.Args}
+`, files.String(), dirs.String(), SchemaLocation,
+		)
+		usage()
+	}
 }
 
-func NewWithArgs(args []string) Config {
-	return &lsConfig{Args: args}
-}
-
-func Default() Config {
-	return &lsConfig{
-		opts: opts{
-			UseStdio:        true,
-			UseWs:           false,
-			UseTCP:          false,
-			Statsviz:        false,
-			ClientProcessID: 0,
-			URL:             "",
-			FileExtensions:  []string{"php"},
-			IgnoredDirNames: []string{".git", "node_modules"},
-			StubsDir:        "",
-			LogsDir:         "",
-			PHPVersion:      "",
+func loadConfig(args []string) *Schema {
+	cfg := &Schema{}
+	ymlDecoder := aconfigyaml.New()
+	files := configPaths()
+	loader := aconfig.LoaderFor(cfg, aconfig.Config{
+		// SkipDefaults:       false,
+		// SkipFiles:          false,
+		// SkipEnv:            false,
+		// SkipFlags:          false,
+		EnvPrefix: "ELEPHP",
+		// FlagPrefix:         "",
+		FlagDelimiter: ".",
+		// AllFieldRequired:   false,
+		// AllowDuplicates:    false,
+		// AllowUnknownFields: false,
+		// AllowUnknownEnvs:   false,
+		// AllowUnknownFlags:  false,
+		// DontGenerateTags:   false,
+		// FailOnFileNotFound: false,
+		// FileSystem:         nil,
+		MergeFiles: true,
+		FileFlag:   "config",
+		Files:      files,
+		// Envs:               []string{},
+		// Args:               []string{},
+		FileDecoders: map[string]aconfig.FileDecoder{
+			".yaml": ymlDecoder,
+			".yml":  ymlDecoder,
 		},
+	})
+
+	flags := loader.Flags()
+	wrapUsage(flags)
+
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			os.Exit(ok)
+		}
+
+		os.Exit(invalid)
 	}
+
+	checkConfigFileExists(flags)
+
+	if err := loader.Load(); err != nil {
+		var numErr *strconv.NumError
+		if errors.As(err, &numErr) {
+			_, _ = fmt.Fprintf(
+				os.Stderr,
+				"Unable to %s %q because of %v\n",
+				humanFunc(numErr.Func),
+				numErr.Num,
+				numErr.Err,
+			)
+		} else {
+			_, _ = fmt.Fprintln(os.Stderr, err.Error()+"\n")
+		}
+		os.Exit(invalid)
+	}
+
+	return cfg
 }
 
-type Config interface {
-	Name() string
-	Version() string
-	Initialize() (disregardErr bool, err error)
-	ClientPid() (uint, bool)
-	ConnType() (connection.ConnType, error)
-	ConnURL() string
-	UseStatsviz() bool
-	FileExtensions() []string
-	IgnoredDirNames() []string
-	StubsDir() string
-	LogsDir() string
-	BinDir() string
-	PHPVersion() (*phpversion.PHPVersion, error)
-}
-
-type lsConfig struct {
-	opts opts
-	Args []string
-
-	phpVersion   *phpversion.PHPVersion
-	phpVersionMu sync.Mutex
-
-	stubsDirMu sync.Mutex
-	logsDirMu  sync.Mutex
-	binDirMu   sync.Mutex
-}
-
-func (c *lsConfig) Initialize() (disregardErr bool, err error) {
-	parser := flags.NewParser(&c.opts, flags.Default)
-	parser.Usage = Usage
-	_, err = parser.ParseArgs(c.Args)
+func validate(cfg *Schema) {
+	jsonSchema, err := schema.Generate(reflect.TypeOf(&Schema{}))
 	if err != nil {
-		var specificErr *flags.Error
-		errors.As(err, &specificErr)
-		helpShown := specificErr != nil && specificErr.Type == flags.ErrHelp
-
-		return helpShown, fmt.Errorf("parsing arguments: %w", err)
+		panic(err) // programmer error.
 	}
 
-	return false, nil
-}
-
-func (c *lsConfig) ClientPid() (uint, bool) {
-	isset := c.opts.ClientProcessID != 0
-	return c.opts.ClientProcessID, isset
-}
-
-func (c *lsConfig) ConnType() (connection.ConnType, error) {
-	connTypes := map[connection.ConnType]bool{
-		connection.ConnStdio: c.opts.UseStdio,
-		connection.ConnTCP:   c.opts.UseTCP,
-		connection.ConnWs:    c.opts.UseWs,
+	sLoader := gojsonschema.NewGoLoader(jsonSchema)
+	cfgLoader := gojsonschema.NewGoLoader(cfg)
+	s, err := gojsonschema.NewSchema(sLoader)
+	if err != nil {
+		panic(err) // programmer error.
 	}
 
-	var result connection.ConnType
-	var found bool
-	for connType, selected := range connTypes {
-		if !selected {
-			continue
+	res, err := s.Validate(cfgLoader)
+	if err != nil {
+		panic(err) // programmer error.
+	}
+
+	errs := res.Errors()
+	if len(errs) > 0 {
+		_, _ = fmt.Fprintf(os.Stderr, "Invalid configuration detected:\n")
+		for _, err := range errs {
+			_, _ = fmt.Fprintf(os.Stderr, "  - %v\n", err)
+		}
+		os.Exit(invalid)
+	}
+}
+
+// applyComputedDefaults applies any defaults that can't be put in struct tags.
+func applyComputedDefaults(cfg *Schema) {
+	if cfg.Php.Version == "" {
+		phpv, err := phpversion.Get()
+		if err != nil {
+			_, _ = fmt.Fprintf(
+				os.Stderr,
+				"Unable to get php version automatically, specify the version manually or make sure `php -v` works: %v\n",
+				err,
+			)
+			os.Exit(invalid)
 		}
 
-		if found {
-			return "", ErrIncorrectConnTypeAmt
+		cfg.Php.Version = phpv.String()
+	}
+
+	if cfg.CachePath == "" {
+		dir, err := os.UserCacheDir()
+		if err != nil {
+			_, _ = fmt.Fprintf(
+				os.Stderr,
+				"Unable to get cache path automatically, try specifying the path manually: %v\n",
+				err,
+			)
+			os.Exit(invalid)
 		}
 
-		result = connType
-		found = true
+		cfg.CachePath = dir
+	}
+}
+
+func setComputed(cfg *Schema) {
+	cfg.LogsPath = filepath.Join(cfg.CachePath, "elephp", Version, "logs")
+	if err := os.MkdirAll(cfg.LogsPath, 0o755); err != nil {
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"Could not create logs directory at %q, please set the cache path configuration to a writable directory: %v\n",
+			cfg.LogsPath,
+			err,
+		)
+		os.Exit(invalid)
 	}
 
-	if !found {
-		return "", ErrIncorrectConnTypeAmt
+	cfg.StubsPath = filepath.Join(cfg.CachePath, "elephp", Version, "stubs")
+	if err := os.MkdirAll(cfg.LogsPath, 0o755); err != nil {
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"Could not create stubs directory at %q, please set the cache path configuration to a writable directory: %v\n",
+			cfg.StubsPath,
+			err,
+		)
+		os.Exit(invalid)
 	}
 
-	return result, nil
+	v, ok := phpversion.FromString(cfg.Php.Version)
+	if !ok {
+		_, _ = fmt.Fprintf(os.Stderr, "Invalid PHP Version string %q", cfg.Php.Version)
+		os.Exit(invalid)
+	}
+	cfg.PhpVersion = v
 }
 
-func (c *lsConfig) ConnURL() string {
-	return c.opts.URL
-}
-
-func (c *lsConfig) UseStatsviz() bool {
-	return c.opts.Statsviz
-}
-
-func (c *lsConfig) Name() string {
-	return "elephp"
-}
-
-func (c *lsConfig) Version() string {
-	return "0.0.1-dev"
-}
-
-func (c *lsConfig) FileExtensions() []string {
-	exts := make([]string, 0, len(c.opts.FileExtensions))
-	for _, ext := range c.opts.FileExtensions {
-		exts = append(exts, "."+strings.TrimSpace(ext))
+func configDirs() (dirs []string) {
+	configDir, err := configDir()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+	} else {
+		dirs = append(dirs, configDir)
 	}
 
-	return exts
-}
-
-func (c *lsConfig) IgnoredDirNames() []string {
-	dirs := make([]string, 0, len(c.opts.IgnoredDirNames))
-	for _, dir := range c.opts.IgnoredDirNames {
-		dirs = append(dirs, strings.TrimSpace(dir))
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+	} else {
+		dirs = append(dirs, homeDir)
 	}
 
 	return dirs
 }
 
-func (c *lsConfig) StubsDir() string {
-	c.stubsDirMu.Lock()
-	defer c.stubsDirMu.Unlock()
-
-	if c.opts.StubsDir == "" {
-		c.opts.StubsDir = c.cacheDir("stubs")
+// configPaths collects all paths to check for config files.
+func configPaths() (paths []string) {
+	for _, dir := range configDirs() {
+		paths = append(paths, addFileNames(filepath.Join(dir, "elephp"))...)
 	}
-
-	return c.opts.StubsDir
+	paths = append(paths, filenames...)
+	return paths
 }
 
-func (c *lsConfig) LogsDir() string {
-	c.logsDirMu.Lock()
-	defer c.logsDirMu.Unlock()
-
-	if c.opts.LogsDir == "" {
-		c.opts.LogsDir = c.cacheDir("logs")
+func addFileNames(dir string) []string {
+	paths := make([]string, 0, len(filenames))
+	for _, fn := range filenames {
+		paths = append(paths, filepath.Join(dir, fn))
 	}
-
-	return c.opts.LogsDir
+	return paths
 }
 
-func (c *lsConfig) BinDir() string {
-	c.binDirMu.Lock()
-	defer c.binDirMu.Unlock()
+func configDir() (string, error) {
+	// MacOS returns /Library/Application Support normally, but this is not really used for dev
+	// based configuration, that is the same as unix systems most of the time.
+	if runtime.GOOS == "darwin" {
+		dir := os.Getenv("XDG_CONFIG_HOME")
+		if dir == "" {
+			dir = os.Getenv("HOME")
+			if dir == "" {
+				dir, err := os.UserConfigDir()
+				if err != nil {
+					return "", fmt.Errorf("getting darwin config dir: %w", err)
+				}
 
-	if c.opts.BinDir == "" {
-		c.opts.BinDir = c.cacheDir("bin")
-	}
-
-	return c.opts.BinDir
-}
-
-func (c *lsConfig) PHPVersion() (*phpversion.PHPVersion, error) {
-	c.phpVersionMu.Lock()
-	defer c.phpVersionMu.Unlock()
-
-	if c.phpVersion != nil {
-		return c.phpVersion, nil
-	}
-
-	if c.opts.PHPVersion != "" {
-		v, ok := phpversion.FromString(c.opts.PHPVersion)
-		if !ok {
-			return nil, fmt.Errorf("unable to parse config php version: %s", c.opts.PHPVersion)
+				return dir, nil
+			}
+			dir += "/.config"
 		}
 
-		c.phpVersion = v
-		return v, nil
+		return dir, nil
 	}
 
-	v, err := phpversion.Get()
+	dir, err := os.UserConfigDir()
 	if err != nil {
-		return nil, fmt.Errorf("retrieving current PHP version: %w", err)
+		return "", fmt.Errorf("getting config dir: %w", err)
 	}
 
-	c.phpVersion = v
-	return v, nil
+	return dir, nil
 }
 
-func (c *lsConfig) cacheDir(subfolder string) string {
-	dir, err := os.UserCacheDir()
+func humanFunc(f string) string {
+	switch f {
+	case "ParseBool":
+		return "parse boolean"
+	case "ParseInt":
+		return "parse integer"
+	case "ParseUint":
+		return "parse unsigned integer"
+	case "ParseFloat", "ParseComplex":
+		return "parse number"
+	default:
+		return f
+	}
+}
+
+func maybeDumpConfig(cfg *Schema) {
+	if !cfg.DumpConfig {
+		return
+	}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "    ")
+	err := enc.Encode(cfg)
 	if err != nil {
-		panic(err)
+		panic(err) // programmer error.
 	}
 
-	cacheDir := filepath.Join(dir, c.Name(), c.Version(), subfolder)
-	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
-		panic(err)
-	}
+	os.Exit(ok)
+}
 
-	return cacheDir
+func checkConfigFileExists(flags *flag.FlagSet) {
+	f := flags.Lookup("config")
+	configFile := f.Value.String()
+	if configFile != "" {
+		_, err := os.Stat(configFile)
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"Non default config file (provided through the -config flag) could not be accessed: %v\n",
+			err,
+		)
+		os.Exit(invalid)
+	}
 }

@@ -1,0 +1,58 @@
+{
+    "LogsPath": "",
+    "PhpVersion": {
+        "Major": 0,
+        "Minor": 0,
+        "Patch": 0
+    },
+    "StubsPath": "",
+    "cache_path": "",
+    "diagnostics": {
+        "enabled": true,
+        "phpcs": {
+            "binary": [
+                "vendor/bin/phpcs",
+                "phpcs"
+            ],
+            "enabled": true,
+            "method": "ON_CHANGE"
+        },
+        "phpstan": {
+            "binary": [
+                "vendor/bin/phpstan",
+                "phpstan"
+            ],
+            "enabled": true,
+            "method": "ON_CHANGE"
+        }
+    },
+    "dump_config": false,
+    "extensions": [
+        ".php"
+    ],
+    "ignored_directories": [
+        ".git",
+        "node_modules"
+    ],
+    "php": {
+        "binary": "php",
+        "version": ""
+    },
+    "phpcbf": {
+        "binary": [
+            "vendor/bin/phpcbf",
+            "phpcbf"
+        ],
+        "enabled": true,
+        "standard": ""
+    },
+    "server": {
+        "client_pid": 0,
+        "communication": "stdio",
+        "url": "127.0.0.1:2001"
+    },
+    "statsviz": {
+        "enabled": false,
+        "url": "127.0.0.1:6060/debug/statsviz"
+    }
+}

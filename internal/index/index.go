@@ -178,7 +178,8 @@ func (i *index) Delete(path string) error {
 		j++
 	}
 
-	log.Printf("Removed %d symbols from %s out of the symboltrie", j, path)
+	_, filename := filepath.Split(path)
+	log.Printf("Removed %d symbols from %q out of the symboltrie", j, filename)
 
 	return nil
 }
@@ -186,7 +187,7 @@ func (i *index) Delete(path string) error {
 var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 func (i *index) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, config.Current.StubsDir()) || strings.HasPrefix(path, stubsDir) {
+	if strings.HasPrefix(path, config.Current.StubsPath) || strings.HasPrefix(path, stubsDir) {
 		return i.stubParser
 	}
 

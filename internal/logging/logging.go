@@ -47,14 +47,14 @@ func Configure(root string) (stop func()) {
 }
 
 func LogsPath(root string) string {
-	name := config.Current.Name()
+	name := config.Name
 
 	filename := name + "-" + time.Now().Format(dateLayout) + fileType
 	return filepath.Join(root, filename)
 }
 
 func cleanLogs(root string) {
-	name := config.Current.Name()
+	name := config.Name
 
 	minTime := time.Now().Add(-(time.Hour * hoursInDay * daysToKeep))
 

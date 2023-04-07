@@ -1,0 +1,212 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/laytan/elephp/main/internal/config/elephp.schema.json",
+    "title": "ElePHP",
+    "description": "Configuration format for the ElePHP language server.",
+    "type": "object",
+    "properties": {
+        "cache_path": {
+            "type": "string",
+            "description": "Root directory for generated stubs and logs, defaults to the user cache directory."
+        },
+        "diagnostics": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "phpcs": {
+                    "type": "object",
+                    "properties": {
+                        "binary": {
+                            "type": "array",
+                            "description": "The paths checked, in order, for the PHPCS binary.",
+                            "items": {
+                                "type": "string"
+                            },
+                            "default": [
+                                "vendor/bin/phpcs",
+                                "phpcs"
+                            ],
+                            "example": [
+                                "phpcs"
+                            ],
+                            "minItems": 1,
+                            "uniqueItems": true
+                        },
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "method": {
+                            "type": "string",
+                            "description": "When to run diagnostics, either ON_SAVE or ON_CHANGE.",
+                            "enum": [
+                                "ON_SAVE",
+                                "ON_CHANGE"
+                            ],
+                            "default": "ON_CHANGE"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "phpstan": {
+                    "type": "object",
+                    "properties": {
+                        "binary": {
+                            "type": "array",
+                            "description": "The paths checked, in order, for the PHPStan binary.",
+                            "items": {
+                                "type": "string"
+                            },
+                            "default": [
+                                "vendor/bin/phpstan",
+                                "phpstan"
+                            ],
+                            "example": [
+                                "phpstan"
+                            ],
+                            "minItems": 1,
+                            "uniqueItems": true
+                        },
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "method": {
+                            "type": "string",
+                            "description": "When to run diagnostics, either ON_SAVE or ON_CHANGE.",
+                            "enum": [
+                                "ON_SAVE",
+                                "ON_CHANGE"
+                            ],
+                            "default": "ON_CHANGE"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        },
+        "dump_config": {
+            "type": "boolean",
+            "description": "Dump the resolved config before validation, useful for debugging.",
+            "default": false
+        },
+        "extensions": {
+            "type": "array",
+            "description": "File extensions to consider PHP code.",
+            "items": {
+                "type": "string"
+            },
+            "default": [
+                ".php"
+            ],
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "ignored_directories": {
+            "type": "array",
+            "description": "Directories to ignore completely, use when you have huge directories with non-php files.",
+            "items": {
+                "type": "string"
+            },
+            "default": [
+                ".git",
+                "node_modules"
+            ],
+            "uniqueItems": true
+        },
+        "php": {
+            "type": "object",
+            "properties": {
+                "binary": {
+                    "type": "string",
+                    "description": "The php binary used to execute external commands like analyzers.",
+                    "default": "php",
+                    "example": "valet php"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "The PHP version to use when parsing, defaults to the output of 'php -v'.",
+                    "example": "8.1",
+                    "pattern": "^[7-8](\\.[0-9]+){0,2}$"
+                }
+            },
+            "additionalProperties": false
+        },
+        "phpcbf": {
+            "type": "object",
+            "properties": {
+                "binary": {
+                    "type": "array",
+                    "description": "The paths checked, in order, for the PHPCBF binary.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "vendor/bin/phpcbf",
+                        "phpcbf"
+                    ],
+                    "minItems": 1,
+                    "uniqueItems": true
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable formatting using PHPCBF.",
+                    "default": true
+                },
+                "standard": {
+                    "type": "string",
+                    "description": "The PHPCS standard to format according to, NOTE: if this is set, the project level config is ignored."
+                }
+            },
+            "additionalProperties": false
+        },
+        "server": {
+            "type": "object",
+            "properties": {
+                "client_pid": {
+                    "type": "integer",
+                    "description": "A process ID to watch for exits, server will exit when it exits.",
+                    "format": "int32",
+                    "minimum": 0
+                },
+                "communication": {
+                    "type": "string",
+                    "description": "How to communicate: standard io, web sockets or tcp.",
+                    "enum": [
+                        "stdio",
+                        "ws",
+                        "tcp"
+                    ],
+                    "default": "stdio"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "The URL to use for the websocket or tcp server.",
+                    "default": "127.0.0.1:2001"
+                }
+            },
+            "additionalProperties": false
+        },
+        "statsviz": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Visualize the server's memory usage, cpu usage, threads and other stats. NOTE: comes with a performance cost.",
+                    "default": false
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Where to serve the visualizations.",
+                    "default": "127.0.0.1:6060/debug/statsviz"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": false
+}

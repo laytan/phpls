@@ -105,8 +105,8 @@ func New(phpv *phpversion.PHPVersion, root string, stubs string) Wrkspc {
 		normalParser:    normalParser,
 		stubParser:      stubParser,
 		roots:           []string{root, stubs},
-		fileExtensions:  config.Current.FileExtensions(),
-		ignoredDirNames: config.Current.IgnoredDirNames(),
+		fileExtensions:  config.Current.Extensions,
+		ignoredDirNames: config.Current.IgnoredDirectories,
 		files:           files,
 		irs:             irs,
 	}
@@ -358,7 +358,7 @@ func (w *wrkspc) shouldParse(d fs.DirEntry) (bool, error) {
 var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
 func (w *wrkspc) parser(path string) parsing.Parser {
-	if strings.HasPrefix(path, config.Current.StubsDir()) || strings.HasPrefix(path, stubsDir) {
+	if strings.HasPrefix(path, config.Current.StubsPath) || strings.HasPrefix(path, stubsDir) {
 		return w.stubParser
 	}
 

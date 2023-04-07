@@ -24,64 +24,41 @@ func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "logs":
-			defaultConf := config.Default()
-			_, _ = fmt.Println(defaultConf.LogsDir())
+			config.Parse(os.Args[2:])
+			_, _ = fmt.Println(config.Current.LogsPath)
 			return
 		case "stubs":
-			defaultConf := config.Default()
-			_, _ = fmt.Println(defaultConf.StubsDir())
-			return
-		case "bin":
-			defaultConf := config.Default()
-			_, _ = fmt.Println(defaultConf.BinDir())
+			config.Parse(os.Args[2:])
+			_, _ = fmt.Println(config.Current.StubsPath)
 			return
 		}
 	}
 
-	conf := config.New()
-	config.Current = conf
-
-	disregardErr, err := conf.Initialize()
-	if disregardErr {
-		_, _ = fmt.Println(err)
-		return
-	}
-
-	if err != nil {
-		_, _ = fmt.Println(err)
-		return
-	}
-
-	stop := logging.Configure(conf.LogsDir())
+	config.Parse(os.Args[1:])
+	stop := logging.Configure(config.Current.LogsPath)
 	defer stop()
 
 	_, _ = fmt.Printf(
-		"Output will be going into the logs file at \"%s\" from now on",
-		logging.LogsPath(conf.LogsDir()),
+		"Output will be going into the logs file at %q from now on\n",
+		logging.LogsPath(config.Current.LogsPath),
 	)
 
-	connType, err := conf.ConnType()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	if pid, isset := conf.ClientPid(); isset {
+	if pid := config.Current.Server.ClientPid; pid != 0 {
 		processwatch.NewExiter(pid)
 		log.Printf("Monitoring process ID: %d", pid)
 	}
 
-	if conf.UseStatsviz() {
+	if config.Current.Statsviz.Enabled {
 		go func() {
-			log.Println("Starting Statsviz at http://localhost:6060/debug/statsviz")
+			log.Printf("Starting Statsviz at %s", config.Current.Statsviz.URL)
 			if err := statsviz.RegisterDefault(); err != nil {
-				log.Println(fmt.Errorf("Unable to register statsviz routes: %w", err))
+				log.Printf("Unable to register statsviz routes: %v", err)
 			}
 
 			log.Println(
 				//nolint:gosec // This is ok because we use statsviz for locally visualizing, this is not opened to the internet.
 				http.ListenAndServe(
-					"localhost:6060",
+					config.Current.Statsviz.URL,
 					nil,
 				),
 			)
@@ -92,10 +69,17 @@ func main() {
 
 	connChan := make(chan net.Conn, 1)
 	listeningChann := make(chan bool, 1)
-	go func() { connection.NewConnectionListener(connType, conf.ConnURL(), connChan, listeningChann) }()
+	go func() {
+		connection.NewConnectionListener(
+			config.Current.Server.Communication,
+			config.Current.Server.URL,
+			connChan,
+			listeningChann,
+		)
+	}()
 
 	<-listeningChann
-	log.Printf("Waiting for connection of type: %s\n", connType)
+	log.Printf("Waiting for connection of type: %s\n", config.Current.Server.Communication)
 
 	conn := <-connChan
 	log.Println("Connected with client")

@@ -107,8 +107,8 @@ func (s *Server) Initialize(
 			},
 		},
 		ServerInfo: &protocol.PServerInfoMsg_initialize{
-			Name:    config.Current.Name(),
-			Version: config.Current.Version(),
+			Name:    config.Name,
+			Version: config.Version,
 		},
 	}, nil
 }
@@ -202,12 +202,8 @@ func (s *Server) index() {
 }
 
 func (s *Server) createProject(stubsDir string) (*project.Project, error) {
-	phpv, err := config.Current.PHPVersion()
-	if err != nil {
-		return nil, fmt.Errorf("creating project: %w", err)
-	}
-
-	log.Printf("Detected php version: %s\n", phpv.String())
+	phpv := config.Current.PhpVersion
+	log.Printf("Using php version: %s\n", phpv.String())
 
 	i := index.New(phpv)
 	w := wrkspc.New(phpv, string(s.root), stubsDir)
@@ -218,12 +214,8 @@ func (s *Server) createProject(stubsDir string) (*project.Project, error) {
 }
 
 func (s *Server) initStubs(ctx context.Context) (string, error) {
-	phpv, err := config.Current.PHPVersion()
-	if err != nil {
-		return "", fmt.Errorf("initializing stubs, getting php version: %w", err)
-	}
-
-	stubsDir, err := stubs.Path(config.Current.StubsDir(), phpv)
+	phpv := config.Current.PhpVersion
+	stubsDir, err := stubs.Path(config.Current.StubsPath, phpv)
 	if err == nil {
 		return stubsDir, nil
 	}
@@ -244,8 +236,7 @@ func (s *Server) initStubs(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("started tracking stub progress: %w", err)
 	}
 
-	stubsDir, err = stubs.Generate(config.Current.StubsDir(), phpv, done)
-
+	stubsDir, err = stubs.Generate(config.Current.StubsPath, phpv, done)
 	if err != nil {
 		err = fmt.Errorf("generating stubs: %w", err)
 		if stopErr := stop(err); stopErr != nil {
