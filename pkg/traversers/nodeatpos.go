@@ -33,7 +33,12 @@ func (n *NodeAtPos) EnterNode(node ast.Vertex) bool {
 
 	n.checkComment(node)
 
-	if n.pos >= node.GetPosition().StartPos && n.pos <= node.GetPosition().EndPos {
+	nPos := node.GetPosition()
+	if nPos == nil {
+		return true
+	}
+
+	if n.pos >= nPos.StartPos && n.pos <= nPos.EndPos {
 		n.Nodes = append(n.Nodes, node)
 		return true
 	}
