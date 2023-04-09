@@ -5,8 +5,6 @@ import (
 	"github.com/laytan/elephp/pkg/phpversion"
 )
 
-// TODO: a lot of these configurations aren't actually used in the app just yet.
-
 type DiagnosticsMethod string
 
 const (
@@ -15,7 +13,9 @@ const (
 )
 
 type Schema struct {
-	Php                Php         `json:"php,omitempty"`
+	// TODO: implement usage of this.
+	Php Php `json:"php,omitempty"`
+	// TODO: implement usage of this.
 	Phpcbf             Phpcbf      `json:"phpcbf,omitempty"`
 	Diagnostics        Diagnostics `json:"diagnostics,omitempty"`
 	Extensions         []string    `json:"extensions,omitempty"          uniqueItems:"true" minItems:"1" default:".php"              doc:"File extensions to consider PHP code."                                                    usage:"File extensions to consider PHP code."`

@@ -25,7 +25,7 @@ var Current *Schema
 
 const (
 	Name           = "elephp"
-	Version        = "dev-0.0.0"
+	Version        = "0.0.1-dev"
 	SchemaLocation = "https://raw.githubusercontent.com/laytan/elephp/main/internal/config/elephp.schema.json"
 	ok             = 0
 	err            = 1

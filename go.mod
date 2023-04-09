@@ -10,6 +10,7 @@ require (
 	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
 	github.com/danielgtaylor/huma v1.13.0
 	github.com/davecgh/go-spew v1.1.1
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5

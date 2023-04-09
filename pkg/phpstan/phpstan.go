@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"os/exec"
@@ -32,12 +31,12 @@ type ReportMessage struct {
 
 var ErrCancelled = errors.New("cancelled")
 
-func Analyze(ctx context.Context, path string, content []byte) ([]*ReportMessage, error) {
-	executable := executable()
-	if executable == "" {
-		return nil, nil
-	}
-
+func Analyze(
+	ctx context.Context,
+	executable string,
+	path string,
+	content []byte,
+) ([]*ReportMessage, error) {
 	dir, name := filepath.Split(path)
 	fh, err := os.CreateTemp(dir, ".phpstan-tmp."+name)
 	if err != nil {
@@ -60,6 +59,10 @@ func Analyze(ctx context.Context, path string, content []byte) ([]*ReportMessage
 		}()
 	}()
 
+	return AnalyzePath(ctx, executable, fh.Name())
+}
+
+func AnalyzePath(ctx context.Context, executable string, path string) ([]*ReportMessage, error) {
 	cmd := exec.CommandContext(
 		ctx,
 		executable,
@@ -67,7 +70,7 @@ func Analyze(ctx context.Context, path string, content []byte) ([]*ReportMessage
 		"--error-format",
 		"json",
 		"--no-progress",
-		fh.Name(),
+		path,
 	)
 	out, err := cmd.Output()
 	var exitErr *exec.ExitError
@@ -92,42 +95,5 @@ func Analyze(ctx context.Context, path string, content []byte) ([]*ReportMessage
 		return nil, nil
 	}
 
-	return report.Files[fh.Name()].Messages, nil
-}
-
-func HasExecutable() bool {
-	return executable() != ""
-}
-
-var cachedExecutable *string
-
-func executable() (p string) {
-	if cachedExecutable != nil {
-		return *cachedExecutable
-	}
-
-	defer func() { cachedExecutable = &p }()
-
-	localPath := filepath.Join("vendor", "bin", "phpstan")
-	_, err := os.Stat(localPath)
-	if err == nil {
-		log.Printf("[INFO]: using local phpstan at %q", localPath)
-		return localPath
-	}
-
-	if !errors.Is(err, fs.ErrNotExist) {
-		log.Println(fmt.Errorf("[WARN]: unexpected error checking %q: %w", localPath, err))
-	}
-
-	p, err = exec.LookPath("phpstan")
-	if err != nil {
-		if !errors.Is(err, exec.ErrNotFound) {
-			log.Println(fmt.Errorf("[WARN]: unexpected error checking path for phpcbf: %w", err))
-		}
-
-		return ""
-	}
-
-	log.Printf("[INFO]: using global phpstan at %q", p)
-	return p
+	return report.Files[path].Messages, nil
 }

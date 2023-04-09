@@ -11,7 +11,11 @@ import (
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
-type PhpstanAnalyzer struct{}
+type PhpstanAnalyzer struct {
+	Executable string
+}
+
+var _ Analyzer = &PhpstanAnalyzer{}
 
 func (p *PhpstanAnalyzer) Name() string {
 	return "phpstan"
@@ -22,16 +26,14 @@ func (p *PhpstanAnalyzer) Analyze(
 	path string,
 	code []byte,
 ) ([]protocol.Diagnostic, error) {
-	report, err := phpstan.Analyze(ctx, path, code)
-	if errors.Is(err, phpstan.ErrCancelled) {
-		log.Printf("[DEBUG]: phpstan cancelled: %v", err)
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("analyzing %q with phpstan: %w", path, err)
-	}
+	return transformPhpstanResult(phpstan.Analyze(ctx, p.Executable, path, code))
+}
 
-	return functional.Map(report, phpstanMessageToDiagnostic), nil
+func (p *PhpstanAnalyzer) AnalyzeSave(
+	ctx context.Context,
+	path string,
+) ([]protocol.Diagnostic, error) {
+	return transformPhpstanResult(phpstan.AnalyzePath(ctx, p.Executable, path))
 }
 
 func phpstanMessageToDiagnostic(m *phpstan.ReportMessage) protocol.Diagnostic {
@@ -55,4 +57,19 @@ func phpstanMessageToDiagnostic(m *phpstan.ReportMessage) protocol.Diagnostic {
 		// RelatedInformation: []protocol.DiagnosticRelatedInformation{},
 		// Data:               nil,
 	}
+}
+
+func transformPhpstanResult(
+	msgs []*phpstan.ReportMessage,
+	err error,
+) ([]protocol.Diagnostic, error) {
+	if errors.Is(err, phpstan.ErrCancelled) {
+		log.Printf("[DEBUG]: phpstan cancelled: %v", err)
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("analyzing with phpstan: %w", err)
+	}
+
+	return functional.Map(msgs, phpstanMessageToDiagnostic), nil
 }

@@ -17,10 +17,16 @@ func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 		return err
 	}
 
-	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
-	code := wrkspc.Current.FContentOf(path)
-	if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(code)); err != nil {
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+	if s.diag != nil {
+		path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+		code := wrkspc.Current.FContentOf(path)
+		if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(code)); err != nil {
+			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+				s.showAndLog(ctx, protocol.Error, err)
+			}
+		}
+
+		if err := s.diag.Watch(path); err != nil {
 			s.showAndLog(ctx, protocol.Error, err)
 		}
 	}
@@ -52,19 +58,23 @@ func (s *Server) DidChange(
 		return nil
 	}
 
+	// TODO: check if this file extension is in config file extensions, and return if not.
+
 	go func() {
 		if err := s.project.ParseFileUpdate(path, newContent); err != nil {
 			s.showAndLog(ctx, protocol.Warning, err)
 		}
 	}()
 
-	go func() {
-		if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(newContent)); err != nil {
-			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-				s.showAndLog(ctx, protocol.Error, err)
+	if s.diag != nil {
+		go func() {
+			if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(newContent)); err != nil {
+				if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+					s.showAndLog(ctx, protocol.Error, err)
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return nil
 }
@@ -73,6 +83,13 @@ func (s *Server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocu
 	if err := s.isMethodAllowed("DidClose"); err != nil {
 		return err
 	}
-	// noop, we could remove the diagnostics for this file, but I don't think that has a big memory footprint.
+
+	if s.diag != nil {
+		path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+		if err := s.diag.StopWatching(path); err != nil {
+			s.showAndLog(ctx, protocol.Error, err)
+		}
+	}
+
 	return nil
 }

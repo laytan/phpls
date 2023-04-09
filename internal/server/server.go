@@ -18,11 +18,8 @@ func NewServer(client protocol.ClientCloser) *Server {
 	return &Server{
 		client:   client,
 		progress: lsprogress.NewTracker(client),
-		diag: diagnostics.NewRunner(client, []diagnostics.Analyzer{
-			diagnostics.MakePhpcs(),
-			&diagnostics.PhpstanAnalyzer{},
-		}),
-		phpcbf: phpcbf.NewInstance(),
+		phpcbf:   phpcbf.NewInstance(),
+		diag:     diagnostics.NewRunnerFromConfig(client),
 	}
 }
 
@@ -36,8 +33,9 @@ type Server struct {
 	root           string
 	project        *project.Project
 	progress       *lsprogress.Tracker
-	diag           *diagnostics.Runner
-	phpcbf         *phpcbf.Instance
+	// NOTE: This can be nil if diagnostics are configured to be disabled!
+	diag   *diagnostics.Runner
+	phpcbf *phpcbf.Instance
 }
 
 var _ protocol.Server = &Server{}

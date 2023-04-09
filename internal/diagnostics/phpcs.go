@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/phpcs"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
@@ -20,9 +21,9 @@ var (
 	_ Closer   = &PhpcsAnalyzer{}
 )
 
-func MakePhpcs() *PhpcsAnalyzer {
+func MakePhpcs(executable string) *PhpcsAnalyzer {
 	return &PhpcsAnalyzer{
-		instance: phpcs.NewInstance(),
+		instance: phpcs.New(executable),
 	}
 }
 
@@ -31,10 +32,6 @@ func (p *PhpcsAnalyzer) Analyze(
 	path string,
 	code []byte,
 ) ([]protocol.Diagnostic, error) {
-	if !p.instance.HasExecutable() {
-		return nil, nil
-	}
-
 	report, err := p.instance.Check(ctx, code)
 	if errors.Is(err, phpcs.ErrCancelled) {
 		log.Printf("[DEBUG]: phpcs cancelled: %v", err)
@@ -46,6 +43,13 @@ func (p *PhpcsAnalyzer) Analyze(
 
 	// guaranteed to be there.
 	return functional.Map(report.Files["STDIN"].Messages, phpcsMessageToDiagnostic), nil
+}
+
+func (p *PhpcsAnalyzer) AnalyzeSave(
+	ctx context.Context,
+	path string,
+) ([]protocol.Diagnostic, error) {
+	return p.Analyze(ctx, path, []byte(wrkspc.Current.FContentOf(path)))
 }
 
 func (p *PhpcsAnalyzer) Name() string {

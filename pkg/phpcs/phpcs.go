@@ -6,11 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"sync"
 	"syscall"
 )
@@ -28,25 +25,16 @@ type Instance struct {
 	mu         sync.Mutex
 }
 
-// NewInstance initializes a new instance.
-func NewInstance() *Instance {
-	p := &Instance{}
+// New initializes a new instance.
+func New(executable string) *Instance {
+	p := &Instance{executable: executable}
 	p.Init()
 	return p
-}
-
-func (p *Instance) HasExecutable() bool {
-	return p.executable != ""
 }
 
 func (p *Instance) Init() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
-	p.executable = executable()
-	if p.executable == "" {
-		return
-	}
 
 	p.reset()
 }
@@ -101,11 +89,6 @@ var ErrCancelled = errors.New("cancelled")
 
 func (p *Instance) Check(ctx context.Context, code []byte) (*Report, error) {
 	p.mu.Lock()
-
-	if p.executable == "" {
-		p.mu.Unlock()
-		return nil, fmt.Errorf("no phpcs executable found")
-	}
 
 	if p.startErr != nil {
 		p.mu.Unlock()
@@ -258,30 +241,4 @@ func (p *Instance) reset() {
 		p.startErr = fmt.Errorf("starting phpcs: %w", err)
 		return
 	}
-}
-
-// TODO: make sure it is phpcs v3.
-func executable() string {
-	localPath := filepath.Join("vendor", "bin", "phpcs")
-	_, err := os.Stat(localPath)
-	if err == nil {
-		log.Printf("[INFO]: using local phpcs at %q", localPath)
-		return localPath
-	}
-
-	if !errors.Is(err, fs.ErrNotExist) {
-		log.Println(fmt.Errorf("[WARN]: unexpected error checking %q: %w", localPath, err))
-	}
-
-	p, err := exec.LookPath("phpcs")
-	if err != nil {
-		if !errors.Is(err, exec.ErrNotFound) {
-			log.Println(fmt.Errorf("[WARN]: unexpected error checking path for phpcbf: %w", err))
-		}
-
-		return ""
-	}
-
-	log.Printf("[INFO]: using global phpcs at %q", p)
-	return p
 }
