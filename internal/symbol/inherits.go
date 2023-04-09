@@ -144,7 +144,7 @@ func (t *inheritsTraverser) EnterNode(node ast.Vertex) bool {
 		case *ast.StmtClass:
 			t.implements = append(t.implements, functional.Map(typedNode.Implements, nodeToName)...)
 			if typedNode.Extends != nil {
-				t.extends = typedNode.Extends.(*ast.Name)
+				t.extends = typedNode.Extends
 			}
 		case *ast.StmtInterface:
 			t.implements = append(t.implements, functional.Map(typedNode.Extends, nodeToName)...)
