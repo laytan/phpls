@@ -108,9 +108,6 @@ func PosToLoc(content string, pos uint) (row uint, col uint) {
 }
 
 func LocToPos(content string, row uint, col uint) uint {
-	log.Println(
-		"DEPRECATED: migrate from this to using the StartCol and EndCol provided by *position.Position",
-	)
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	linebreaks := 1
