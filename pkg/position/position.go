@@ -72,6 +72,8 @@ func (p *Position) ToIRPosition(content string) *position.Position {
 		EndLine:   row,
 		StartPos:  irPos,
 		EndPos:    irPos,
+		StartCol:  int(p.Col),
+		EndCol:    int(p.Col),
 	}
 }
 

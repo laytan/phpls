@@ -5,7 +5,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/server"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
@@ -18,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUseInsertion(t *testing.T) {
+func TestUseInsertion(t *testing.T) { // nolint:tparallel // doesn't work for some reason.
 	t.Parallel()
 
 	scenarios := []struct {
@@ -28,40 +27,204 @@ func TestUseInsertion(t *testing.T) {
 		insert   *fqn.FQN
 		position *position.Position
 	}{
-		/*
-		   		{
-		   			name: "add after opening brace if no namespace",
-		   			input: `
-		   <?php
+		{
+			name: "add after opening brace if no namespace",
+			input: `
+<?php
 
-		   function test() {
+function test() {
 
-		   }
+}
 		   			`,
-		   			expect: `
-		   <?php
+			expect: `
+<?php
 
-		   use Test\Test;
+use Test\Test;
 
-		   function test() {
+function test() {
 
-		   }
+}
 		   			`,
-		   			insert: fqn.New("\\Test\\Test"),
-		   			position: &position.Position{
-		   				Row:  3,
-		   				Col:  0,
-		   				Path: "test",
-		   			},
-		   		},
-		*/
+			insert: fqn.New("\\Test\\Test"),
+			position: &position.Position{
+				Row:  6,
+				Col:  0,
+				Path: "test",
+			},
+		},
+		{
+			name: "add after namespace",
+			input: `
+<?php
+
+namespace Test;
+
+function test() {
+}
+			`,
+			expect: `
+<?php
+
+namespace Test;
+
+use Test2\Test;
+
+function test() {
+}
+			`,
+			insert: fqn.New("\\Test2\\Test"),
+			position: &position.Position{
+				Row:  6,
+				Col:  0,
+				Path: "test",
+			},
+		},
+		{
+			name: "add after use statement without namespace",
+			input: `
+<?php
+
+use Test\Test;
+
+function test() {
+}
+			`,
+			expect: `
+<?php
+
+use Test\Test;
+use Test1\Test;
+
+function test() {
+}
+			`,
+			insert: fqn.New("\\Test1\\Test"),
+			position: &position.Position{
+				Row:  7,
+				Col:  0,
+				Path: "test",
+			},
+		},
+		{
+			name: "empty",
+			input: `
+<?php
+
+			`,
+			expect: `
+<?php
+
+use Test\Test;
+
+			`,
+			insert: fqn.New("\\Test\\Test"),
+			position: &position.Position{
+				Row:  3,
+				Col:  0,
+				Path: "test",
+			},
+		},
+		{
+			name: "multiple namespaces",
+			input: `
+<?php
+
+namespace Test;
+
+namespace Testing;
+
+function test() {
+}
+			`,
+			expect: `
+<?php
+
+namespace Test;
+
+namespace Testing;
+
+use Test1\Test;
+
+function test() {
+}
+			`,
+			insert: fqn.New("\\Test1\\Test"),
+			position: &position.Position{
+				Row:  9,
+				Col:  0,
+				Path: "test",
+			},
+		},
+		{
+			name: "multiple namespaces insert at middle",
+			input: `
+<?php
+
+namespace Test;
+
+function test() {
+}
+
+namespace Testing;
+
+			`,
+			expect: `
+<?php
+
+namespace Test;
+
+use Test1\Test;
+
+function test() {
+}
+
+namespace Testing;
+
+			`,
+			insert: fqn.New("\\Test1\\Test"),
+			position: &position.Position{
+				Row:  7,
+				Col:  0,
+				Path: "test",
+			},
+		},
+		{
+			name: "namespace block",
+			input: `
+<?php
+
+namespace Testing;
+
+namespace {
+
+	function test() {
+	}
+}
+			`,
+			expect: `
+<?php
+
+namespace Testing;
+
+namespace {
+
+use Test\Test;
+
+	function test() {
+	}
+}
+			`,
+			insert: fqn.New("\\Test\\Test"),
+			position: &position.Position{
+				Row:  8,
+				Col:  0,
+				Path: "test",
+			},
+		},
 	}
 
-	for _, scenario := range scenarios {
-		scenario := scenario
+	for _, scenario := range scenarios { // nolint:paralleltest // doesn't work for some reason.
 		t.Run(scenario.name, func(t *testing.T) {
-			t.Parallel()
-
 			parser := parsing.New(phpversion.EightOne())
 			root, err := parser.Parse([]byte(scenario.input))
 			require.NoError(t, err)
@@ -74,14 +237,9 @@ func TestUseInsertion(t *testing.T) {
 			}
 			wrkspc.Current = w
 
-			p := project.New()
-			inserter := server.UseInserter{Project: p}
-			edits := inserter.Insert(scenario.insert, scenario.position)
+			edits := server.InsertUseStmt(scenario.insert, scenario.position)
 			output := applyEdits(scenario.input, edits)
-
-			if output != scenario.expect {
-				t.Errorf("Edits don't match, got: %v, want: %v", output, scenario.expect)
-			}
+			require.Equal(t, scenario.expect, output)
 		})
 	}
 }
@@ -346,8 +504,8 @@ func (mockWrkspc) FContentOf(path string) string {
 	panic("unimplemented")
 }
 
-func (mockWrkspc) FIROf(path string) *ast.Root {
-	panic("unimplemented")
+func (w mockWrkspc) FIROf(path string) *ast.Root {
+	return w.root
 }
 
 func (mockWrkspc) IROf(path string) (*ast.Root, error) {
