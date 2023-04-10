@@ -34,8 +34,9 @@ type Server struct {
 	project        *project.Project
 	progress       *lsprogress.Tracker
 	// NOTE: This can be nil if diagnostics are configured to be disabled!
-	diag   *diagnostics.Runner
-	phpcbf *phpcbf.Instance
+	diag        *diagnostics.Runner
+	phpcbf      *phpcbf.Instance
+	useInserter *UseInserter
 }
 
 var _ protocol.Server = &Server{}

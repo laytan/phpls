@@ -7,6 +7,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/laytan/elephp/internal/project"
+	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
@@ -114,13 +116,27 @@ func (s *Server) additionalTextEdits(
 	item *protocol.CompletionItem,
 	pos *position.Position,
 ) []protocol.TextEdit {
-	// get FQN for item, if it matches the namespace in item.Detail, it is already imported.
-	if !s.project.NeedsUseStmtFor(pos, `\`+item.Detail) {
+	return s.useInserter.Insert(fqn.New(`\`+item.Detail), pos)
+}
+
+func (s *Server) documentation(item *protocol.CompletionItem, pos *position.Position) string {
+	return ""
+}
+
+type UseInserter struct {
+	Project *project.Project
+}
+
+func (u *UseInserter) Insert(
+	qualifiedName *fqn.FQN,
+	currPos *position.Position,
+) []protocol.TextEdit {
+	if !u.Project.NeedsUseStmtFor(currPos, qualifiedName.String()) {
 		return nil
 	}
 
-	useStmt := fmt.Sprintf("use %s;", item.Detail)
-	nsPos := s.project.Namespace(pos)
+	useStmt := fmt.Sprintf("use %s;", qualifiedName.String()[1:])
+	nsPos := u.Project.Namespace(currPos)
 	if nsPos == nil {
 		return []protocol.TextEdit{{
 			Range: protocol.Range{
@@ -140,8 +156,4 @@ func (s *Server) additionalTextEdits(
 		},
 		NewText: useStmt + "\n",
 	}}
-}
-
-func (s *Server) documentation(item *protocol.CompletionItem, pos *position.Position) string {
-	return ""
 }

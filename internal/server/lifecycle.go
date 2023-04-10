@@ -80,6 +80,9 @@ func (s *Server) Initialize(
 	}
 
 	s.project = proj
+	s.useInserter = &UseInserter{
+		Project: proj,
+	}
 
 	go s.index()
 
