@@ -410,7 +410,7 @@ func parentOf(scopes *Scopes) *index.INode {
 
 	if node, ok := fqner.FindFullyQualifiedName(
 		scopes.Root,
-		class.Extends.(*ast.Name),
+		class.Extends,
 	); ok {
 		return node
 	}
