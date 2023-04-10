@@ -3,15 +3,12 @@ package project
 import (
 	"bufio"
 	"errors"
-	"log"
 	"strings"
 	"unicode"
 
 	"github.com/laytan/elephp/internal/index"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/position"
-	"github.com/laytan/elephp/pkg/traversers"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 const maxCompletionResults = 20
@@ -82,43 +79,4 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 	}
 
 	return ""
-}
-
-// Returns the position for the namespace statement that matches the given position.
-func (p *Project) Namespace(pos *position.Position) *position.Position {
-	content, root := wrkspc.Current.FAllOf(pos.Path)
-	t := traversers.NewNamespace(int(pos.Row))
-	tv := traverser.NewTraverser(t)
-	root.Accept(tv)
-
-	if t.Result == nil {
-		log.Printf("[project.Namespace]: Did not find namespace for %v", pos)
-		return nil
-	}
-
-	row, col := position.PosToLoc(content, uint(t.Result.Position.StartPos))
-
-	return &position.Position{
-		Row:  row,
-		Col:  col,
-		Path: pos.Path,
-	}
-}
-
-// Returns whether the file at given pos needs a use statement for the given fqn.
-func (p *Project) NeedsUseStmtFor(pos *position.Position, fqn string) bool {
-	// content, root := wrkspc.FromContainer().FAllOf(pos.Path)
-	//
-	// parts := strings.Split(fqn, `\`)
-	// className := parts[len(parts)-1]
-
-	// Get how it would be resolved in the current file state.
-	panic("unimplemented")
-	// actFQN := fqner.FullyQualifyName(root, &ir.Name{
-	// 	Position: pos.ToIRPosition(content),
-	// 	Value:    className,
-	// })
-
-	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
-	// return actFQN.String() != fqn
 }

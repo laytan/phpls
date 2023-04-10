@@ -4,10 +4,12 @@ import (
 	"strings"
 
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
@@ -33,6 +35,22 @@ func FullyQualifyName(root *ast.Root, name ast.Vertex) *fqn.FQN {
 func FindFullyQualifiedName(root *ast.Root, name ast.Vertex) (*index.INode, bool) {
 	qualified := FullyQualifyName(root, name)
 	return index.Current.Find(qualified)
+}
+
+// Returns whether the file at given pos needs a use statement for the given fqn.
+func NeedsUseStmtFor(pos *position.Position, name *fqn.FQN) bool {
+	content, root := wrkspc.Current.FAllOf(pos.Path)
+	parts := strings.Split(name.String(), `\`)
+	className := parts[len(parts)-1]
+
+	// Get how it would be resolved in the current file state.
+	actFQN := FullyQualifyName(root, &ast.Name{
+		Position: pos.ToIRPosition(content),
+		Parts:    []ast.Vertex{&ast.NamePart{Value: []byte(className)}},
+	})
+
+	// If the resolvement in current state equals the wanted fqn, no use stmt is needed.
+	return actFQN.String() != name.String()
 }
 
 type rooter interface {
