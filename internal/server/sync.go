@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/laytan/elephp/internal/config"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/lsperrors"
 	"github.com/laytan/elephp/pkg/strutil"
@@ -17,10 +18,8 @@ func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 		return err
 	}
 
-	// TODO: don't diagnose stubs.
-
-	if s.diag != nil {
-		path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+	if s.diag != nil && !inStubs(path) {
 		code := wrkspc.Current.FContentOf(path)
 		if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(code)); err != nil {
 			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
@@ -68,7 +67,7 @@ func (s *Server) DidChange(
 		}
 	}()
 
-	if s.diag != nil {
+	if s.diag != nil && !inStubs(path) {
 		go func() {
 			if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(newContent)); err != nil {
 				if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
@@ -94,4 +93,8 @@ func (s *Server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocu
 	}
 
 	return nil
+}
+
+func inStubs(path string) bool {
+	return strings.HasPrefix(path, config.Current.StubsPath)
 }
