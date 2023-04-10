@@ -5,8 +5,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/VKCOM/noverify/src/ir"
-	"github.com/jdbaldry/go-language-server-protocol/lsp/protocol"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/server"
 	"github.com/laytan/elephp/internal/wrkspc"
@@ -15,8 +13,9 @@ import (
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/elephp/pkg/strutil"
-	"github.com/matryer/is"
-	"github.com/samber/do"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUseInsertion(t *testing.T) {
@@ -62,11 +61,10 @@ func TestUseInsertion(t *testing.T) {
 		scenario := scenario
 		t.Run(scenario.name, func(t *testing.T) {
 			t.Parallel()
-			is := is.New(t)
 
 			parser := parsing.New(phpversion.EightOne())
-			root, err := parser.Parse(scenario.input)
-			is.NoErr(err)
+			root, err := parser.Parse([]byte(scenario.input))
+			require.NoError(t, err)
 
 			w := mockWrkspc{
 				path:    scenario.position.Path,
@@ -74,8 +72,7 @@ func TestUseInsertion(t *testing.T) {
 				root:    root,
 				t:       t,
 			}
-
-			do.OverrideValue[wrkspc.Wrkspc](nil, &w)
+			wrkspc.Current = w
 
 			p := project.New()
 			inserter := server.UseInserter{Project: p}
@@ -325,11 +322,11 @@ func applyEdits(inp string, edits []protocol.TextEdit) string {
 type mockWrkspc struct {
 	path    string
 	content string
-	root    *ir.Root
+	root    *ast.Root
 	t       *testing.T
 }
 
-func (mockWrkspc) AllOf(path string) (string, *ir.Root, error) {
+func (mockWrkspc) AllOf(path string) (string, *ast.Root, error) {
 	panic("unimplemented")
 }
 
@@ -337,7 +334,7 @@ func (mockWrkspc) ContentOf(path string) (string, error) {
 	panic("unimplemented")
 }
 
-func (w mockWrkspc) FAllOf(path string) (string, *ir.Root) {
+func (w mockWrkspc) FAllOf(path string) (string, *ast.Root) {
 	if w.path != path {
 		w.t.Errorf("expected wrkspc.FAllOf to be called with %s, but called with %s", w.path, path)
 	}
@@ -349,11 +346,11 @@ func (mockWrkspc) FContentOf(path string) string {
 	panic("unimplemented")
 }
 
-func (mockWrkspc) FIROf(path string) *ir.Root {
+func (mockWrkspc) FIROf(path string) *ast.Root {
 	panic("unimplemented")
 }
 
-func (mockWrkspc) IROf(path string) (*ir.Root, error) {
+func (mockWrkspc) IROf(path string) (*ast.Root, error) {
 	panic("unimplemented")
 }
 
