@@ -17,6 +17,8 @@ func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 		return err
 	}
 
+	// TODO: don't diagnose stubs.
+
 	if s.diag != nil {
 		path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
 		code := wrkspc.Current.FContentOf(path)

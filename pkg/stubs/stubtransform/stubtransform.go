@@ -1,10 +1,12 @@
 package stubtransform
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -15,12 +17,13 @@ import (
 	"github.com/laytan/php-parser/pkg/errors"
 	"github.com/laytan/php-parser/pkg/parser"
 	"github.com/laytan/php-parser/pkg/version"
+	"github.com/laytan/php-parser/pkg/visitor/printer"
 	"golang.org/x/sync/errgroup"
 )
 
 var (
 	// Fastest based on benchmarking.
-	MaxConcurrency = 14
+	MaxConcurrency = runtime.NumCPU() * 2
 
 	NonStubs = map[string]struct{}{
 		filepath.Join(string(os.PathSeparator), ".github"):                          {},
@@ -184,23 +187,17 @@ func (w *Walker) TransformFile(transformers []ast.Visitor, path string, finalPat
 	if err != nil {
 		return fmt.Errorf("creating out path %s: %w", finalPath, err)
 	}
-
 	defer file.Close()
 
-	// TODO: can we get this to work in php 8?
-	// f := formatter.NewFormatter()
-	// ast.Accept(f)
+	buffer := bufio.NewWriter(file)
+	p := printer.NewPrinter(buffer)
+	ast.Accept(p)
 
-	panic("unimplemented")
-	// writer := bufio.NewWriter(file)
-	// ir := irconv.ConvertNode(ast)
-	// irfmt.NewPrettyPrinter(writer, "    ").Print(ir)
-	// err = writer.Flush()
-	// if err != nil {
-	// 	return fmt.Errorf("writing remaining buffer: %w", err)
-	// }
+	if err := buffer.Flush(); err != nil {
+		return fmt.Errorf("writing remaining bytes: %w", err)
+	}
 
-	// return nil
+	return nil
 }
 
 func outPath(stubsDir string, outDir string, path string, version string) string {
