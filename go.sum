@@ -291,6 +291,8 @@ github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5 h1:NtTaaRSn
 github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5/go.mod h1:D1njoCxBWyG+vZ1r9Xy11U02X5XB5R8PTKRj3kcer7I=
 github.com/laytan/php-parser v0.9.1-0.20230331145008-68ac672368c7 h1:KtNCkVtLwfY+uZHKQTruOa4vuIbHbdHUhsI9cwOnVNM=
 github.com/laytan/php-parser v0.9.1-0.20230331145008-68ac672368c7/go.mod h1:crDMdef5HZkk8JsREDMA6wgTXdip/8mJa4asmjt3ogM=
+github.com/laytan/php-parser v0.9.1-0.20230410001802-f98b59a5f023 h1:nL1UWvJ1+wSp7rTIZsRKyxIYimVLnfl/+rft9Db/w40=
+github.com/laytan/php-parser v0.9.1-0.20230410001802-f98b59a5f023/go.mod h1:crDMdef5HZkk8JsREDMA6wgTXdip/8mJa4asmjt3ogM=
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
 github.com/lyft/protoc-gen-star v0.5.3/go.mod h1:V0xaHgaf5oCCqmcxYcWiDfTiKsZsRc87/1qhoTACD8w=
 github.com/magiconair/properties v1.8.5/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
