@@ -68,6 +68,8 @@ func newModifiedFromNode(node ast.Vertex) *modified {
 		mods = typedNode.Modifiers
 	case *ast.StmtClassConstList:
 		mods = typedNode.Modifiers
+	case *ast.Parameter:
+		mods = typedNode.Modifiers
 	case *ast.StmtTrait, *ast.StmtInterface:
 		// An interface or trait is a valid class-like but never has modifiers,
 		// even though, lets not complain using the default case.
@@ -91,6 +93,10 @@ func (m *modified) Privacy() phprivacy.Privacy {
 
 	// A symbol is public unless otherwise specified.
 	return phprivacy.PrivacyPublic
+}
+
+func (m *modified) HasExplicitPrivacy() bool {
+	return m.modifiers.Has("private") || m.modifiers.Has("public") || m.modifiers.Has("protected")
 }
 
 func (m *modified) CanBeAccessedFrom(p phprivacy.Privacy) bool {

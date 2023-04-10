@@ -3,6 +3,7 @@ package symbol
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/laytan/elephp/internal/doxcontext"
 	"github.com/laytan/elephp/pkg/fqn"
@@ -19,10 +20,20 @@ type Property struct {
 	*doxed
 
 	cls  *ClassLike
-	node *ast.StmtPropertyList
+	node ast.Vertex
 }
 
-func NewProperty(cls *ClassLike, node *ast.StmtPropertyList) *Property {
+// node should either be a *ast.Parameter or *ast.StmtPropertyList.
+// *ast.Parameter is a constructor promoted property.
+func NewProperty(cls *ClassLike, node ast.Vertex) *Property {
+	t := node.GetType()
+	if t != ast.TypeStmtPropertyList && t != ast.TypeParameter {
+		log.Panicf(
+			"[FATAL]: %T is not a property, *ast.Parameter or *ast.StmtPropertyList should be given",
+			node,
+		)
+	}
+
 	return &Property{
 		cls:      cls,
 		node:     node,
@@ -35,7 +46,7 @@ func (p *Property) Name() string {
 	return nodeident.Get(p.node)
 }
 
-func (p *Property) Node() *ast.StmtPropertyList {
+func (p *Property) Node() ast.Vertex {
 	return p.node
 }
 
@@ -89,7 +100,7 @@ func (p *Property) ClsType() ([]*phpdoxer.TypeClassLike, error) {
 	tv := traverser.NewTraverser(fqnt)
 	cls.Root().Accept(tv)
 
-	return doxcontext.ApplyContext(fqnt, cls.GetFQN(), p.node.Position, doc), nil
+	return doxcontext.ApplyContext(fqnt, cls.GetFQN(), p.node.GetPosition(), doc), nil
 }
 
 func (p *Property) ownType() (phpdoxer.Type, error) {
@@ -98,14 +109,22 @@ func (p *Property) ownType() (phpdoxer.Type, error) {
 		return varDoc.(*phpdoxer.NodeVar).Type, nil
 	}
 
-	if p.node.Type == nil {
+	var typ ast.Vertex
+	switch tn := p.node.(type) {
+	case *ast.StmtPropertyList:
+		typ = tn.Type
+	case *ast.Parameter:
+		typ = tn.Type
+	}
+
+	if typ == nil {
 		return nil, fmt.Errorf("no @var or type hint for prop %s: %w", p.Name(), ErrNoPropertyType)
 	}
 
-	typ, err := TypeHintToDocType(p.node.Type)
+	doctyp, err := TypeHintToDocType(typ)
 	if err != nil {
 		return nil, fmt.Errorf("parsing property %s type hint: %w", p.Name(), err)
 	}
 
-	return typ, nil
+	return doctyp, nil
 }

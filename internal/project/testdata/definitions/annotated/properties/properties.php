@@ -100,3 +100,20 @@ class TestTypedProperties
 
 $testTypedPropObj = new TestTypedProperties();
 $testTypedPropObj->testTypedProperty; // @t_in(props_hint_non_classlike, 20)
+
+
+class TestPromotedProps
+{
+    public function __construct(public string $test) {} // @t_out(props_promoted, 33) @t_out(props_promoted_deeper, 33)
+}
+
+$testPromoted = new TestPromotedProps();
+$testPromoted->test; // @t_in(props_promoted, 18)
+
+class TestDeepPromotedProps
+{
+    public function __construct(public TestPromotedProps $test) {} // @t_out(props_promoted_deep, 33)
+}
+
+$testDeepPromoted = new TestDeepPromotedProps();
+$testDeepPromoted->test->test; // @t_in(props_promoted_deep, 20) @t_in(props_promoted_deeper, 26)

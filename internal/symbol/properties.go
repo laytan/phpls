@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
@@ -15,7 +16,7 @@ type (
 )
 
 func (c *ClassLike) PropertiesIter() PropertiesIterFunc {
-	pt := &propertiesTraverser{Properties: []*ast.StmtPropertyList{}}
+	pt := &propertiesTraverser{Properties: []ast.Vertex{}}
 	tv := traverser.NewTraverser(pt)
 	c.node.Accept(tv)
 	i := 0
@@ -54,7 +55,7 @@ PropertiesIter:
 
 type propertiesTraverser struct {
 	visitor.Null
-	Properties     []*ast.StmtPropertyList
+	Properties     []ast.Vertex
 	firstTraversed bool
 }
 
@@ -70,6 +71,15 @@ func (t *propertiesTraverser) EnterNode(node ast.Vertex) bool {
 		t.firstTraversed = true
 
 		return true
+	}
+
+	// Check promoted properties in constructor.
+	if meth, ok := node.(*ast.StmtClassMethod); ok && nodeident.Get(meth) == "__construct" {
+		for _, param := range meth.Params {
+			if newModifiedFromNode(param).HasExplicitPrivacy() {
+				t.Properties = append(t.Properties, param)
+			}
+		}
 	}
 
 	return !nodescopes.IsScope(node.GetType())
