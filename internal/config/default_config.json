@@ -46,6 +46,6 @@
     },
     "statsviz": {
         "enabled": false,
-        "url": "127.0.0.1:6060/debug/statsviz"
+        "url": "localhost:6060"
     }
 }

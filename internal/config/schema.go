@@ -70,5 +70,5 @@ type Server struct {
 
 type Statsviz struct {
 	Enabled bool   `json:"enabled,omitempty" default:"false"                         doc:"Visualize the server's memory usage, cpu usage, threads and other stats. NOTE: comes with a performance cost." usage:"Visualize the server's memory usage, cpu usage, threads and other stats. NOTE: comes with a performance cost."`
-	URL     string `json:"url,omitempty"     default:"127.0.0.1:6060/debug/statsviz" doc:"Where to serve the visualizations."                                                                            usage:"Where to serve the visualizations."`
+	URL     string `json:"url,omitempty"     default:"localhost:6060" doc:"Where to serve the visualizations."                                                                            usage:"Where to serve the visualizations."`
 }

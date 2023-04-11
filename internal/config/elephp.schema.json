@@ -202,7 +202,7 @@
                 "url": {
                     "type": "string",
                     "description": "Where to serve the visualizations.",
-                    "default": "127.0.0.1:6060/debug/statsviz"
+                    "default": "localhost:6060"
                 }
             },
             "additionalProperties": false
