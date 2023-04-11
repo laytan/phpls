@@ -98,7 +98,7 @@ func (s *Server) Initialize(
 			},
 			DefinitionProvider: &protocol.Or_ServerCapabilities_definitionProvider{Value: true},
 			CompletionProvider: &protocol.CompletionOptions{
-				TriggerCharacters: []string{"$", "-", ">"},
+				TriggerCharacters: []string{"$", ":", ">", " ", "\\"},
 				ResolveProvider:   true,
 			},
 			HoverProvider: &protocol.Or_ServerCapabilities_hoverProvider{Value: true},

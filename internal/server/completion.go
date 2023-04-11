@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/laytan/elephp/internal/fqner"
-	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/lsperrors"
@@ -33,63 +33,13 @@ func (s *Server) Completion(
 	defer func() { log.Printf("Retrieving completion took %s\n", time.Since(start)) }()
 
 	pos := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
-	completionData := func(n *index.INode) string {
-		data := CompletionItemData{
-			CurrPos: pos,
-			TargetPos: &position.Position{
-				Path: n.Path,
-				Row:  uint(n.Position.StartLine),
-				Col:  uint(n.Position.StartCol),
-			},
-		}
-		dataJSON, err := json.Marshal(data)
-		if err != nil {
-			panic(err) // Should never fail.
-		}
-		return string(dataJSON)
-	}
 
-	results := s.project.Complete(pos)
-	items := make([]protocol.CompletionItem, 0, len(results))
-	for _, res := range results {
-		item := protocol.CompletionItem{
-			Label: res.Identifier,
-			Data:  completionData(res),
-		}
+	comp := project.GetCompletionQuery2(pos)
+	log.Printf("[INFO]: Completing action: %s", comp.Action)
+	completions := project.Complete(pos, comp)
 
-		if res.FQN.Namespace() == "" {
-			items = append(items, item)
-			continue
-		}
-
-		switch res.Kind {
-		case ast.TypeStmtFunction:
-			item.Kind = protocol.FunctionCompletion
-		case ast.TypeStmtClass:
-			item.Kind = protocol.ClassCompletion
-		case ast.TypeStmtTrait:
-			// There is no trait kind, module seems appropriate.
-			item.Kind = protocol.ModuleCompletion
-		case ast.TypeStmtInterface:
-			item.Kind = protocol.InterfaceCompletion
-		default:
-		}
-
-		item.Detail = fmt.Sprintf(`%s\%s`, res.FQN.Namespace(), res.Identifier)
-
-		// Adding an additional text edit, so the client shows it in the UI.
-		// The actual text edit is added in the Resolve method.
-		item.AdditionalTextEdits = []protocol.TextEdit{{}}
-
-		items = append(items, item)
-	}
-
-	log.Printf("Returning %d completion items\n", len(items))
-
-	return &protocol.CompletionList{
-		Items:        items,
-		IsIncomplete: true,
-	}, nil
+	log.Printf("[INFO]: Returning %d completion items\n", len(completions.Items))
+	return &completions, nil
 }
 
 // Completion will return basic information about the result,

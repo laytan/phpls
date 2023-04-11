@@ -12,6 +12,7 @@ import (
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/conf"
 	astErrors "github.com/laytan/php-parser/pkg/errors"
+	"github.com/laytan/php-parser/pkg/lexer"
 	astParser "github.com/laytan/php-parser/pkg/parser"
 	"github.com/laytan/php-parser/pkg/version"
 )
@@ -31,6 +32,8 @@ var ErrNoContent = errors.New(
 // IR for use everywhere else.
 type Parser interface {
 	Parse(content []byte) (*ast.Root, error)
+
+	Lexer(content []byte) (lexer.Lexer, error)
 
 	Read(path string) (string, error)
 
@@ -67,6 +70,15 @@ func (p *parser) Parse(content []byte) (*ast.Root, error) {
 	}
 
 	return a.(*ast.Root), nil
+}
+
+func (p *parser) Lexer(content []byte) (lexer.Lexer, error) {
+	res, err := lexer.New(content, p.config)
+	if err != nil {
+		return nil, fmt.Errorf("creating lexer: %w", err)
+	}
+
+	return res, nil
 }
 
 func (p *parser) Read(path string) (string, error) {
