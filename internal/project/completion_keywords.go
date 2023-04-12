@@ -1,5 +1,12 @@
 package project
 
+import (
+	"strings"
+
+	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+)
+
 // Source: https://www.php.net/manual/en/reserved.keywords.php
 var Keywords = []string{
 	"abstract",
@@ -66,4 +73,16 @@ var Keywords = []string{
 	"xor",
 	"yield",
 	"yield from",
+}
+
+var KeywordItems = functional.Map(Keywords, func(keyword string) protocol.CompletionItem {
+	return protocol.CompletionItem{Label: keyword, Kind: protocol.KeywordCompletion}
+})
+
+func AddKeywordsWithPrefix(list *protocol.CompletionList, prefix string) {
+	for i := range KeywordItems {
+		if strings.HasPrefix(KeywordItems[i].Label, prefix) {
+			list.Items = append(list.Items, KeywordItems[i])
+		}
+	}
 }

@@ -20,7 +20,7 @@ type Property struct {
 	*doxed
 
 	cls  *ClassLike
-	node ast.Vertex
+	node ast.Vertex // A *ast.Parameter or *ast.StmtPropertyList.
 }
 
 // node should either be a *ast.Parameter or *ast.StmtPropertyList.
@@ -47,6 +47,11 @@ func (p *Property) Name() string {
 }
 
 func (p *Property) Node() ast.Vertex {
+	return p.node
+}
+
+// Implements the Member interface.
+func (p *Property) Vertex() ast.Vertex {
 	return p.node
 }
 

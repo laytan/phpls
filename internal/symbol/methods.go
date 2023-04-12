@@ -32,6 +32,15 @@ func (c *ClassLike) MethodsIter() MethodsIterFunc {
 }
 
 func (c *ClassLike) FindMethod(filters ...FilterFunc[*Method]) *Method {
+	res := c.FindMethods(true, filters...)
+	if len(res) == 0 {
+		return nil
+	}
+
+	return res[0]
+}
+
+func (c *ClassLike) FindMethods(shortCircuit bool, filters ...FilterFunc[*Method]) (res []*Method) {
 	iter := c.MethodsIter()
 MethodsIter:
 	for m, done, err := iter(); !done; m, done, err = iter() {
@@ -46,7 +55,10 @@ MethodsIter:
 			}
 		}
 
-		return m
+		res = append(res, m)
+		if shortCircuit {
+			return res
+		}
 	}
 
 	return nil

@@ -4,21 +4,32 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
 
+	"appliedgo.net/what"
+	"github.com/laytan/elephp/internal/context"
+	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/elephp/internal/project/definition"
+	"github.com/laytan/elephp/internal/symbol"
 	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/elephp/pkg/parsing"
+	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/elephp/pkg/set"
 	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/php-parser/pkg/ast"
+	astposition "github.com/laytan/php-parser/pkg/position"
 	"github.com/laytan/php-parser/pkg/token"
+	"github.com/laytan/php-parser/pkg/visitor"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
@@ -66,6 +77,13 @@ type CompletionContext struct {
 }
 
 func GetCompletionQuery2(pos *position.Position) CompletionContext {
+	content, root := wrkspc.Current.FAllOf(pos.Path)
+	offset := position.LocToPos(content, pos.Row, pos.Col)
+	v := traversers.NewNodeAtPos(int(offset))
+	tv := traverser.NewTraverser(v)
+	root.Accept(tv)
+	what.Is(v.Nodes)
+
 	ctx := CompletionContext{}
 	lexer := wrkspc.Current.FLexerOf(pos.Path)
 	for tok := lexer.Lex(); tok != nil && tok.ID != 0; tok = lexer.Lex() {
@@ -130,7 +148,7 @@ func GetCompletionQuery2(pos *position.Position) CompletionContext {
 		case token.T_USE:
 			ctx.Action = Use
 			ctx.Tokens = ctx.Tokens[:0]
-		case 36: // a lone '$'
+		case 36: // '$'
 			ctx.Action = StartingVariable
 			ctx.Tokens = ctx.Tokens[:0]
 		case token.T_VARIABLE:
@@ -140,7 +158,7 @@ func GetCompletionQuery2(pos *position.Position) CompletionContext {
 			ctx.Action = ObjectOp
 		case token.T_PAAMAYIM_NEKUDOTAYIM:
 			ctx.Action = StaticOp
-		case 59: // a lone ';'
+		case 59, 123, 125: // ';', '}', '}'
 			ctx.Action = None
 			ctx.Tokens = ctx.Tokens[:0]
 			skipAdd = true
@@ -154,7 +172,7 @@ func GetCompletionQuery2(pos *position.Position) CompletionContext {
 	return ctx
 }
 
-func INodeCompletionKind(kind ast.Type) protocol.CompletionItemKind {
+func NodeCompletionKind(kind ast.Type) protocol.CompletionItemKind {
 	switch kind {
 	case ast.TypeStmtFunction:
 		return protocol.FunctionCompletion
@@ -162,6 +180,12 @@ func INodeCompletionKind(kind ast.Type) protocol.CompletionItemKind {
 		return protocol.ClassCompletion
 	case ast.TypeStmtInterface:
 		return protocol.InterfaceCompletion
+	case ast.TypeStmtClassMethod:
+		return protocol.MethodCompletion
+	case ast.TypeParameter: // Parameter is a property, because this is only called with constructor promoted properties.
+		return protocol.PropertyCompletion
+	case ast.TypeStmtPropertyList:
+		return protocol.PropertyCompletion
 	default:
 		return 0
 	}
@@ -189,48 +213,101 @@ func CompletionData(pos *position.Position, n *index.INode) string {
 }
 
 func Complete(pos *position.Position, comp CompletionContext) (list protocol.CompletionList) {
-	switch comp.Action {
-	case None:
-		list.Items = functional.Map(Keywords, func(keyword string) protocol.CompletionItem {
-			return protocol.CompletionItem{Label: keyword, Kind: protocol.KeywordCompletion}
-		})
-	case Name:
-		query := string(comp.Tokens[len(comp.Tokens)-1].Value)
-		log.Printf("[INFO]: looking for classes starting with: %s", query)
-		indexNodes := index.Current.FindPrefix(
-			query,
-			maxCompletionResults,
-			ast.TypeStmtClass,
-			ast.TypeStmtInterface,
-			ast.TypeStmtTrait,
-		)
+	var lastValue string
+	if len(comp.Tokens) > 0 {
+		lastValue = string(comp.Tokens[len(comp.Tokens)-1].Value)
+	}
 
-		list.Items = functional.Map(indexNodes, func(node *index.INode) protocol.CompletionItem {
-			return protocol.CompletionItem{
-				Label: node.Identifier,
-				Kind:  INodeCompletionKind(node.Kind),
-				Data:  CompletionData(pos, node),
-				// Adding an additional text edit, so the client shows it in the UI.
-				// The actual text edit is added in the Resolve method.
-				AdditionalTextEdits: []protocol.TextEdit{{}},
+	var ctx *context.Ctx
+	needCtx := func() bool {
+		if ctx != nil {
+			return true
+		}
+
+		c, err := context.New(pos)
+		if err != nil {
+			log.Printf("unable to create context at %v: %v", pos, err)
+			return false
+		}
+
+		ctx = c
+		return true
+	}
+
+	switch comp.Action {
+	case NamingFunction, NamingClassLike:
+		break
+	case None:
+		AddKeywordsWithPrefix(&list, lastValue)
+
+		// Lets not return every single result in our index.
+		if lastValue != "" {
+			AddFromIndex(&list, pos, lastValue)
+		}
+
+		// Complete variables when no query,
+		// If user has typed something and still in None, they don't want variables.
+		// Because the first character is always a '$'.
+		if lastValue == "" {
+			if !needCtx() {
+				break
 			}
-		})
+			AddScopeVars(&list, ctx, lastValue)
+		}
+	case StartingVariable, Variable:
+		if !needCtx() {
+			break
+		}
+		AddScopeVars(&list, ctx, lastValue)
+	case Implements:
+		AddFromIndex(&list, pos, lastValue, ast.TypeStmtInterface)
+	case Use:
+		AddFromIndex(&list, pos, lastValue, ast.TypeStmtTrait)
+	case Extends, Newing:
+		AddFromIndex(&list, pos, lastValue, ast.TypeStmtClass)
+	case Name:
+		AddFromIndex(
+			&list,
+			pos,
+			lastValue,
+			ast.TypeStmtClass,
+			ast.TypeStmtInterface,
+			ast.TypeStmtTrait,
+		)
+	case ObjectOp:
+		if len(comp.Tokens) == 1 {
+			break
+		}
+
+		if !needCtx() {
+			break
+		}
+
+		AddExprCompletions(&list, comp, ctx, lastValue, symbol.FilterNotStatic[symbol.Member]())
+	case StaticOp:
+		if len(comp.Tokens) == 1 {
+			break
+		}
+
+		if !needCtx() {
+			break
+		}
+
+		AddExprCompletions(&list, comp, ctx, lastValue, symbol.FilterStatic[symbol.Member]())
 	case NameFullyQualified:
-		query := string(comp.Tokens[len(comp.Tokens)-1].Value)
-		log.Printf("[INFO]: looking for classes starting with: %s", query)
 		indexNodes := index.Current.FindFqnPrefix(
-			query,
+			lastValue,
 			maxCompletionResults,
 			ast.TypeStmtClass,
 			ast.TypeStmtInterface,
 			ast.TypeStmtTrait,
 		)
-		list.Items = functional.Map(indexNodes, func(node *index.INode) protocol.CompletionItem {
-			return protocol.CompletionItem{
+		for _, node := range indexNodes {
+			list.Items = append(list.Items, protocol.CompletionItem{
 				Label: node.FQN.String(),
-				Kind:  INodeCompletionKind(node.Kind),
-			}
-		})
+				Kind:  NodeCompletionKind(node.Kind),
+			})
+		}
 	case NameRelative:
 		root := wrkspc.Current.FIROf(pos.Path)
 		v := traversers.NewNamespace(int(pos.Row))
@@ -238,10 +315,8 @@ func Complete(pos *position.Position, comp CompletionContext) (list protocol.Com
 		root.Accept(tv)
 		namespace := nodeident.Get(v.Result)
 
-		query := string(comp.Tokens[len(comp.Tokens)-1].Value)
-		noNsQuery := strings.TrimPrefix(query, "namespace")
+		noNsQuery := strings.TrimPrefix(lastValue, "namespace")
 		fullQuery := namespace + noNsQuery
-		log.Printf("[INFO]: looking for classes starting with: %s", fullQuery)
 		indexNodes := index.Current.FindFqnPrefix(
 			fullQuery,
 			maxCompletionResults,
@@ -249,25 +324,237 @@ func Complete(pos *position.Position, comp CompletionContext) (list protocol.Com
 			ast.TypeStmtInterface,
 			ast.TypeStmtTrait,
 		)
-		list.Items = functional.Map(indexNodes, func(node *index.INode) protocol.CompletionItem {
-			label := strings.Replace(node.FQN.String(), namespace, "namespace", 1)
-			return protocol.CompletionItem{
-				Label: label,
-				Kind:  INodeCompletionKind(node.Kind),
-			}
-		})
+		for _, node := range indexNodes {
+			list.Items = append(list.Items, protocol.CompletionItem{
+				Label: strings.Replace(node.FQN.String(), namespace, "namespace", 1),
+				Kind:  NodeCompletionKind(node.Kind),
+			})
+		}
 	case NamingNamespace:
 		if prediction := PredictNamespace(pos); prediction != "" {
-			list.Items = []protocol.CompletionItem{{
+			list.Items = append(list.Items, protocol.CompletionItem{
 				Label: prediction,
 				Kind:  protocol.ModuleCompletion,
-			}}
+			})
 		}
-	default:
+	case AddingFile: // NOTE: this is kinda yanky.
+		// If 1 token, it is the keyword that started this, don't want that.
+		if len(comp.Tokens) == 1 {
+			lastValue = ""
+		}
+
+		lastValue = strings.Trim(lastValue, "'")
+		lastValue = strings.Trim(lastValue, "\"")
+
+		dir := filepath.Dir(pos.Path)
+		_, fn := filepath.Split(pos.Path)
+		currAbsPath := filepath.Clean(filepath.Join(dir, lastValue))
+		err := filepath.WalkDir(currAbsPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			rel, err := filepath.Rel(dir, path)
+			if err != nil {
+				log.Printf("[ERROR]: can't make relative of %q with base %q: %v", path, dir, err)
+				return nil
+			}
+
+			if d.IsDir() {
+				list.Items = append(
+					list.Items,
+					protocol.CompletionItem{
+						Label: rel + string(filepath.Separator),
+						Kind:  protocol.FileCompletion,
+					},
+				)
+				return nil
+			}
+
+			if !wrkspc.Current.IsPhpFile(path) {
+				return nil
+			}
+
+			// Skip current file.
+			if fn == rel {
+				return nil
+			}
+
+			list.Items = append(list.Items, protocol.CompletionItem{
+				Label: rel,
+				Kind:  protocol.FileCompletion,
+			})
+
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR]: walking dir %q: %v", currAbsPath, err)
+		}
+	}
+	return list
+}
+
+func AddExprCompletions(
+	list *protocol.CompletionList,
+	comp CompletionContext,
+	ctx *context.Ctx,
+	lastValue string,
+	additionalFilters ...symbol.FilterFunc[symbol.Member],
+) {
+	subj := Reconstruct(comp.Tokens[:len(comp.Tokens)-1])
+	if subj == nil {
+		log.Println(
+			"[WARN]: could not reconstruct ast from lexed tokens to provide completions",
+		)
+		return
 	}
 
-	list.IsIncomplete = true
-	return list
+	scopes := definition.ContextToScopes(ctx)
+	res, lastClass, left := expr.Resolve(subj, scopes)
+	if left != 0 {
+		log.Println("[WARN]: could not resolve reconstructed expression to provide completion")
+		return
+	}
+
+	log.Printf("[DEBUG]: res: %#v", res)
+	log.Printf("[DEBUG]: lastClass: %#v", lastClass)
+
+	cls, err := symbol.NewClassLikeFromFQN(wrkspc.NewRooter(ctx.Path(), ctx.Root()), lastClass)
+	if err != nil {
+		log.Printf(
+			"[ERROR]: could not create internal class representation for %q: %v",
+			lastClass,
+			err,
+		)
+		return
+	}
+
+	// TODO: filter privacy.
+	members := cls.FindMembersInherit(
+		false, // don't shortCircuit.
+		symbol.FilterPrefix[symbol.Member](lastValue),
+	)
+	for _, m := range members {
+		item := protocol.CompletionItem{
+			Label: strings.TrimPrefix(m.Name(), "$"),
+			Kind:  NodeCompletionKind(m.Vertex().GetType()),
+		}
+
+		switch tm := m.(type) {
+		case *symbol.Method:
+			rtype, _, err := tm.Returns()
+			if err != nil {
+				if !errors.Is(err, symbol.ErrNoReturn) {
+					log.Printf("[ERROR]: method %q: %v", tm.Name(), err)
+				}
+				item.Detail = "mixed"
+				break
+			}
+			item.Detail = rtype.String()
+		case *symbol.Property:
+			ptype, _, err := tm.Type()
+			if err != nil {
+				if !errors.Is(err, symbol.ErrNoPropertyType) {
+					log.Printf("[ERROR]: method %q: %v", tm.Name(), err)
+				}
+				item.Detail = "mixed"
+				break
+			}
+			item.Detail = ptype.String()
+		}
+
+		list.Items = append(list.Items, item)
+	}
+}
+
+// PERF: This is bad, should use builders, and do this in On time.
+func Reconstruct(tokens []*token.Token) ast.Vertex {
+	source := "<?php "
+	for _, t := range tokens { // TODO: maybe not add last token so we get subject, and later resolve the actual query on it.
+		source += string(t.Value)
+	}
+
+	source = strings.TrimSuffix(source, "::")
+	source = strings.TrimSuffix(source, "->")
+
+	if strings.Count(source, "'")%2 != 0 {
+		source += "'"
+	}
+
+	if strings.Count(source, "\"")%2 != 0 {
+		source += "\""
+	}
+
+	openParenC := strings.Count(source, "(")
+	closeParenC := strings.Count(source, ")")
+	if openParenC > closeParenC {
+		source += strings.Repeat(")", openParenC-closeParenC)
+	}
+
+	openArrC := strings.Count(source, "[")
+	closeArrC := strings.Count(source, "]")
+	if openArrC > closeArrC {
+		source += strings.Repeat("]", openArrC-closeArrC)
+	}
+
+	if !strings.ContainsRune(source, ';') {
+		source += ";"
+	}
+
+	log.Printf("[DEBUG]: Reconstructed %q", source)
+
+	p := parsing.New(phpversion.EightOne())
+	root, err := p.Parse([]byte(source))
+	if err != nil {
+		log.Printf("[ERROR]: could not parse %q: %v", source, err)
+		return nil
+	}
+
+	if len(root.Stmts) == 0 {
+		log.Printf("[ERROR]: no statements were reconstructed from %q", source)
+		return nil
+	}
+
+	var res ast.Vertex
+	switch tn := root.Stmts[0].(type) {
+	case *ast.StmtExpression:
+		res = tn.Expr
+	default:
+		log.Printf("Unexpected reconstruction result of %q: %#v", source, root.Stmts[0])
+	}
+
+	if res == nil {
+		return nil
+	}
+
+	// Traverse to set the position of all nodes to that of the first token.
+	// Should allow scope/location based funcs to still work.
+	v := &setPosVisitor{Pos: tokens[0].Position}
+	tv := traverser.NewTraverser(v)
+	res.Accept(tv)
+
+	return res
+}
+
+type setPosVisitor struct {
+	visitor.Null
+	Pos *astposition.Position
+}
+
+func (s *setPosVisitor) EnterNode(n ast.Vertex) bool {
+	p := n.GetPosition()
+	if p == nil {
+		return true
+	}
+
+	p.StartCol = s.Pos.StartCol
+	p.EndCol = s.Pos.EndCol
+	p.StartLine = s.Pos.StartLine
+	p.EndLine = s.Pos.EndLine
+	p.StartPos = s.Pos.StartPos
+	p.EndPos = s.Pos.EndPos
+
+	return true
 }
 
 // 1. Check if there are other sibling files, parse for their namespace.
@@ -326,6 +613,68 @@ func PredictNamespace(pos *position.Position) string {
 	return ""
 }
 
+func AddFromIndex(
+	list *protocol.CompletionList,
+	pos *position.Position,
+	prefix string,
+	types ...ast.Type,
+) {
+	indexNodes := index.Current.FindPrefix(prefix, maxCompletionResults, types...)
+	for _, node := range indexNodes {
+		item := protocol.CompletionItem{
+			Label: node.Identifier,
+			Kind:  NodeCompletionKind(node.Kind),
+		}
+
+		// Add completion data for automatic use statements.
+		if nodescopes.IsClassLike(node.Kind) {
+			item.Data = CompletionData(pos, node)
+			// Adding an additional text edit, so the client shows it in the UI.
+			// The actual text edit is added in the Resolve method.
+			item.AdditionalTextEdits = []protocol.TextEdit{{}}
+		}
+
+		list.Items = append(list.Items, item)
+	}
+}
+
+func AddScopeVars(
+	list *protocol.CompletionList,
+	ctx *context.Ctx,
+	prefix string,
+) {
+	scope := ctx.Scope()
+	scopet := scope.GetType()
+	if scopet != ast.TypeStmtFunction && scopet != ast.TypeStmtClassMethod &&
+		scopet != ast.TypeExprClosure {
+		return
+	}
+
+	v := &availableInFuncVisitor{
+		Results: set.New[string](),
+		Until: &position.Position{
+			Row: ctx.Start().Row,
+			// Minus length of query, so the current var is not shown, fixes some edge case where '$\n\n$test = '';' would say the $test variable starts at the '$' character.
+			Col: ctx.Start().Col - uint(len(prefix)) - 2,
+		},
+	}
+	tv := traverser.NewTraverser(v)
+	scope.Accept(tv)
+
+	if scopet == ast.TypeStmtClassMethod {
+		v.Results.Add("$this")
+	}
+
+	for _, v := range v.Results.Slice() {
+		if strings.HasPrefix(v, prefix) {
+			list.Items = append(list.Items, protocol.CompletionItem{
+				Label: v,
+				Kind:  protocol.VariableCompletion,
+			})
+		}
+	}
+}
+
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.
 func (p *Project) getCompletionQuery(pos *position.Position) string {
 	content := wrkspc.Current.FContentOf(pos.Path)
@@ -379,4 +728,35 @@ func (p *Project) getCompletionQuery(pos *position.Position) string {
 	}
 
 	return ""
+}
+
+type availableInFuncVisitor struct {
+	visitor.Null
+	Results *set.Set[string]
+	Until   *position.Position
+}
+
+var _ ast.Visitor = &availableInFuncVisitor{}
+
+func (a *availableInFuncVisitor) EnterNode(n ast.Vertex) bool {
+	p := n.GetPosition()
+	if p == nil {
+		return true
+	}
+
+	// Later line.
+	if p.StartLine > int(a.Until.Row) {
+		return false
+	}
+
+	// Same line, later column.
+	if p.StartLine == int(a.Until.Row) && p.StartCol > int(a.Until.Col) {
+		return false
+	}
+
+	return true
+}
+
+func (a *availableInFuncVisitor) ExprVariable(n *ast.ExprVariable) {
+	a.Results.Add(nodeident.Get(n))
 }

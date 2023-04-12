@@ -41,3 +41,7 @@ func (m *Method) Name() string {
 func (m *Method) Node() *ast.StmtClassMethod {
 	return m.node
 }
+
+func (m *Method) Vertex() ast.Vertex {
+	return m.node
+}

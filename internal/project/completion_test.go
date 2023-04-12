@@ -4,14 +4,18 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/project"
 	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/elephp/pkg/parsing"
+	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/conf"
 	"github.com/laytan/php-parser/pkg/errors"
 	"github.com/laytan/php-parser/pkg/lexer"
 	"github.com/laytan/php-parser/pkg/version"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCompletionQuery(t *testing.T) {
@@ -20,7 +24,7 @@ func TestCompletionQuery(t *testing.T) {
 	input := `
 <?php
 
-new namespace\
+$var->te()->fds
 	`
 
 	wrkspc.Current = &mockWrkspc{
@@ -28,11 +32,13 @@ new namespace\
 		t:     t,
 	}
 
-	project.GetCompletionQuery2(&position.Position{
+	comp := project.GetCompletionQuery2(&position.Position{
 		Row:  4,
-		Col:  14, // is this 0 or 1 based?
+		Col:  8, // is this 0 or 1 based?
 		Path: "test",
 	})
+	what.Is(comp)
+	what.Is(project.Reconstruct(comp.Tokens))
 }
 
 type mockWrkspc struct {
@@ -51,8 +57,11 @@ func (*mockWrkspc) ContentOf(path string) (string, error) {
 }
 
 // FAllOf implements wrkspc.Wrkspc
-func (*mockWrkspc) FAllOf(path string) (string, *ast.Root) {
-	panic("unimplemented")
+func (w *mockWrkspc) FAllOf(path string) (string, *ast.Root) {
+	p := parsing.New(phpversion.EightOne())
+	root, err := p.Parse(w.input)
+	require.NoError(w.t, err)
+	return string(w.input), root
 }
 
 // FContentOf implements wrkspc.Wrkspc

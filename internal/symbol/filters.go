@@ -1,6 +1,8 @@
 package symbol
 
 import (
+	"strings"
+
 	"github.com/laytan/elephp/pkg/phprivacy"
 )
 
@@ -10,6 +12,7 @@ type Named interface {
 	Name() string
 }
 
+// Mirrors Named so it can be embedded without allowing .Named in users.
 type named interface {
 	Named
 }
@@ -17,6 +20,14 @@ type named interface {
 func FilterName[T Named](name string) FilterFunc[T] {
 	return func(v T) bool {
 		return v.Name() == name
+	}
+}
+
+func FilterPrefix[T Named](prefix string) FilterFunc[T] {
+	withDollar := "$" + prefix
+	return func(v T) bool {
+		n := v.Name()
+		return strings.HasPrefix(n, prefix) || strings.HasPrefix(n, withDollar)
 	}
 }
 
