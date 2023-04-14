@@ -17,6 +17,10 @@ func (s *Server) Definition(
 	ctx context.Context,
 	params *protocol.DefinitionParams,
 ) ([]protocol.Location, error) {
+	if err := s.isMethodAllowed("Definition"); err != nil {
+		return nil, err
+	}
+
 	start := time.Now()
 	defer func() { log.Printf("Retrieving definition took %s\n", time.Since(start)) }()
 

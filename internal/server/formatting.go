@@ -14,6 +14,10 @@ func (s *Server) Formatting(
 	ctx context.Context,
 	params *protocol.DocumentFormattingParams,
 ) ([]protocol.TextEdit, error) {
+	if err := s.isMethodAllowed("Formatting"); err != nil {
+		return nil, err
+	}
+
 	if !s.phpcbf.HasExecutable() {
 		return nil, nil
 	}

@@ -29,6 +29,10 @@ func (s *Server) Completion(
 	ctx context.Context,
 	params *protocol.CompletionParams,
 ) (*protocol.CompletionList, error) {
+	if err := s.isMethodAllowed("Completion"); err != nil {
+		return nil, err
+	}
+
 	start := time.Now()
 	defer func() { log.Printf("Retrieving completion took %s\n", time.Since(start)) }()
 

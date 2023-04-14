@@ -10,6 +10,10 @@ import (
 )
 
 func (s *Server) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+	if err := s.isMethodAllowed("Hover"); err != nil {
+		return nil, err
+	}
+
 	start := time.Now()
 	defer func() {
 		log.Printf("Retrieving hover took %s\n", time.Since(start))
