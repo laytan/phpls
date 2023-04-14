@@ -3,7 +3,7 @@ package phprivacy_test
 import (
 	"testing"
 
-	"github.com/laytan/elephp/pkg/phprivacy"
+	"github.com/laytan/phpls/pkg/phprivacy"
 )
 
 func TestPrivacy_CanAccess(t *testing.T) {

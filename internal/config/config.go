@@ -15,7 +15,7 @@ import (
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigyaml"
 	"github.com/danielgtaylor/huma/schema"
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -24,9 +24,9 @@ import (
 var Current *Schema
 
 const (
-	Name           = "elephp"
+	Name           = "phpls"
 	Version        = "0.0.1-dev"
-	SchemaLocation = "https://raw.githubusercontent.com/laytan/elephp/main/internal/config/elephp.schema.json"
+	SchemaLocation = "https://raw.githubusercontent.com/laytan/phpls/main/internal/config/phpls.schema.json"
 	ok             = 0
 	err            = 1
 	invalid        = 2
@@ -34,12 +34,12 @@ const (
 
 // filenames are the files we check for in each of the directories that are checked.
 var filenames = []string{
-	"./elephp.json",
-	"./.elephp.json",
-	"./elephp.yml",
-	"./.elephp.yml",
-	"./elephp.yaml",
-	"./.elephp.yaml",
+	"./phpls.json",
+	"./.phpls.json",
+	"./phpls.yml",
+	"./.phpls.yml",
+	"./phpls.yaml",
+	"./.phpls.yaml",
 }
 
 // Parse loads the configuration from all the config files, environment variables, cli flags, and defaults.
@@ -106,22 +106,22 @@ func wrapUsage(flags *flag.FlagSet) {
 		_, _ = fmt.Fprintf(
 			o,
 			`
-ElePHP - The PHP language server
+phpls - The PHP language server
 
 Available commands:
   default  Runs the language server
   logs     Outputs the directory where logs are saved
   stubs    Outputs the directory where stubs are saved
 
-The following file names are seen as ElePHP configuration files:
+The following file names are seen as phpls configuration files:
 %s
 These files are recognized when they are in any of the following directories:
 %s
 These files are checked top to bottom, with later files overwriting the former.
 See %s for the configuration schema.
 
-Configuration files are then overwritten by environment variables, with the prefix 'ELEPHP_',
-so setting the php version can for example be done with 'ELEPHP_PHP_VERSION=8'.
+Configuration files are then overwritten by environment variables, with the prefix 'phpls_',
+so setting the php version can for example be done with 'phpls_PHP_VERSION=8'.
 
 `, files.String(), dirs.String(), SchemaLocation,
 		)
@@ -138,7 +138,7 @@ func loadConfig(args []string) *Schema {
 		// SkipFiles:          false,
 		// SkipEnv:            false,
 		// SkipFlags:          false,
-		EnvPrefix: "ELEPHP",
+		EnvPrefix: "phpls",
 		// FlagPrefix:         "",
 		FlagDelimiter: ".",
 		// AllFieldRequired:   false,
@@ -252,7 +252,7 @@ func applyComputedDefaults(cfg *Schema) {
 }
 
 func setComputed(cfg *Schema) {
-	cfg.LogsPath = filepath.Join(cfg.CachePath, "elephp", Version, "logs")
+	cfg.LogsPath = filepath.Join(cfg.CachePath, "phpls", Version, "logs")
 	if err := os.MkdirAll(cfg.LogsPath, 0o755); err != nil {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
@@ -263,7 +263,7 @@ func setComputed(cfg *Schema) {
 		os.Exit(invalid)
 	}
 
-	cfg.StubsPath = filepath.Join(cfg.CachePath, "elephp", Version, "stubs")
+	cfg.StubsPath = filepath.Join(cfg.CachePath, "phpls", Version, "stubs")
 	if err := os.MkdirAll(cfg.LogsPath, 0o755); err != nil {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
@@ -303,7 +303,7 @@ func configDirs() (dirs []string) {
 // configPaths collects all paths to check for config files.
 func configPaths() (paths []string) {
 	for _, dir := range configDirs() {
-		paths = append(paths, addFileNames(filepath.Join(dir, "elephp"))...)
+		paths = append(paths, addFileNames(filepath.Join(dir, "phpls"))...)
 	}
 	paths = append(paths, filenames...)
 	return paths

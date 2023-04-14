@@ -1,8 +1,8 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/laytan/elephp/main/internal/config/elephp.schema.json",
-    "title": "ElePHP",
-    "description": "Configuration format for the ElePHP language server.",
+    "$id": "https://raw.githubusercontent.com/laytan/phpls/main/internal/config/phpls.schema.json",
+    "title": "phpls",
+    "description": "Configuration format for the phpls language server.",
     "type": "object",
     "properties": {
         "cache_path": {

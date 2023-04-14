@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/phpversion"
 )
 
 type NodeKind uint

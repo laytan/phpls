@@ -1,15 +1,15 @@
-# Elephp
+# phpls
 
-![Go build/test](https://github.com/laytan/elephp/actions/workflows/go-test.yml/badge.svg?branch=main)
-![Go linting](https://github.com/laytan/elephp/actions/workflows/golangci-lint.yml/badge.svg?branch=main)
+![Go build/test](https://github.com/laytan/phpls/actions/workflows/go-test.yml/badge.svg?branch=main)
+![Go linting](https://github.com/laytan/phpls/actions/workflows/golangci-lint.yml/badge.svg?branch=main)
 
-Elephp is a language server for PHP.
+phpls is a language server for PHP.
 
 ## Features
 
-- Go To Definition, mostly done, see [this milestone](https://github.com/laytan/elephp/milestone/1)
+- Go To Definition, mostly done, see [this milestone](https://github.com/laytan/phpls/milestone/1)
 - Hover, basic implementation, shows the PHPDoc and signature for the symbol under cursor that can be defined using Go To Definition
-- Completion, basic implementation, completes global functions, constants, classes, interfaces and traits, and auto-inserts a use-statement, see [this issue](https://github.com/laytan/elephp/issues/22)
+- Completion, basic implementation, completes global functions, constants, classes, interfaces and traits, and auto-inserts a use-statement, see [this issue](https://github.com/laytan/phpls/issues/22)
 - Diagnostics, basic diagnostics for syntax/parse errors, use PHPStan, PHPCS etc. if more diagnostics are wanted
 
 ## Installation
@@ -20,7 +20,7 @@ Elephp is a language server for PHP.
 2. Unzip this somewhere
 3. Symlink the executable to a folder that's in your path, example:
 ```bash
-sudo ln -s /unzipped/folder/elephp /usr/local/bin/elephp
+sudo ln -s /unzipped/folder/phpls /usr/local/bin/phpls
 ```
 
 ### Building yourself
@@ -28,13 +28,13 @@ sudo ln -s /unzipped/folder/elephp /usr/local/bin/elephp
 Make sure you have git and go(1.18) installed.
 
 ```bash
-git clone --recurse-submodules https://github.com/laytan/elephp.git
+git clone --recurse-submodules https://github.com/laytan/phpls.git
 make build
 ```
 
 Symlink the executable to a folder that's in your path, example:
 ```bash
-sudo ln -s /unzipped/folder/elephp /usr/local/bin/elephp
+sudo ln -s /unzipped/folder/phpls /usr/local/bin/phpls
 ```
 
 Or if you're on windows, add it to your path.
@@ -45,10 +45,10 @@ Running a language server is done using your IDE/editor most of the time,
 but here are the options available:
 
 ```bash
-elephp -h
+phpls -h
 
 #Usage:
-#  elephp [OPTIONS]
+#  phpls [OPTIONS]
 #
 #Application Options:
 #      --stdio            Communicate over stdio
@@ -81,7 +81,7 @@ golangci-lint run
 
 ## License
 
-Elephp is licensed with the [Apache 2](https://www.apache.org/licenses/LICENSE-2.0) license.
+phpls is licensed with the [Apache 2](https://www.apache.org/licenses/LICENSE-2.0) license.
 
 The project uses [JetBrains's phpstorm-stubs](https://github.com/JetBrains/phpstorm-stubs)
 which is also licensed with the [Apache 2](https://www.apache.org/licenses/LICENSE-2.0) license and does not

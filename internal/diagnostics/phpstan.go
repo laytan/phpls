@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/phpstan"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/phpstan"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
@@ -51,7 +51,7 @@ func phpstanMessageToDiagnostic(m *phpstan.ReportMessage) protocol.Diagnostic {
 		Severity: protocol.SeverityError,
 		// Code:               nil,
 		// CodeDescription:    &protocol.CodeDescription{},
-		// Source:  "elephp:phpstan",
+		// Source:  "phpls:phpstan",
 		Message: m.Msg,
 		// Tags:               []protocol.DiagnosticTag{},
 		// RelatedInformation: []protocol.DiagnosticRelatedInformation{},

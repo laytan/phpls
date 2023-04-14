@@ -3,7 +3,7 @@ package project
 import (
 	"strings"
 
-	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 

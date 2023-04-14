@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/laytan/elephp/internal/doxcontext"
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/phpls/internal/doxcontext"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/phpdoxer"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )

@@ -1,10 +1,10 @@
 package providers
 
 import (
-	"github.com/laytan/elephp/internal/context"
-	"github.com/laytan/elephp/internal/expr"
-	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/pkg/nodeident"
+	"github.com/laytan/phpls/internal/context"
+	"github.com/laytan/phpls/internal/expr"
+	"github.com/laytan/phpls/internal/project/definition"
+	"github.com/laytan/phpls/pkg/nodeident"
 )
 
 func DefineExpr(ctx *context.Ctx) ([]*definition.Definition, error) {

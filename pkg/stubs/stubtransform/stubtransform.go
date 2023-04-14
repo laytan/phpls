@@ -11,7 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/conf"
 	"github.com/laytan/php-parser/pkg/errors"

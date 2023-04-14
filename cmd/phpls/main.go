@@ -9,11 +9,11 @@ import (
 	"os"
 
 	"github.com/arl/statsviz"
-	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/internal/logging"
-	"github.com/laytan/elephp/internal/server"
-	"github.com/laytan/elephp/pkg/connection"
-	"github.com/laytan/elephp/pkg/processwatch"
+	"github.com/laytan/phpls/internal/config"
+	"github.com/laytan/phpls/internal/logging"
+	"github.com/laytan/phpls/internal/server"
+	"github.com/laytan/phpls/pkg/connection"
+	"github.com/laytan/phpls/pkg/processwatch"
 
 	// TODO: what is the difference between jsonrpc2 and jsonrpc2_v2?
 	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"

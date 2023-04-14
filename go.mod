@@ -1,4 +1,4 @@
-module github.com/laytan/elephp
+module github.com/laytan/phpls
 
 go 1.20
 

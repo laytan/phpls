@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/nodescopes"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"

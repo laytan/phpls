@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/laytan/elephp/internal/context"
-	"github.com/laytan/elephp/internal/expr"
-	"github.com/laytan/elephp/internal/index"
+	"github.com/laytan/phpls/internal/context"
+	"github.com/laytan/phpls/internal/expr"
+	"github.com/laytan/phpls/internal/index"
 	"github.com/laytan/php-parser/pkg/position"
 )
 

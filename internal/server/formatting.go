@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/laytan/elephp/pkg/lsperrors"
-	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/phpls/pkg/lsperrors"
+	"github.com/laytan/phpls/pkg/position"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 

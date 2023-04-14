@@ -6,12 +6,12 @@ import (
 	"log"
 
 	"appliedgo.net/what"
-	"github.com/laytan/elephp/internal/context"
-	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/internal/project/definition/providers"
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/phpls/internal/context"
+	"github.com/laytan/phpls/internal/project/definition"
+	"github.com/laytan/phpls/internal/project/definition/providers"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/position"
 	"github.com/laytan/php-parser/pkg/ast"
 )
 

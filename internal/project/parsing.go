@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/internal/wrkspc"
+	"github.com/laytan/phpls/internal/index"
+	"github.com/laytan/phpls/internal/wrkspc"
 )
 
 // This should only be called once at the beginning of the connection with a

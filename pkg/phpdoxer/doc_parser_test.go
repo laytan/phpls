@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/phpls/pkg/phpdoxer"
 	"github.com/stretchr/testify/require"
 )
 

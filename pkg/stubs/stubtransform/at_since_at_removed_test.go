@@ -3,8 +3,8 @@ package stubtransform_test
 import (
 	"testing"
 
-	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/stubs/stubtransform"
+	"github.com/laytan/phpls/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/stubs/stubtransform"
 	"github.com/laytan/php-parser/pkg/ast"
 )
 

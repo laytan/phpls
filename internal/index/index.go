@@ -7,12 +7,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/internal/symboltrie"
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/parsing"
-	"github.com/laytan/elephp/pkg/pathutils"
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/internal/config"
+	"github.com/laytan/phpls/internal/symboltrie"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/parsing"
+	"github.com/laytan/phpls/pkg/pathutils"
+	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )

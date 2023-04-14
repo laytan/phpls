@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/laytan/elephp/pkg/phpdoxer"
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/phpdoxer"
+	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/token"
 	"github.com/laytan/php-parser/pkg/visitor"

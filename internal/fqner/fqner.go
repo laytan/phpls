@@ -3,13 +3,13 @@ package fqner
 import (
 	"strings"
 
-	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/nodescopes"
-	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/phpls/internal/index"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/nodescopes"
+	"github.com/laytan/phpls/pkg/position"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )

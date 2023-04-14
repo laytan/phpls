@@ -1,7 +1,7 @@
 //go:build ignore
 // +build ignore
 
-// This code generates the elephp.schema.json and default_config.json files.
+// This code generates the phpls.schema.json and default_config.json files.
 
 package main
 
@@ -12,13 +12,13 @@ import (
 	"strings"
 
 	"github.com/danielgtaylor/huma/schema"
-	"github.com/laytan/elephp/internal/config"
+	"github.com/laytan/phpls/internal/config"
 )
 
 const (
 	SchemaVersion = "https://json-schema.org/draft/2020-12/schema"
-	Title         = "ElePHP"
-	Description   = "Configuration format for the ElePHP language server."
+	Title         = "phpls"
+	Description   = "Configuration format for the phpls language server."
 )
 
 type Schema struct {
@@ -40,7 +40,7 @@ func dumpSchema() {
 		panic(err)
 	}
 
-	fh, err := os.Create("elephp.schema.json")
+	fh, err := os.Create("phpls.schema.json")
 	if err != nil {
 		panic(err)
 	}

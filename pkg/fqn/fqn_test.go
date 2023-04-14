@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/parsing"
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/parsing"
+	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/position"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"

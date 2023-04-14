@@ -3,8 +3,8 @@ package symboltrie_test
 import (
 	"testing"
 
-	"github.com/laytan/elephp/internal/symboltrie"
-	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/phpls/internal/symboltrie"
+	"github.com/laytan/phpls/pkg/fqn"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,7 +3,7 @@ package phpversion_test
 import (
 	"testing"
 
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/phpversion"
 )
 
 func TestPHPVersion_String(t *testing.T) {

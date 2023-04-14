@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/strutil"
+	"github.com/laytan/phpls/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/strutil"
 )
 
 var (

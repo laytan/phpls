@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/phpls/pkg/position"
 	"github.com/stretchr/testify/require"
 )
 

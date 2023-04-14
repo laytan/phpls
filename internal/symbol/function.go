@@ -3,9 +3,9 @@ package symbol
 import (
 	"fmt"
 
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/traversers"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )

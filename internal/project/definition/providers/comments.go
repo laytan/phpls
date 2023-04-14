@@ -3,13 +3,13 @@ package providers
 import (
 	"fmt"
 
-	"github.com/laytan/elephp/internal/context"
-	"github.com/laytan/elephp/internal/doxcontext"
-	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/internal/symbol"
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/phpls/internal/context"
+	"github.com/laytan/phpls/internal/doxcontext"
+	"github.com/laytan/phpls/internal/index"
+	"github.com/laytan/phpls/internal/project/definition"
+	"github.com/laytan/phpls/internal/symbol"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/phpdoxer"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )

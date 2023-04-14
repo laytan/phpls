@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/laytan/elephp/pkg/pathutils"
-	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/strutil"
-	"github.com/laytan/elephp/pkg/stubs/stubtransform"
+	"github.com/laytan/phpls/pkg/pathutils"
+	"github.com/laytan/phpls/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/strutil"
+	"github.com/laytan/phpls/pkg/stubs/stubtransform"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/conf"
 	"github.com/laytan/php-parser/pkg/errors"
@@ -80,7 +80,7 @@ func (l *logger) Printf(format string, args ...any) {
 
 func BenchmarkTransformer(b *testing.B) {
 	stubsDir := filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
-	outDir := filepath.Join(os.TempDir(), "elephp-stub-benchmark")
+	outDir := filepath.Join(os.TempDir(), "phpls-stub-benchmark")
 
 	l := &logger{b: b}
 	version := phpversion.EightOne()

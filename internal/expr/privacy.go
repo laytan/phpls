@@ -1,7 +1,7 @@
 package expr
 
 import (
-	"github.com/laytan/elephp/pkg/phprivacy"
+	"github.com/laytan/phpls/pkg/phprivacy"
 	"github.com/laytan/php-parser/pkg/ast"
 )
 

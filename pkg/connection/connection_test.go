@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/websocket"
-	"github.com/laytan/elephp/pkg/connection"
+	"github.com/laytan/phpls/pkg/connection"
 	"github.com/stretchr/testify/require"
 )
 

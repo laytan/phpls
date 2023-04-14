@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/laytan/elephp/pkg/connection"
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/connection"
+	"github.com/laytan/phpls/pkg/phpversion"
 )
 
 type DiagnosticsMethod string

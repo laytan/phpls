@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/laytan/elephp/internal/config"
+	"github.com/laytan/phpls/internal/config"
 )
 
 const (

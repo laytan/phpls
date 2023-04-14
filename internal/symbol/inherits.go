@@ -1,10 +1,10 @@
 package symbol
 
 import (
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/nodescopes"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/nodescopes"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
 )

@@ -3,10 +3,10 @@ package context
 import (
 	"fmt"
 
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/nodescopes"
-	"github.com/laytan/elephp/pkg/position"
-	"github.com/laytan/elephp/pkg/traversers"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/nodescopes"
+	"github.com/laytan/phpls/pkg/position"
+	"github.com/laytan/phpls/pkg/traversers"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/token"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"

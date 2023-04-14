@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/nodevar"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/nodevar"
 	"github.com/laytan/php-parser/pkg/ast"
 )
 

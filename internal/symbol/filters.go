@@ -3,7 +3,7 @@ package symbol
 import (
 	"strings"
 
-	"github.com/laytan/elephp/pkg/phprivacy"
+	"github.com/laytan/phpls/pkg/phprivacy"
 )
 
 type FilterFunc[T any] func(T) bool

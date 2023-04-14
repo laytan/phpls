@@ -3,7 +3,7 @@ package stack_test
 import (
 	"testing"
 
-	"github.com/laytan/elephp/pkg/stack"
+	"github.com/laytan/phpls/pkg/stack"
 	"github.com/stretchr/testify/require"
 )
 
