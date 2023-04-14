@@ -4,9 +4,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/nodevar"
-	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // Returns the identifier/value of a node.

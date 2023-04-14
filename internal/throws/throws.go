@@ -6,6 +6,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/expr"
 	"github.com/laytan/phpls/internal/fqner"
 	"github.com/laytan/phpls/internal/index"
@@ -18,9 +21,6 @@ import (
 	"github.com/laytan/phpls/pkg/phpdoxer"
 	"github.com/laytan/phpls/pkg/set"
 	"github.com/laytan/phpls/pkg/traversers"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"golang.org/x/exp/slices"
 )
 

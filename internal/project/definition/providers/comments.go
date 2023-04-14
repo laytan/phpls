@@ -3,6 +3,8 @@ package providers
 import (
 	"fmt"
 
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/doxcontext"
 	"github.com/laytan/phpls/internal/index"
@@ -10,8 +12,6 @@ import (
 	"github.com/laytan/phpls/internal/symbol"
 	"github.com/laytan/phpls/pkg/fqn"
 	"github.com/laytan/phpls/pkg/phpdoxer"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 type CommentsProvider struct{}

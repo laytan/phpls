@@ -3,13 +3,13 @@ package symbol
 import (
 	"fmt"
 
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/fqner"
 	"github.com/laytan/phpls/internal/wrkspc"
 	"github.com/laytan/phpls/pkg/fqn"
 	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/phpls/pkg/traversers"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 type rooter interface {

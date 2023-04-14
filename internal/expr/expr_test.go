@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/internal/expr"
 	"github.com/laytan/phpls/pkg/stack"
-	"github.com/laytan/php-parser/pkg/ast"
 	"go.uber.org/goleak"
 )
 

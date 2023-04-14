@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/internal/config"
 	"github.com/laytan/phpls/internal/index"
 	"github.com/laytan/phpls/internal/project"
@@ -17,7 +18,6 @@ import (
 	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/laytan/phpls/pkg/processwatch"
 	"github.com/laytan/phpls/pkg/stubs"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"golang.org/x/exp/slices"
 )
 

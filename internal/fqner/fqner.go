@@ -3,6 +3,8 @@ package fqner
 import (
 	"strings"
 
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/index"
 	"github.com/laytan/phpls/internal/wrkspc"
 	"github.com/laytan/phpls/pkg/fqn"
@@ -10,8 +12,6 @@ import (
 	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/phpls/pkg/nodescopes"
 	"github.com/laytan/phpls/pkg/position"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 func FullyQualifyName(root *ast.Root, name ast.Vertex) *fqn.FQN {

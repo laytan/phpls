@@ -7,6 +7,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/fqner"
 	"github.com/laytan/phpls/internal/project"
 	"github.com/laytan/phpls/internal/wrkspc"
@@ -14,10 +18,6 @@ import (
 	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/laytan/phpls/pkg/nodescopes"
 	"github.com/laytan/phpls/pkg/position"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 type CompletionItemData struct {

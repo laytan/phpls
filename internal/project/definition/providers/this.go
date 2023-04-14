@@ -1,10 +1,10 @@
 package providers
 
 import (
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/project/definition"
 	"github.com/laytan/phpls/pkg/nodeident"
-	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // ThisProvider resolves the definition of the current class scope for '$this'

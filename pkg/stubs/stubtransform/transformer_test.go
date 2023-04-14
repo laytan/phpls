@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/laytan/phpls/pkg/pathutils"
-	"github.com/laytan/phpls/pkg/phpversion"
-	"github.com/laytan/phpls/pkg/strutil"
-	"github.com/laytan/phpls/pkg/stubs/stubtransform"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/conf"
 	"github.com/laytan/php-parser/pkg/errors"
 	"github.com/laytan/php-parser/pkg/parser"
 	"github.com/laytan/php-parser/pkg/version"
 	"github.com/laytan/php-parser/pkg/visitor/printer"
+	"github.com/laytan/phpls/pkg/pathutils"
+	"github.com/laytan/phpls/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/strutil"
+	"github.com/laytan/phpls/pkg/stubs/stubtransform"
 	"github.com/stretchr/testify/require"
 )
 

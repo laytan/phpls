@@ -1,9 +1,9 @@
 package traversers
 
 import (
-	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/phpls/pkg/nodeident"
 )
 
 type Variable struct {

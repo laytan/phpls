@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/fqner"
 	"github.com/laytan/phpls/internal/index"
 	"github.com/laytan/phpls/internal/symbol"
@@ -19,8 +21,6 @@ import (
 	"github.com/laytan/phpls/pkg/phpdoxer"
 	"github.com/laytan/phpls/pkg/phprivacy"
 	"github.com/laytan/phpls/pkg/traversers"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 var starters = map[Type]StartResolver{

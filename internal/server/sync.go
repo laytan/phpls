@@ -6,11 +6,11 @@ import (
 	"log"
 	"strings"
 
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/internal/config"
 	"github.com/laytan/phpls/internal/wrkspc"
 	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/laytan/phpls/pkg/strutil"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {

@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/internal/config"
 	"github.com/laytan/phpls/pkg/set"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 // Implement closer to do clean up (stopping a daemon for example).

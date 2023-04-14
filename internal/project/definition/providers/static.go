@@ -1,9 +1,9 @@
 package providers
 
 import (
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/project/definition"
-	"github.com/laytan/php-parser/pkg/ast"
 )
 
 // StaticProvider provides definitions for static method calls like Foo::bar().

@@ -3,9 +3,9 @@ package stubtransform_test
 import (
 	"testing"
 
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/phpls/pkg/stubs/stubtransform"
-	"github.com/laytan/php-parser/pkg/ast"
 )
 
 func TestAtSinceAtRemoved(t *testing.T) {

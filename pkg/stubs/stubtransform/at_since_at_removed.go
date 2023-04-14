@@ -4,11 +4,11 @@ import (
 	"bytes"
 
 	"appliedgo.net/what"
-	"github.com/laytan/phpls/pkg/phpdoxer"
-	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/token"
 	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/phpls/pkg/phpdoxer"
+	"github.com/laytan/phpls/pkg/phpversion"
 )
 
 // AtSinceAtRemoved removes nodes that are

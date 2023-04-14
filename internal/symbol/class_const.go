@@ -1,8 +1,8 @@
 package symbol
 
 import (
-	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/phpls/pkg/nodeident"
 )
 
 type ClassConst struct {

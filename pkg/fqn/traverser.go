@@ -3,12 +3,12 @@ package fqn
 import (
 	"strings"
 
-	"github.com/laytan/phpls/pkg/functional"
-	"github.com/laytan/phpls/pkg/nodeident"
-	"github.com/laytan/phpls/pkg/nodescopes"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/position"
 	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/nodescopes"
 )
 
 type Traverser struct {

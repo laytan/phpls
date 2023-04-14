@@ -7,14 +7,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/config"
 	"github.com/laytan/phpls/internal/symboltrie"
 	"github.com/laytan/phpls/pkg/fqn"
 	"github.com/laytan/phpls/pkg/parsing"
 	"github.com/laytan/phpls/pkg/pathutils"
 	"github.com/laytan/phpls/pkg/phpversion"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 const (

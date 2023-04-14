@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"appliedgo.net/what"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/lexer"
 	"github.com/laytan/phpls/internal/config"
 	"github.com/laytan/phpls/pkg/cache"
 	"github.com/laytan/phpls/pkg/parsing"
 	"github.com/laytan/phpls/pkg/pathutils"
 	"github.com/laytan/phpls/pkg/phpversion"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/lexer"
 	"golang.org/x/sync/errgroup"
 )
 

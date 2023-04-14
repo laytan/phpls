@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/phpstan"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 type PhpstanAnalyzer struct {

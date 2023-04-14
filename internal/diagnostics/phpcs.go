@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/internal/wrkspc"
 	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/phpcs"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 type PhpcsAnalyzer struct {

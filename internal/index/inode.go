@@ -1,12 +1,12 @@
 package index
 
 import (
-	"github.com/laytan/phpls/pkg/fqn"
-	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/position"
 	"github.com/laytan/php-parser/pkg/visitor"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/nodeident"
 )
 
 type INode struct {

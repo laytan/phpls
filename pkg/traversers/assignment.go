@@ -1,11 +1,11 @@
 package traversers
 
 import (
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/visitor"
 	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/phpls/pkg/nodescopes"
 	"github.com/laytan/phpls/pkg/nodevar"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/visitor"
 )
 
 func NewAssignment(variable *ast.ExprVariable) *Assignment {

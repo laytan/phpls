@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"appliedgo.net/what"
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/internal/config"
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/fqner"
@@ -20,7 +21,6 @@ import (
 	"github.com/laytan/phpls/pkg/pathutils"
 	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/phpls/pkg/position"
-	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )

@@ -6,11 +6,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/internal/project"
 	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/laytan/phpls/pkg/position"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 )
 
 func (s *Server) Definition(

@@ -2,12 +2,12 @@ package expr
 
 import (
 	"appliedgo.net/what"
+	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/position"
 	"github.com/laytan/phpls/pkg/fqn"
 	"github.com/laytan/phpls/pkg/phpdoxer"
 	"github.com/laytan/phpls/pkg/phprivacy"
 	"github.com/laytan/phpls/pkg/stack"
-	"github.com/laytan/php-parser/pkg/ast"
-	"github.com/laytan/php-parser/pkg/position"
 )
 
 type Type int

@@ -3,11 +3,11 @@ package symbol
 import (
 	"log"
 
+	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/phpls/pkg/phprivacy"
 	"github.com/laytan/phpls/pkg/set"
-	"github.com/laytan/php-parser/pkg/ast"
 )
 
 type Modified interface {

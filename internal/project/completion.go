@@ -11,6 +11,12 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/php-parser/pkg/ast"
+	astposition "github.com/laytan/php-parser/pkg/position"
+	"github.com/laytan/php-parser/pkg/token"
+	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/php-parser/pkg/visitor/traverser"
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/expr"
 	"github.com/laytan/phpls/internal/index"
@@ -24,12 +30,6 @@ import (
 	"github.com/laytan/phpls/pkg/position"
 	"github.com/laytan/phpls/pkg/set"
 	"github.com/laytan/phpls/pkg/traversers"
-	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
-	"github.com/laytan/php-parser/pkg/ast"
-	astposition "github.com/laytan/php-parser/pkg/position"
-	"github.com/laytan/php-parser/pkg/token"
-	"github.com/laytan/php-parser/pkg/visitor"
-	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
 // TODO: test out returning all results.
