@@ -14,7 +14,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5
-	github.com/shivamMg/trie v0.0.1
+	github.com/laytan/php-parser v0.9.1-0.20230411203829-6b3673ece43a
 	github.com/stretchr/testify v1.8.2
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/goleak v1.2.1
@@ -25,9 +25,7 @@ require (
 require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/laytan/php-parser v0.9.1-0.20230410001802-f98b59a5f023 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/shivamMg/ppds v0.0.1 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	golang.org/x/mod v0.9.0 // indirect
