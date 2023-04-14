@@ -65,6 +65,14 @@ func EightOne() *PHPVersion {
 	return &PHPVersion{Major: 8, Minor: 1}
 }
 
+func EightTwo() *PHPVersion {
+	return &PHPVersion{Major: 8, Minor: 2}
+}
+
+func Latest() *PHPVersion {
+	return EightTwo()
+}
+
 func FromString(version string) (*PHPVersion, bool) {
 	match := versionRgx.FindStringSubmatch(version)
 	if len(match) < 2 {

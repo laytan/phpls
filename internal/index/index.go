@@ -159,19 +159,6 @@ func (i *index) FindFqnPrefix(prefix string, max int, kind ...ast.Type) []*INode
 	return values
 }
 
-func (i *index) FindFqnPrefix(prefix string, max int, kind ...ast.Type) []*INode {
-	results := i.symbolTrie.SearchFqns(prefix, max)
-
-	values := make([]*INode, 0, len(results))
-	for _, result := range results {
-		if result.MatchesKind(kind...) {
-			values = append(values, result)
-		}
-	}
-
-	return values
-}
-
 func (i *index) Refresh(path string, content string) error {
 	if err := i.Delete(path); err != nil {
 		return err

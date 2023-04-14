@@ -11,7 +11,6 @@ import (
 	"strings"
 	"unicode"
 
-	"appliedgo.net/what"
 	"github.com/laytan/elephp/internal/context"
 	"github.com/laytan/elephp/internal/expr"
 	"github.com/laytan/elephp/internal/index"
@@ -33,7 +32,7 @@ import (
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
 
-// TODO: test out returning all results
+// TODO: test out returning all results.
 const maxCompletionResults = 20
 
 var ErrNoCompletionResults = errors.New("No completion results found for symbol at given position")
@@ -76,13 +75,13 @@ type CompletionContext struct {
 	Tokens []*token.Token // The last of these is the place the cursor is at.
 }
 
-func GetCompletionQuery2(pos *position.Position) CompletionContext {
-	content, root := wrkspc.Current.FAllOf(pos.Path)
-	offset := position.LocToPos(content, pos.Row, pos.Col)
-	v := traversers.NewNodeAtPos(int(offset))
-	tv := traverser.NewTraverser(v)
-	root.Accept(tv)
-	what.Is(v.Nodes)
+func GetCompletionQuery(pos *position.Position) CompletionContext {
+	// content, root := wrkspc.Current.FAllOf(pos.Path)
+	// offset := position.LocToPos(content, pos.Row, pos.Col)
+	// v := traversers.NewNodeAtPos(int(offset))
+	// tv := traverser.NewTraverser(v)
+	// root.Accept(tv)
+	// what.Is(v.Nodes)
 
 	ctx := CompletionContext{}
 	lexer := wrkspc.Current.FLexerOf(pos.Path)
@@ -467,43 +466,64 @@ func AddExprCompletions(
 	}
 }
 
-// PERF: This is bad, should use builders, and do this in On time.
+// Reconstruct tries to construct an AST node from the given tokens.
+// It closes any open constructs and tries to turn the tokens into parse-able PHP.
+// That PHP is then parsed and the resulting
+// nodes have their position set to that of the tokens.
 func Reconstruct(tokens []*token.Token) ast.Vertex {
-	source := "<?php "
-	for _, t := range tokens { // TODO: maybe not add last token so we get subject, and later resolve the actual query on it.
-		source += string(t.Value)
+	origB := strings.Builder{}
+	for _, t := range tokens {
+		_, _ = origB.Write(t.Value)
 	}
+	orig := origB.String()
+
+	counts := map[rune]int{}
+	for _, ch := range orig {
+		switch ch {
+		case '\'', '"', '(', ')', '[', ']':
+			counts[ch]++
+		}
+	}
+
+	sourceB := strings.Builder{}
+	_, _ = sourceB.WriteString(orig)
+
+	if counts['"']%2 != 0 {
+		_, _ = sourceB.WriteRune('"')
+	}
+
+	if counts['\'']%2 != 0 {
+		_, _ = sourceB.WriteRune('\'')
+	}
+
+	obc := counts['[']
+	cbc := counts[']']
+	if obc > cbc {
+		for i := cbc; i < obc; i++ {
+			_, _ = sourceB.WriteRune(']')
+		}
+	}
+
+	opc := counts['(']
+	cpc := counts[')']
+	if opc > cpc {
+		for i := cpc; i < opc; i++ {
+			_, _ = sourceB.WriteRune(')')
+		}
+	}
+
+	source := "<?php " + sourceB.String()
 
 	source = strings.TrimSuffix(source, "::")
 	source = strings.TrimSuffix(source, "->")
 
-	if strings.Count(source, "'")%2 != 0 {
-		source += "'"
-	}
-
-	if strings.Count(source, "\"")%2 != 0 {
-		source += "\""
-	}
-
-	openParenC := strings.Count(source, "(")
-	closeParenC := strings.Count(source, ")")
-	if openParenC > closeParenC {
-		source += strings.Repeat(")", openParenC-closeParenC)
-	}
-
-	openArrC := strings.Count(source, "[")
-	closeArrC := strings.Count(source, "]")
-	if openArrC > closeArrC {
-		source += strings.Repeat("]", openArrC-closeArrC)
-	}
-
-	if !strings.ContainsRune(source, ';') {
+	if !strings.HasSuffix(source, ";") {
 		source += ";"
 	}
 
-	log.Printf("[DEBUG]: Reconstructed %q", source)
+	log.Printf("[INFO]: Reconstruction: %q => %q", orig, source)
 
-	p := parsing.New(phpversion.EightOne())
+	p := parsing.New(phpversion.Latest())
 	root, err := p.Parse([]byte(source))
 	if err != nil {
 		log.Printf("[ERROR]: could not parse %q: %v", source, err)
@@ -511,7 +531,7 @@ func Reconstruct(tokens []*token.Token) ast.Vertex {
 	}
 
 	if len(root.Stmts) == 0 {
-		log.Printf("[ERROR]: no statements were reconstructed from %q", source)
+		log.Printf("[WARN]: no statements were reconstructed from %q", source)
 		return nil
 	}
 
@@ -520,7 +540,7 @@ func Reconstruct(tokens []*token.Token) ast.Vertex {
 	case *ast.StmtExpression:
 		res = tn.Expr
 	default:
-		log.Printf("Unexpected reconstruction result of %q: %#v", source, root.Stmts[0])
+		log.Printf("[WARN]: Unexpected reconstruction result of %q: %#v", source, root.Stmts[0])
 	}
 
 	if res == nil {
@@ -536,6 +556,7 @@ func Reconstruct(tokens []*token.Token) ast.Vertex {
 	return res
 }
 
+// Sets the position of all nodes in the tree to Pos.
 type setPosVisitor struct {
 	visitor.Null
 	Pos *astposition.Position
@@ -619,6 +640,7 @@ func AddFromIndex(
 	prefix string,
 	types ...ast.Type,
 ) {
+	list.IsIncomplete = true // TODO: set this based on if there are more items with this prefix.
 	indexNodes := index.Current.FindPrefix(prefix, maxCompletionResults, types...)
 	for _, node := range indexNodes {
 		item := protocol.CompletionItem{
@@ -643,10 +665,11 @@ func AddScopeVars(
 	ctx *context.Ctx,
 	prefix string,
 ) {
+	// TODO: if scope is arrow function, use the scope above that one (vars are inherited in arrow funcs).
 	scope := ctx.Scope()
 	scopet := scope.GetType()
 	if scopet != ast.TypeStmtFunction && scopet != ast.TypeStmtClassMethod &&
-		scopet != ast.TypeExprClosure {
+		scopet != ast.TypeExprClosure && scopet != ast.TypeExprArrowFunction {
 		return
 	}
 

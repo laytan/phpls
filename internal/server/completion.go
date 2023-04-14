@@ -34,7 +34,7 @@ func (s *Server) Completion(
 
 	pos := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
 
-	comp := project.GetCompletionQuery2(pos)
+	comp := project.GetCompletionQuery(pos)
 	log.Printf("[INFO]: Completing action: %s", comp.Action)
 	completions := project.Complete(pos, comp)
 

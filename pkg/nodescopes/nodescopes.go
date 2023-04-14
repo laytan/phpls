@@ -10,6 +10,7 @@ var (
 	Scopes = map[ast.Type]bool{
 		ast.TypeStmtFunction:      true,
 		ast.TypeExprClosure:       true,
+		ast.TypeExprArrowFunction: true,
 
 		ast.TypeStmtClass:       true,
 		ast.TypeStmtClassMethod: true,
