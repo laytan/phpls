@@ -25,9 +25,9 @@ type Schema struct {
 	CachePath          string      `json:"cache_path,omitempty"                                                                      doc:"Root directory for generated stubs and logs, defaults to the user cache directory."       usage:"Root directory for generated stubs and logs, defaults to the user cache directory."       flag:"cache-path"`
 	DumpConfig         bool        `json:"dump_config,omitempty"                                         default:"false"             doc:"Dump the resolved config before validation, useful for debugging."                        usage:"Dump the resolved config before validation, useful for debugging."                        flag:"dump-config"`
 
-	LogsPath   string                 `json:"-"`
-	StubsPath  string                 `json:"-"`
-	PhpVersion *phpversion.PHPVersion `json:"-"`
+	LogsPath   string                 `json:"-" flag:"-"`
+	StubsPath  string                 `json:"-" flag:"-"`
+	PhpVersion *phpversion.PHPVersion `json:"-" flag:"-"`
 }
 
 type Php struct {

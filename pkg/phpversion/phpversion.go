@@ -15,9 +15,9 @@ var (
 
 // PHPVersion struct is a representation of a PHP version with methods to retrieve it.
 type PHPVersion struct {
-	Major uint8
-	Minor uint8
-	Patch uint8
+	Major uint8 `flag:"-"`
+	Minor uint8 `flag:"-"`
+	Patch uint8 `flag:"-"`
 }
 
 func (v *PHPVersion) String() string {
