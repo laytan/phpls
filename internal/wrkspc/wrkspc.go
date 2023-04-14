@@ -18,6 +18,7 @@ import (
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/lexer"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -81,6 +82,10 @@ type Wrkspc interface {
 	Refresh(path string) error
 
 	RefreshFrom(path string, content string) error
+
+	FLexerOf(path string) lexer.Lexer
+
+	IsPhpFile(path string) bool
 }
 
 // fileExtensions should all start with a period.
@@ -296,6 +301,15 @@ func (w *wrkspc) RefreshFrom(path string, content string) error {
 	return nil
 }
 
+func (w *wrkspc) FLexerOf(path string) lexer.Lexer {
+	lexer, err := w.parser(path).Lexer([]byte(w.FContentOf(path)))
+	if err != nil {
+		log.Println(err)
+	}
+
+	return lexer
+}
+
 func (w *wrkspc) walk(walker func(path string, d fs.DirEntry) error) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(w.roots))
@@ -332,6 +346,15 @@ func (w *wrkspc) walk(walker func(path string, d fs.DirEntry) error) error {
 	return finalErr
 }
 
+func (w *wrkspc) IsPhpFile(path string) bool {
+	for _, extension := range w.fileExtensions {
+		if strings.HasSuffix(path, extension) {
+			return true
+		}
+	}
+	return false
+}
+
 func (w *wrkspc) shouldParse(d fs.DirEntry) (bool, error) {
 	if d.IsDir() {
 		// Skip ignored directories.
@@ -345,11 +368,8 @@ func (w *wrkspc) shouldParse(d fs.DirEntry) (bool, error) {
 		return false, nil
 	}
 
-	name := d.Name()
-	for _, extension := range w.fileExtensions {
-		if strings.HasSuffix(name, extension) {
-			return true, nil
-		}
+	if w.IsPhpFile(d.Name()) {
+		return true, nil
 	}
 
 	return false, nil

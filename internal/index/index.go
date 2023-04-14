@@ -47,6 +47,8 @@ type Index interface {
 	// Giving this no kinds will return any kind.
 	// A max of 0 or passing ir.KindRoot will return everything.
 	FindPrefix(prefix string, max int, kind ...ast.Type) []*INode
+
+	FindFqnPrefix(prefix string, max int, kind ...ast.Type) []*INode
 }
 
 type index struct {

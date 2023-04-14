@@ -14,6 +14,7 @@ import (
 	"github.com/laytan/elephp/pkg/strutil"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/php-parser/pkg/lexer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -235,7 +236,7 @@ use Test\Test;
 				root:    root,
 				t:       t,
 			}
-			wrkspc.Current = w
+			wrkspc.Current = &w
 
 			edits := server.InsertUseStmt(scenario.insert, scenario.position)
 			output := applyEdits(scenario.input, edits)
@@ -484,6 +485,16 @@ type mockWrkspc struct {
 	t       *testing.T
 }
 
+var _ wrkspc.Wrkspc = &mockWrkspc{}
+
+func (*mockWrkspc) FLexerOf(path string) lexer.Lexer {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) IsPhpFile(path string) bool {
+	panic("unimplemented")
+}
+
 func (mockWrkspc) AllOf(path string) (string, *ast.Root, error) {
 	panic("unimplemented")
 }
@@ -532,4 +543,4 @@ func (mockWrkspc) Root() string {
 	panic("unimplemented")
 }
 
-var _ wrkspc.Wrkspc = mockWrkspc{}
+var _ wrkspc.Wrkspc = &mockWrkspc{}

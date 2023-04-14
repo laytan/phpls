@@ -33,6 +33,18 @@ func (c *ClassLike) PropertiesIter() PropertiesIterFunc {
 }
 
 func (c *ClassLike) FindProperty(filters ...FilterFunc[*Property]) *Property {
+	res := c.FindProperties(true, filters...)
+	if len(res) == 0 {
+		return nil
+	}
+
+	return res[0]
+}
+
+func (c *ClassLike) FindProperties(
+	shortCircuit bool,
+	filters ...FilterFunc[*Property],
+) (res []*Property) {
 	iter := c.PropertiesIter()
 PropertiesIter:
 	for p, done, err := iter(); !done; p, done, err = iter() {
@@ -47,7 +59,10 @@ PropertiesIter:
 			}
 		}
 
-		return p
+		res = append(res, p)
+		if shortCircuit {
+			return res
+		}
 	}
 
 	return nil

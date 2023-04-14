@@ -42,9 +42,6 @@ jobs:
       run: echo ::set-output name=gobin::$(go env GOPATH)/bin
       shell: bash
 
-    - name: Install task
-      run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
-
     - name: Cache richgo
       uses: actions/cache@v3
       id: cache-richgo
@@ -59,7 +56,7 @@ jobs:
       run: go install github.com/kyoh86/richgo@latest
 
     - name: Test
-      run: task test
+      run: richgo test ./... -shuffle=on -race -cover -timeout=60s -tags what
       env:
         RICHGO_FORCE_COLOR: 1
         CI: true
