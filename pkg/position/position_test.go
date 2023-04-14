@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/laytan/elephp/pkg/pathutils"
-	"github.com/laytan/elephp/pkg/position"
+	"github.com/laytan/phpls/pkg/pathutils"
+	"github.com/laytan/phpls/pkg/position"
 	"github.com/stretchr/testify/require"
 )
 

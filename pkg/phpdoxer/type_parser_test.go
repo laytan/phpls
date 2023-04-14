@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/laytan/elephp/pkg/phpdoxer"
+	"github.com/laytan/phpls/pkg/phpdoxer"
 )
 
 func TestParse(t *testing.T) {

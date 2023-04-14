@@ -3,8 +3,8 @@ package project
 import (
 	"strings"
 
-	"github.com/laytan/elephp/pkg/functional"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/phpls/pkg/functional"
 )
 
 // Source: https://www.php.net/manual/en/reserved.keywords.php

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/laytan/elephp/pkg/phpcs/phpcbf"
+	"github.com/laytan/phpls/pkg/phpcs/phpcbf"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )

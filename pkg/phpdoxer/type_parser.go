@@ -107,7 +107,7 @@ var (
 
 // NOTE: const and classlike types are basically the same format, to parse those
 // NOTE: correctly we need context of the actual project, which we don't have here.
-// NOTE: for elephp, the internal package 'doxcontext' is there to
+// NOTE: for phpls, the internal package 'doxcontext' is there to
 // NOTE: apply context and transform these cases.
 func ParseType(value string) (Type, error) {
 	value = strings.TrimSpace(value)

@@ -6,15 +6,15 @@ import (
 	"testing"
 
 	"appliedgo.net/what"
-	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/internal/project"
-	"github.com/laytan/elephp/internal/symbol"
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/pathutils"
-	"github.com/laytan/elephp/pkg/phprivacy"
-	"github.com/laytan/elephp/pkg/phpversion"
 	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/phpls/internal/config"
+	"github.com/laytan/phpls/internal/index"
+	"github.com/laytan/phpls/internal/project"
+	"github.com/laytan/phpls/internal/symbol"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/pathutils"
+	"github.com/laytan/phpls/pkg/phprivacy"
+	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(
 		m,
 		// The cache size logger.
-		goleak.IgnoreTopFunction("github.com/laytan/elephp/internal/wrkspc.New.func1"),
+		goleak.IgnoreTopFunction("github.com/laytan/phpls/internal/wrkspc.New.func1"),
 	)
 }
 

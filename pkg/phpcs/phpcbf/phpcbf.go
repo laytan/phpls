@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/strutil"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/strutil"
 )
 
 // Instance is a wrapper around the 'phpcbf' cli for formatting code.

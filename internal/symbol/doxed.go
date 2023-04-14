@@ -5,11 +5,11 @@ import (
 	"log"
 	"strings"
 
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/token"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/phpdoxer"
 )
 
 type DocFilter func(phpdoxer.Node) bool

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/phpcs"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/phpcs"
 )
 
 type PhpcsAnalyzer struct {
@@ -66,7 +66,7 @@ func phpcsMessageToDiagnostic(m *phpcs.ReportMessage) protocol.Diagnostic {
 		Range:    protocol.Range{Start: pos, End: pos},
 		Severity: phpcsToLSPSeverity(m.Type),
 		Code:     m.Source,
-		// Source:   "elephp",
+		// Source:   "phpls",
 		Message: m.Msg,
 
 		// TODO: check if message is for deprecation/unnecessary, and add tags accordingly.

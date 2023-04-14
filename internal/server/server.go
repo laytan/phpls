@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/laytan/elephp/internal/diagnostics"
-	"github.com/laytan/elephp/internal/project"
-	"github.com/laytan/elephp/pkg/lsperrors"
-	"github.com/laytan/elephp/pkg/lsprogress"
-	"github.com/laytan/elephp/pkg/phpcs/phpcbf"
 	"github.com/laytan/go-lsp-protocol/pkg/jsonrpc2"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/phpls/internal/diagnostics"
+	"github.com/laytan/phpls/internal/project"
+	"github.com/laytan/phpls/pkg/lsperrors"
+	"github.com/laytan/phpls/pkg/lsprogress"
+	"github.com/laytan/phpls/pkg/phpcs/phpcbf"
 )
 
 func NewServer(client protocol.ClientCloser) *Server {

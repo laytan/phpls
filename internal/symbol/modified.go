@@ -3,11 +3,11 @@ package symbol
 import (
 	"log"
 
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/phprivacy"
-	"github.com/laytan/elephp/pkg/set"
 	"github.com/laytan/php-parser/pkg/ast"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/phprivacy"
+	"github.com/laytan/phpls/pkg/set"
 )
 
 type Modified interface {

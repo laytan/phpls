@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/pkg/set"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/phpls/internal/config"
+	"github.com/laytan/phpls/pkg/set"
 )
 
 // Implement closer to do clean up (stopping a daemon for example).
@@ -499,7 +499,7 @@ func timeDiagnostics(name string) func() {
 // TODO: consistent casing and consistent ending . or not.
 func normalizeDiagnostics(name string, diagnostics []protocol.Diagnostic) []protocol.Diagnostic {
 	for i := range diagnostics {
-		diagnostics[i].Source = "elephp-" + name
+		diagnostics[i].Source = "phpls-" + name
 		diagnostics[i].Message = fmt.Sprintf("[%s] %s", name, diagnostics[i].Message)
 	}
 

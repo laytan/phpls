@@ -10,14 +10,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/internal/index"
-	"github.com/laytan/elephp/internal/project"
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/lsperrors"
-	"github.com/laytan/elephp/pkg/processwatch"
-	"github.com/laytan/elephp/pkg/stubs"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/phpls/internal/config"
+	"github.com/laytan/phpls/internal/index"
+	"github.com/laytan/phpls/internal/project"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/lsperrors"
+	"github.com/laytan/phpls/pkg/processwatch"
+	"github.com/laytan/phpls/pkg/stubs"
 	"golang.org/x/exp/slices"
 )
 

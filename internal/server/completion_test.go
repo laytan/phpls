@@ -5,16 +5,16 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/laytan/elephp/internal/server"
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/parsing"
-	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/position"
-	"github.com/laytan/elephp/pkg/strutil"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/lexer"
+	"github.com/laytan/phpls/internal/server"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/parsing"
+	"github.com/laytan/phpls/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/position"
+	"github.com/laytan/phpls/pkg/strutil"
 	"github.com/stretchr/testify/require"
 )
 

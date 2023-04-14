@@ -3,11 +3,11 @@ package doxcontext
 import (
 	"strings"
 
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/functional"
-	"github.com/laytan/elephp/pkg/phpdoxer"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/position"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/functional"
+	"github.com/laytan/phpls/pkg/phpdoxer"
 )
 
 // ApplyContext applies any context we have about the code (which phpdoxer

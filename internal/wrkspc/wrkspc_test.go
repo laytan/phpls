@@ -5,10 +5,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/laytan/elephp/internal/config"
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/pathutils"
-	"github.com/laytan/elephp/pkg/phpversion"
+	"github.com/laytan/phpls/internal/config"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/pathutils"
+	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/stretchr/testify/require"
 )
 

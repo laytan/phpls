@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/laytan/elephp/pkg/lsperrors"
+	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/stretchr/testify/require"
 )
 

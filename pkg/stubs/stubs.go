@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/stubs/stubtransform"
-	thirdparty "github.com/laytan/elephp/third_party"
+	"github.com/laytan/phpls/pkg/phpversion"
+	"github.com/laytan/phpls/pkg/stubs/stubtransform"
+	thirdparty "github.com/laytan/phpls/third_party"
 )
 
 // Generate `total.go`.

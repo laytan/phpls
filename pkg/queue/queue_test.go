@@ -3,7 +3,7 @@ package queue_test
 import (
 	"testing"
 
-	"github.com/laytan/elephp/pkg/queue"
+	"github.com/laytan/phpls/pkg/queue"
 	"github.com/stretchr/testify/require"
 )
 

@@ -7,7 +7,7 @@ import (
 	"github.com/DmitriyVTitov/size"
 	"github.com/davecgh/go-spew/spew"
 	lru "github.com/hashicorp/golang-lru/v2"
-	"github.com/laytan/elephp/pkg/datasize"
+	"github.com/laytan/phpls/pkg/datasize"
 )
 
 // Wrapper of the lru cache, adding generics and a size in bytes (approx).

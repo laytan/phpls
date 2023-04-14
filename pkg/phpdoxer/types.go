@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/laytan/elephp/pkg/functional"
+	"github.com/laytan/phpls/pkg/functional"
 )
 
 // TODO: support phpstan's generics: https://phpstan.org/writing-php-code/phpdoc-types#generics.

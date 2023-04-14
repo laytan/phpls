@@ -3,10 +3,10 @@ package index
 import (
 	"log"
 
-	"github.com/laytan/elephp/pkg/fqn"
-	"github.com/laytan/elephp/pkg/nodeident"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/nodeident"
 )
 
 type INodeTraverser struct {

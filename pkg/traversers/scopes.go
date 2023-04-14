@@ -1,9 +1,9 @@
 package traversers
 
 import (
-	"github.com/laytan/elephp/pkg/nodescopes"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
+	"github.com/laytan/phpls/pkg/nodescopes"
 )
 
 type ScopesTraverser struct {

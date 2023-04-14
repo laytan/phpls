@@ -13,7 +13,7 @@ tasks:
     build:
         deps: [generate]
         cmds:
-            - go build -o elephp cmd/elephp/main.go
+            - go build -o phpls -ldflags="-s -w" cmd/phpls/main.go
         sources:
             - cmd/**/*
             - internal/**/*
@@ -22,7 +22,7 @@ tasks:
             - go.mod
             - go.sum
         generates:
-            - elephp
+            - phpls
 
     test:
         deps: [generate]
@@ -45,4 +45,4 @@ tasks:
     # Tail the latest log file from wherever you are.
     logs:
         cmds:
-            - tail -f $(ls -cl $(elephp logs)/* | tail -n 1 | rev | cut -d' ' -f1 | rev)
+            - tail -f $(ls -cl $(phpls logs)/* | tail -n 1 | rev | cut -d' ' -f1 | rev)

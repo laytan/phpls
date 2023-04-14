@@ -1,12 +1,12 @@
 package providers
 
 import (
-	"github.com/laytan/elephp/internal/context"
-	"github.com/laytan/elephp/internal/project/definition"
-	"github.com/laytan/elephp/pkg/nodeident"
-	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
+	"github.com/laytan/phpls/internal/context"
+	"github.com/laytan/phpls/internal/project/definition"
+	"github.com/laytan/phpls/pkg/nodeident"
+	"github.com/laytan/phpls/pkg/traversers"
 )
 
 // VariableProvider resolves the definition of a simple variable.

@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/laytan/elephp/pkg/position"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
+	"github.com/laytan/phpls/pkg/position"
 )
 
 func (s *Server) Hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {

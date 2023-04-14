@@ -3,7 +3,7 @@ package symboltrie
 import (
 	"sync"
 
-	"github.com/laytan/elephp/pkg/fqn"
+	"github.com/laytan/phpls/pkg/fqn"
 )
 
 const (

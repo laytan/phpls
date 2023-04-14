@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/laytan/elephp/internal/symbol"
-	"github.com/laytan/elephp/internal/throws"
-	"github.com/laytan/elephp/internal/wrkspc"
-	"github.com/laytan/elephp/pkg/position"
-	"github.com/laytan/elephp/pkg/traversers"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/printer"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
+	"github.com/laytan/phpls/internal/symbol"
+	"github.com/laytan/phpls/internal/throws"
+	"github.com/laytan/phpls/internal/wrkspc"
+	"github.com/laytan/phpls/pkg/position"
+	"github.com/laytan/phpls/pkg/traversers"
 )
 
 func (p *Project) Hover(currpos *position.Position) string {
