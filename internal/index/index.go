@@ -8,11 +8,11 @@ import (
 	"sync"
 
 	"github.com/laytan/elephp/internal/config"
+	"github.com/laytan/elephp/internal/symboltrie"
 	"github.com/laytan/elephp/pkg/fqn"
 	"github.com/laytan/elephp/pkg/parsing"
 	"github.com/laytan/elephp/pkg/pathutils"
 	"github.com/laytan/elephp/pkg/phpversion"
-	"github.com/laytan/elephp/pkg/symboltrie"
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
 )
@@ -124,11 +124,28 @@ func (i *index) Index(path string, content string) error {
 
 // Find returns the first result matching the given query.
 func (i *index) Find(key *fqn.FQN) (*INode, bool) {
-	return i.symbolTrie.SearchExact(key)
+	if res := i.symbolTrie.FullSearch(key); len(res) > 0 {
+		return res[0], true
+	}
+
+	return nil, false
 }
 
 func (i *index) FindPrefix(prefix string, max int, kind ...ast.Type) []*INode {
-	results := i.symbolTrie.SearchNames(prefix, max)
+	results := i.symbolTrie.NameSearch(prefix, max)
+
+	values := make([]*INode, 0, len(results))
+	for _, result := range results {
+		if result.MatchesKind(kind...) {
+			values = append(values, result)
+		}
+	}
+
+	return values
+}
+
+func (i *index) FindFqnPrefix(prefix string, max int, kind ...ast.Type) []*INode {
+	results := i.symbolTrie.FqnSearch(prefix, max)
 
 	values := make([]*INode, 0, len(results))
 	for _, result := range results {
@@ -174,7 +191,7 @@ func (i *index) Delete(path string) error {
 
 	j := 0
 	for node := range nodes {
-		i.symbolTrie.Delete(node.FQN)
+		i.symbolTrie.Delete(node.FQN, symboltrie.DelAll[*INode])
 		j++
 	}
 
