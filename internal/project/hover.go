@@ -114,7 +114,8 @@ func nodeToHover(p *Project, currpos *position.Position) ([]ast.Vertex, *ast.Roo
 	}
 
 	pos := poss[0]
-	return napper(pos)
+	content := wrkspc.Current.FContentOf(pos.Path)
+	return napper(position.FromIRPosition(pos.Path, content, pos.Position.StartPos))
 }
 
 func NodeSignature(node ast.Vertex) string {

@@ -281,13 +281,6 @@ func (s *Server) SignatureHelp(
 	return nil, errorUnimplemented
 }
 
-func (s *Server) References(
-	context.Context,
-	*protocol.ReferenceParams,
-) ([]protocol.Location, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *Server) DocumentHighlight(
 	context.Context,
 	*protocol.DocumentHighlightParams,

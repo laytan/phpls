@@ -59,6 +59,7 @@ func New(phpv *phpversion.PHPVersion) Parser {
 	}
 }
 
+// TODO: recover panics
 func (p *parser) Parse(content []byte) (*ast.Root, error) {
 	a, err := astParser.Parse(content, p.config)
 	if err != nil || a == nil {

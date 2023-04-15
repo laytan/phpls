@@ -131,3 +131,19 @@ func LocToPos(content string, row uint, col uint) uint {
 
 	return 0
 }
+
+func AstToLspLocation(path string, p *position.Position) protocol.Location {
+	return protocol.Location{
+		URI: protocol.DocumentURI("file://" + path),
+		Range: protocol.Range{
+			Start: protocol.Position{
+				Line:      uint32(p.StartLine) - 1,
+				Character: uint32(p.StartCol),
+			},
+			End: protocol.Position{
+				Line:      uint32(p.EndLine) - 1,
+				Character: uint32(p.EndCol),
+			},
+		},
+	}
+}

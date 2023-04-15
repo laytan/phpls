@@ -105,6 +105,9 @@ func (s *Server) Initialize(
 			DocumentFormattingProvider: &protocol.Or_ServerCapabilities_documentFormattingProvider{
 				Value: true,
 			},
+			ReferencesProvider: &protocol.Or_ServerCapabilities_referencesProvider{
+				Value: true,
+			},
 		},
 		ServerInfo: &protocol.PServerInfoMsg_initialize{
 			Name:    config.Name,
