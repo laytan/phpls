@@ -14,7 +14,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5
-	github.com/laytan/php-parser v0.9.1-0.20230416231421-9a4744a28d1b
+	github.com/laytan/php-parser v0.10.0
 	github.com/stretchr/testify v1.8.2
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/goleak v1.2.1
