@@ -32,6 +32,8 @@ func (s *Server) References(
 		return nil, err
 	}
 
+	// TODO: support params.IncludeDeclaration.
+
 	start := time.Now()
 	defer func() {
 		log.Printf("Retrieving references took %s", time.Since(start))
@@ -80,7 +82,7 @@ func (s *Server) references(
 	}
 
 	switch pctx.Current().(type) {
-	case *ast.StmtClass:
+	case *ast.StmtClass, *ast.StmtInterface, *ast.StmtTrait:
 		hasErrors := false
 
 		files := make(chan *wrkspc.ParsedFile)
@@ -137,6 +139,21 @@ func (s *Server) references(
 			defer close(references)
 			wg := sync.WaitGroup{}
 			defer wg.Wait()
+
+			// Definition is also a reference.
+			var dname ast.Vertex
+			switch tn := pctx.Current().(type) {
+			case *ast.StmtClass:
+				dname = tn.Name
+			case *ast.StmtInterface:
+				dname = tn.Name
+			case *ast.StmtTrait:
+				dname = tn.Name
+			default:
+				panic("unreachable")
+			}
+			references <- position.AstToLspLocation(d.Path, dname.GetPosition())
+
 			for file := range files {
 				file := file
 				wg.Add(1)
@@ -144,7 +161,7 @@ func (s *Server) references(
 					defer done.Add(1)
 					defer wg.Done()
 
-					// PERF: Don't parse when the class name is not in the file.
+					// PERF: We don't parse when the class name is not in the file.
 					if !strings.Contains(file.Content, name.Name()) {
 						return
 					}
@@ -211,10 +228,6 @@ func (c *classReferenceVisitor) EnterNode(node ast.Vertex) bool {
 	return true
 }
 
-func (c *classReferenceVisitor) StmtClass(node *ast.StmtClass) {
-	c.names = append(c.names, node.Name)
-}
-
 func (c *classReferenceVisitor) NameName(node *ast.Name) {
 	c.names = append(c.names, node)
 }
@@ -238,7 +251,16 @@ func (c *classReferenceVisitor) LeaveNode(node ast.Vertex) {
 		}
 
 		if c.fqnv.ResultFor(name).String() == c.fqn.String() {
-			c.references <- position.AstToLspLocation(c.path, name.GetPosition())
+			var lastPart ast.Vertex
+			switch tn := name.(type) {
+			case *ast.Name:
+				lastPart = tn.Parts[len(tn.Parts)-1]
+			case *ast.NameFullyQualified:
+				lastPart = tn.Parts[len(tn.Parts)-1]
+			case *ast.NameRelative:
+				lastPart = tn.Parts[len(tn.Parts)-1]
+			}
+			c.references <- position.AstToLspLocation(c.path, lastPart.GetPosition())
 		}
 	}
 }
