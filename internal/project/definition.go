@@ -10,7 +10,6 @@ import (
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/project/definition"
 	"github.com/laytan/phpls/internal/project/definition/providers"
-	"github.com/laytan/phpls/internal/wrkspc"
 	"github.com/laytan/phpls/pkg/position"
 )
 
@@ -65,9 +64,4 @@ func (p *Project) Definition(pos *position.Position) ([]*definition.Definition, 
 
 	log.Println("no definition provider registered for the given position")
 	return nil, ErrNoDefinitionFound
-}
-
-func defPosition(def *definition.Definition) *position.Position {
-	content := wrkspc.Current.FContentOf(def.Path)
-	return position.FromIRPosition(def.Path, content, def.Position.StartPos)
 }

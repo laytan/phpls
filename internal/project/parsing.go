@@ -13,7 +13,7 @@ import (
 
 // This should only be called once at the beginning of the connection with a
 // client.
-func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone chan<- bool) error {
+func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64) error {
 	// Parsing creates alot of garbage, after parsing, run a gc cycle manually
 	// because we know there is a lot to clean up.
 	defer func() {
@@ -50,7 +50,7 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 	}()
 
 	w := wrkspc.Current
-	if err := w.Index(files, total, totalDone); err != nil {
+	if err := w.Walk(files, total, wrkspc.WalkAll); err != nil {
 		log.Println(
 			fmt.Errorf(
 				"Could not index the file content of root %s: %w",
@@ -76,19 +76,10 @@ func (p *Project) Parse(done *atomic.Uint64, total *atomic.Uint64, totalDone cha
 func (p *Project) ParseWithoutProgress() error {
 	done := &atomic.Uint64{}
 	total := &atomic.Uint64{}
-	totalDone := make(chan bool, 1)
-
-	return p.Parse(done, total, totalDone)
+	return p.Parse(done, total)
 }
 
 func (p *Project) ParseFileUpdate(path string, content string) error {
-	w := wrkspc.Current
-
-	// NOTE: order is important here.
-	if err := w.RefreshFrom(path, content); err != nil {
-		return fmt.Errorf("Could not refresh indexed content of %s: %w", path, err)
-	}
-
 	if err := index.Current.Refresh(path, content); err != nil {
 		return fmt.Errorf("Could not refresh indexed symbols of %s: %w", path, err)
 	}

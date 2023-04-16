@@ -33,7 +33,7 @@ func FindFullyQualifiedName(root *ast.Root, name ast.Vertex) (*index.INode, bool
 
 // Returns whether the file at given pos needs a use statement for the given fqn.
 func NeedsUseStmtFor(pos *position.Position, name *fqn.FQN) bool {
-	content, root := wrkspc.Current.FAllOf(pos.Path)
+	content, root := wrkspc.Current.AllF(pos.Path)
 	parts := strings.Split(name.String(), `\`)
 	className := parts[len(parts)-1]
 

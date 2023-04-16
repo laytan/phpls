@@ -99,7 +99,7 @@ Nodes:
 
 func nodeToHover(p *Project, currpos *position.Position) ([]ast.Vertex, *ast.Root) {
 	napper := func(pos *position.Position) ([]ast.Vertex, *ast.Root) {
-		content, root := wrkspc.Current.FAllOf(pos.Path)
+		content, root := wrkspc.Current.AllF(pos.Path)
 		apos := position.LocToPos(content, pos.Row, pos.Col)
 		nap := traversers.NewNodeAtPos(int(apos))
 		napt := traverser.NewTraverser(nap)
@@ -114,7 +114,7 @@ func nodeToHover(p *Project, currpos *position.Position) ([]ast.Vertex, *ast.Roo
 	}
 
 	pos := poss[0]
-	content := wrkspc.Current.FContentOf(pos.Path)
+	content := wrkspc.Current.ContentF(pos.Path)
 	return napper(position.FromIRPosition(pos.Path, content, pos.Position.StartPos))
 }
 

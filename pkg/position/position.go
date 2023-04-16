@@ -147,3 +147,11 @@ func AstToLspLocation(path string, p *position.Position) protocol.Location {
 		},
 	}
 }
+
+func FromAst(path string, p *position.Position) *Position {
+	return &Position{
+		Path: path,
+		Row:  uint(p.StartLine),
+		Col:  uint(p.StartCol) + 1,
+	}
+}

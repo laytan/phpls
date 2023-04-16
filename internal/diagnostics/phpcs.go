@@ -49,7 +49,7 @@ func (p *PhpcsAnalyzer) AnalyzeSave(
 	ctx context.Context,
 	path string,
 ) ([]protocol.Diagnostic, error) {
-	return p.Analyze(ctx, path, []byte(wrkspc.Current.FContentOf(path)))
+	return p.Analyze(ctx, path, []byte(wrkspc.Current.ContentF(path)))
 }
 
 func (p *PhpcsAnalyzer) Name() string {

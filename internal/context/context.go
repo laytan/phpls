@@ -73,7 +73,7 @@ func (c *Ctx) InComment() (*token.Token, CommentPosition) {
 		return nil, 0
 	}
 
-	content := wrkspc.Current.FContentOf(c.start.Path)
+	content := wrkspc.Current.ContentF(c.start.Path)
 	cursorPos := position.LocToPos(content, c.start.Row, c.start.Col)
 	return c.comment, CommentPosition(int(cursorPos) - c.comment.Position.StartPos)
 }
@@ -150,7 +150,7 @@ func (c *Ctx) setScopes() {
 }
 
 func (c *Ctx) init() error {
-	content, root, err := wrkspc.Current.AllOf(c.start.Path)
+	content, root, err := wrkspc.Current.All(c.start.Path)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to parse context of %s: %w",

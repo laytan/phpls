@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
 	"github.com/laytan/php-parser/pkg/visitor/traverser"
+	"github.com/laytan/phpls/internal/config"
 	pcontext "github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/fqner"
 	"github.com/laytan/phpls/internal/wrkspc"
@@ -19,12 +21,9 @@ import (
 	"github.com/laytan/phpls/pkg/fqn"
 	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/laytan/phpls/pkg/nodeident"
-	"github.com/laytan/phpls/pkg/parsing"
-	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/phpls/pkg/position"
 )
 
-// TODO: add config to skip vendor directory.
 func (s *Server) References(
 	ctx context.Context,
 	params *protocol.ReferenceParams,
@@ -39,27 +38,40 @@ func (s *Server) References(
 	}()
 
 	target := position.FromTextDocumentPositionParams(&params.Position, &params.TextDocument)
-	definitions, err := s.project.Definition(target)
+	references, err := s.references(ctx, target)
 	if err != nil {
-		log.Println(err)
+		log.Printf("[ERROR]: finding references of %v: %v", target, err)
 		return nil, lsperrors.ErrRequestFailed(err.Error())
 	}
 
+	return references, nil
+}
+
+// TODO: add config to skip vendor directory.
+func (s *Server) references(
+	ctx context.Context,
+	target *position.Position,
+) ([]protocol.Location, error) {
+	// PERF: could probably skip this, and use context of target,
+	// but, definition is extremely fast, so no real pressure.
+	definitions, err := s.project.Definition(target)
+	if err != nil {
+		return nil, fmt.Errorf("finding definition of symbol to get references of: %w", err)
+	}
+
 	if len(definitions) > 1 {
-		msg := "Multiple definitions found in references call, not supported"
-		log.Println(msg)
-		return nil, lsperrors.ErrRequestFailed(msg)
+		return nil, fmt.Errorf("multiple definitions found in references call, not supported")
 	}
 
 	d := definitions[0]
-	content := wrkspc.Current.FContentOf(d.Path)
+	content := wrkspc.Current.ContentF(d.Path)
 	dpos := position.FromIRPosition(d.Path, content, d.Position.StartPos)
 
 	pctx, err := pcontext.New(dpos)
 	if err != nil {
-		log.Printf("Unable to recreate definition context: %v", err)
-		return nil, lsperrors.ErrRequestFailed(err.Error())
+		return nil, fmt.Errorf("Unable to recreate definition context: %w", err)
 	}
+
 	// Advance to the node that matches the definition.
 	for ok := true; ok; ok = pctx.Advance() {
 		if nodeident.Get(pctx.Current()) == d.Identifier {
@@ -80,23 +92,43 @@ func (s *Server) References(
 			},
 		}
 
-		// TODO: parser should be like configured.
-		parser := parsing.New(phpversion.Latest())
+		done := &atomic.Uint64{}
+		total := &atomic.Uint64{}
+		stop, err := s.progress.Track(
+			ctx,
+			func() float64 { return float64(done.Load()) },
+			func() float64 { return float64(total.Load()) },
+			"finding references",
+			time.Millisecond*50,
+		)
+		if err != nil {
+			log.Printf("[ERROR]: starting references progress: %v", err)
+		}
+		defer func() {
+			if err := stop(nil); err != nil {
+				log.Printf("[ERROR]: stopping references progress: %v", err)
+			}
+		}()
+
 		name := fqner.FullyQualifyName(pctx.Root(), pctx.Current())
 
 		log.Printf("[DEBUG]: finding references of %q", name)
 
 		go func() {
-			total := &atomic.Uint64{}
-			totalDone := make(chan bool, 1)
-			if err := wrkspc.Current.Index(files, total, totalDone); err != nil {
-				log.Println(
-					fmt.Errorf(
-						"Could not index the file content of root %s: %w",
-						wrkspc.Current.Root(),
-						err,
-					),
-				)
+			// If the definition is in stubs or in vendor, we need to check everywhere,
+			// But, if the definition is in the project files, it can not be used/referenced in vendor or stubs
+			// so, there is no need to walk those directories.
+			definitionInVendor := strings.Contains(d.Path, "/vendor/")
+			// Note: this does not work in tests.
+			definitionInStubs := strings.HasPrefix(d.Path, config.Current.StubsPath)
+			walkOpts := wrkspc.WalkOptions{
+				DoStubs:  definitionInVendor || definitionInStubs,
+				DoVendor: definitionInVendor || definitionInStubs,
+			}
+			log.Println(walkOpts)
+
+			if err := wrkspc.Current.Walk(files, total, walkOpts); err != nil {
+				log.Printf("[WARN]: could not index the file content of root %s: %v", wrkspc.Current.Root(), err)
 				hasErrors = true
 			}
 		}()
@@ -109,21 +141,21 @@ func (s *Server) References(
 				file := file
 				wg.Add(1)
 				go func() {
-					defer func() {
-						wg.Done()
-						if r := recover(); r != nil {
-							log.Printf("ERROR: could not parse %q into an AST: %v", file.Path, r)
-						}
-					}()
+					defer done.Add(1)
+					defer wg.Done()
 
-					root, err := parser.Parse([]byte(file.Content))
+					// PERF: Don't parse when the class name is not in the file.
+					if !strings.Contains(file.Content, name.Name()) {
+						return
+					}
+
+					root, err := wrkspc.Current.Parse(file.Path, []byte(file.Content))
 					if err != nil {
 						log.Printf("ERROR: parsing %q: %v", file.Path, err)
 						hasErrors = true
 						return
 					}
 
-					// TODO: sync.pool
 					v := tvpool.Get().(*classReferenceVisitor)
 					defer tvpool.Put(v)
 					v.Reset(file.Path, file.Content, name)
@@ -135,7 +167,6 @@ func (s *Server) References(
 
 		var accReferences []protocol.Location
 		for reference := range references {
-			log.Printf("[DEBUG]: found reference: %v", reference)
 			accReferences = append(accReferences, reference)
 		}
 
@@ -144,8 +175,6 @@ func (s *Server) References(
 				"Parsing the project for references resulted in errors, check the logs for more details",
 			)
 		}
-
-		log.Printf("[DEBUG]: References: %v", accReferences)
 
 		return accReferences, nil
 	default:
@@ -204,6 +233,10 @@ func (c *classReferenceVisitor) LeaveNode(node ast.Vertex) {
 	}
 
 	for _, name := range c.names {
+		if name == nil {
+			continue
+		}
+
 		if c.fqnv.ResultFor(name).String() == c.fqn.String() {
 			c.references <- position.AstToLspLocation(c.path, name.GetPosition())
 		}

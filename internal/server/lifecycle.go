@@ -108,6 +108,7 @@ func (s *Server) Initialize(
 			ReferencesProvider: &protocol.Or_ServerCapabilities_referencesProvider{
 				Value: true,
 			},
+			RenameProvider: true,
 		},
 		ServerInfo: &protocol.PServerInfoMsg_initialize{
 			Name:    config.Name,
@@ -161,35 +162,19 @@ func (s *Server) index() {
 
 	done := &atomic.Uint64{}
 	total := &atomic.Uint64{}
-	var finalTotal float64
-
-	totalDoneChan := make(chan bool)
-	go func() {
-		<-totalDoneChan
-		finalTotal = float64(total.Load())
-	}()
-
-	getTotal := func() float64 {
-		if finalTotal != 0 {
-			return finalTotal
-		}
-
-		return float64(total.Load())
-	}
-
 	stop, err := s.progress.Track(
 		ctx,
 		func() float64 { return float64(done.Load()) },
-		getTotal,
+		func() float64 { return float64(total.Load()) },
 		"indexing project",
-		time.Millisecond*100,
+		time.Millisecond*50,
 	)
 	if err != nil {
 		s.showAndLog(ctx, protocol.Error, err)
 		return
 	}
 
-	err = s.project.Parse(done, total, totalDoneChan)
+	err = s.project.Parse(done, total)
 	if err != nil {
 		if err := stop(err); err != nil {
 			s.showAndLog(ctx, protocol.Error, fmt.Errorf("stopping progress: %w", err))

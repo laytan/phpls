@@ -39,7 +39,7 @@ func (s *Server) Definition(
 	}
 
 	return functional.Map(definitions, func(def *definition.Definition) protocol.Location {
-		content := wrkspc.Current.FContentOf(def.Path)
+		content := wrkspc.Current.ContentF(def.Path)
 		return position.FromIRPosition(def.Path, content, def.Position.StartPos).ToLSPLocation()
 	}), nil
 }

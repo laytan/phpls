@@ -17,6 +17,13 @@ func NewName() *NameProvider {
 }
 
 func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	// The class definition is an identifier, so if we get that & wrapped by a class, we can define it.
+	if kind == ast.TypeIdentifier {
+		return ctx.DirectlyWrappedBy(ast.TypeStmtClass) ||
+			ctx.DirectlyWrappedBy(ast.TypeStmtInterface) ||
+			ctx.DirectlyWrappedBy(ast.TypeStmtTrait)
+	}
+
 	if !nodescopes.IsName(kind) {
 		return false
 	}

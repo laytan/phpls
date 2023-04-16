@@ -36,7 +36,7 @@ func NewRooter(path string, root ...*ast.Root) *Rooter {
 func (r *Rooter) Path() string { return r.path }
 func (r *Rooter) Root() *ast.Root {
 	if r.root == nil {
-		r.root = Current.FIROf(r.path)
+		r.root = Current.AstF(r.path)
 	}
 
 	return r.root

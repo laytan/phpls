@@ -363,10 +363,6 @@ func (s *Server) OnTypeFormatting(
 	return nil, errorUnimplemented
 }
 
-func (s *Server) Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *Server) PrepareRename(
 	context.Context,
 	*protocol.PrepareRenameParams,

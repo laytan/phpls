@@ -17,35 +17,21 @@ import (
 	"github.com/laytan/phpls/pkg/phpversion"
 )
 
-const (
-	ErrReadFmt = "Could not read file at %s: %w"
-	ErrASTFmt  = "Error parsing file into AST: %w"
-	ErrWalkFmt = "Error arose during walk of root %s: %w"
+var (
+	ErrRead      = errors.New("could not read file")
+	ErrAst       = errors.New("could not parse content into AST")
+	ErrWalk      = errors.New("error arose walking")
+	ErrNoContent = errors.New(
+		"no AST could be parsed, there were unrecoverable syntax errors or the file was empty",
+	)
 )
 
-var ErrNoContent = errors.New(
-	"No AST could be parsed, there were unrecoverable syntax errors or the file was empty",
-)
-
-// Parser is responsible for and a central place for
-// file system access and parsing file content into
-// IR for use everywhere else.
-type Parser interface {
-	Parse(content []byte) (*ast.Root, error)
-
-	Lexer(content []byte) (lexer.Lexer, error)
-
-	Read(path string) (string, error)
-
-	Walk(root string, walker func(path string, d fs.DirEntry, err error) error) error
-}
-
-type parser struct {
+type Parser struct {
 	config conf.Config
 }
 
-func New(phpv *phpversion.PHPVersion) Parser {
-	return &parser{
+func New(phpv *phpversion.PHPVersion) *Parser {
+	return &Parser{
 		config: conf.Config{
 			Version: &version.Version{
 				Major: uint64(phpv.Major),
@@ -59,21 +45,26 @@ func New(phpv *phpversion.PHPVersion) Parser {
 	}
 }
 
-// TODO: recover panics
-func (p *parser) Parse(content []byte) (*ast.Root, error) {
+func (p *Parser) Parse(content []byte) (root *ast.Root, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = fmt.Errorf("%w: %v", ErrAst, e)
+		}
+	}()
+
 	a, err := astParser.Parse(content, p.config)
 	if err != nil || a == nil {
 		if err == nil {
 			return nil, ErrNoContent
 		}
 
-		return nil, fmt.Errorf(ErrASTFmt, err)
+		return nil, fmt.Errorf("%w: %w", ErrAst, err)
 	}
 
 	return a.(*ast.Root), nil
 }
 
-func (p *parser) Lexer(content []byte) (lexer.Lexer, error) {
+func (p *Parser) Lexer(content []byte) (lexer.Lexer, error) {
 	res, err := lexer.New(content, p.config)
 	if err != nil {
 		return nil, fmt.Errorf("creating lexer: %w", err)
@@ -82,23 +73,23 @@ func (p *parser) Lexer(content []byte) (lexer.Lexer, error) {
 	return res, nil
 }
 
-func (p *parser) Read(path string) (string, error) {
+func (p *Parser) Read(path string) (string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf(ErrReadFmt, path, err)
+		return "", fmt.Errorf("reading %q: %w: %w", path, ErrRead, err)
 	}
 
 	return string(content), nil
 }
 
-func (p *parser) Walk(root string, walker func(path string, d fs.DirEntry, err error) error) error {
+func (p *Parser) Walk(root string, walker func(path string, d fs.DirEntry, err error) error) error {
 	err := filepath.WalkDir(root, walker)
 	if err != nil {
 		if err == filepath.SkipDir { //nolint:errorlint // stdlib checks == so don't want wrapping.
 			return err //nolint:wrapcheck // stdlib checks == so don't want wrapping.
 		}
 
-		return fmt.Errorf(ErrWalkFmt, root, err)
+		return fmt.Errorf("walking %q: %w: %w", root, ErrWalk, err)
 	}
 
 	return nil

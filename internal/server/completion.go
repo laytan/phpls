@@ -103,7 +103,7 @@ func InsertUseStmt(
 		return nil
 	}
 
-	root := wrkspc.Current.FIROf(currPos.Path)
+	root := wrkspc.Current.AstF(currPos.Path)
 	v := &useInserterVisitor{EndLine: int(currPos.Row)}
 	tv := traverser.NewTraverser(v)
 	root.Accept(tv)

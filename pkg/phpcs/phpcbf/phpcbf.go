@@ -120,7 +120,7 @@ func (p *Instance) Format(code []byte) ([]byte, error) {
 
 // TODO: should probably not be in this package.
 func (p *Instance) FormatFileEdits(path string) ([]protocol.TextEdit, error) {
-	code := wrkspc.Current.FContentOf(path)
+	code := wrkspc.Current.ContentF(path)
 	lines := len(strutil.Lines(code))
 	formatted, err := p.Format([]byte(code))
 	if err != nil {
