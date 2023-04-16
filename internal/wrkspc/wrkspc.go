@@ -95,14 +95,24 @@ func (w *wrkspc) Root() string {
 
 func (w *wrkspc) PutOverlay(path string, content string) {
 	w.overlaysMu.Lock()
-	defer w.overlaysMu.Unlock()
 	w.overlays[path] = content
+	w.overlaysMu.Unlock()
+
+	// Refresh/put updates in the cache.
+	root, err := w.Parse(path, []byte(content))
+	if err != nil {
+		log.Printf("[WARN]: could not parse new overlay AST")
+		w.asts.Delete(path)
+		return
+	}
+
+	w.asts.Put(path, root)
 }
 
 func (w *wrkspc) DeleteOverlay(path string) {
 	w.overlaysMu.Lock()
-	defer w.overlaysMu.Unlock()
 	delete(w.overlays, path)
+	w.overlaysMu.Unlock()
 }
 
 type WalkOptions struct {
