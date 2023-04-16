@@ -9,8 +9,10 @@ import (
 	"github.com/laytan/phpls/internal/config"
 	"github.com/laytan/phpls/internal/index"
 	"github.com/laytan/phpls/internal/project"
+	"github.com/laytan/phpls/internal/project/definition"
 	"github.com/laytan/phpls/internal/wrkspc"
 	"github.com/laytan/phpls/pkg/annotated"
+	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/pathutils"
 	"github.com/laytan/phpls/pkg/phpversion"
 	"github.com/laytan/phpls/pkg/position"
@@ -174,7 +176,8 @@ func TestStdlibDefinitions(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, out, 1)
 
-			if !reflect.DeepEqual(out[0], scenario.out) {
+			actPos := position.FromAst(out[0].Path, out[0].Position)
+			if !reflect.DeepEqual(actPos, scenario.out) {
 				what.Is(out)
 				what.Is(scenario.out)
 				t.Errorf("definitions don't match, run with `-tags what` to debug")
@@ -194,7 +197,7 @@ func TestParserPanicIsRecovered(t *testing.T) {
 	)
 
 	err := project.ParseWithoutProgress()
-	require.NoError(t, err)
+	require.Error(t, err)
 }
 
 //nolint:paralleltest,tparallel // Causes data race (indexing while testing?)
@@ -223,7 +226,7 @@ func TestAnnotatedDefinitions(t *testing.T) {
 					}
 
 					if scenario.IsDump {
-						root, err := wrkspc.Current.IROf(scenario.In.Path)
+						root, err := wrkspc.Current.Ast(scenario.In.Path)
 						require.NoError(t, err)
 						what.Is(root)
 						return
@@ -234,14 +237,22 @@ func TestAnnotatedDefinitions(t *testing.T) {
 					}
 
 					out, err := proj.Definition(&scenario.In)
+					what.Is(out)
 
 					if scenario.IsNoDef {
 						require.ErrorIs(t, err, project.ErrNoDefinitionFound)
 						return
 					}
 
+					outPosses := functional.Map(
+						out,
+						func(d *definition.Definition) *position.Position {
+							return position.FromAst(d.Path, d.Position)
+						},
+					)
+
 					require.NoError(t, err)
-					require.Equal(t, out, scenario.Out)
+					require.Equal(t, outPosses, scenario.Out)
 				})
 			}
 		})
