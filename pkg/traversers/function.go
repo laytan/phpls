@@ -28,14 +28,14 @@ func (f *Function) EnterNode(node ast.Vertex) bool {
 		return false
 	}
 
+	if fn, ok := node.(*ast.StmtFunction); ok && nodeident.Get(fn.Name) == f.name {
+		f.Function = fn
+	}
+
 	// If the scope of the traverser is a function, the first call will be a
 	// function which we need to ignore.
 	if f.currNodeIsRoot && node.GetType() == ast.TypeStmtFunction {
 		return true
-	}
-
-	if fn, ok := node.(*ast.StmtFunction); ok && nodeident.Get(fn.Name) == f.name {
-		f.Function = fn
 	}
 
 	if nodescopes.IsScope(node.GetType()) {
