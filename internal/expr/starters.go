@@ -266,7 +266,7 @@ func (p *functionResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	t := traversers.NewFunctionCall(toResolve.Identifier)
+	t := traversers.NewFunctionCall(toResolve.Identifier, false)
 	tv := traverser.NewTraverser(t)
 	scopes.Block.Accept(tv)
 	if t.Result == nil {

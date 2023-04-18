@@ -155,3 +155,33 @@ func FromAst(path string, p *position.Position) *Position {
 		Col:  uint(p.StartCol) + 1,
 	}
 }
+
+func AstInAst(scope *position.Position, p *position.Position) bool {
+	if scope == nil || p == nil {
+		return false
+	}
+
+	if scope.EndLine == 0 && scope.EndPos == 0 {
+		return p.StartLine >= scope.StartLine && p.StartPos >= scope.StartPos
+	}
+
+	return p.StartLine >= scope.StartLine && p.EndLine <= scope.EndLine &&
+		p.StartPos >= scope.StartPos &&
+		p.EndPos <= scope.EndPos
+}
+
+func PosInAst(scope *position.Position, p *Position) bool {
+	if scope == nil {
+		return false
+	}
+
+	if p.Row == uint(scope.StartLine) {
+		return p.Col >= uint(scope.StartCol+1)
+	}
+
+	if p.Row == uint(scope.EndLine) {
+		return p.Col <= uint(scope.EndCol+1)
+	}
+
+	return p.Row >= uint(scope.StartLine) && p.Row <= uint(scope.EndLine)
+}
