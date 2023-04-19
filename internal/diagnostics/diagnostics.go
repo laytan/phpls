@@ -13,6 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/internal/config"
+	"github.com/laytan/phpls/pkg/lsprogress"
 	"github.com/laytan/phpls/pkg/set"
 )
 
@@ -28,7 +29,8 @@ type Analyzer interface {
 }
 
 type Runner struct {
-	client protocol.Client
+	client   protocol.Client
+	progress *lsprogress.Tracker
 
 	diagnostics   map[string]*fileDiagnostics
 	diagnosticsMu sync.Mutex
@@ -57,6 +59,7 @@ func NewRunner(
 ) *Runner {
 	return &Runner{
 		client:        client,
+		progress:      lsprogress.NewTracker(client),
 		diagnostics:   make(map[string]*fileDiagnostics),
 		analyzers:     analyzers,
 		saveAnalyzers: saveAnalyzers,
@@ -187,6 +190,17 @@ func (r *Runner) StopWatching(path string) error {
 }
 
 func (r *Runner) Run(ctx context.Context, version int, path string, code []byte) error {
+	p, err := r.progress.Start(ctx, "diagnostics on change", "Started", nil)
+	if err != nil {
+		log.Printf("[ERROR]: starting progress tracking for diagnostics on change: %v", err)
+	} else {
+		defer func() {
+			if err := p.End(ctx, "Done"); err != nil {
+				log.Printf("[ERROR]: stopping progress tracking for diagnostics: %v", err)
+			}
+		}()
+	}
+
 	return r.run(
 		ctx,
 		r.analyzers,
@@ -408,6 +422,18 @@ Loop:
 }
 
 func (r *Runner) runForSave(path string) {
+	ctx := context.Background()
+	p, err := r.progress.Start(ctx, "diagnostics on save", "Started", nil)
+	if err != nil {
+		log.Printf("[ERROR]: starting progress tracking for diagnostics on save: %v", err)
+	} else {
+		defer func() {
+			if err := p.End(context.Background(), "Done"); err != nil {
+				log.Printf("[ERROR]: stopping progress for diagnostics on save: %v", err)
+			}
+		}()
+	}
+
 	r.diagnosticsMu.Lock()
 	var version int
 	if fd, ok := r.diagnostics[path]; ok {
@@ -415,7 +441,7 @@ func (r *Runner) runForSave(path string) {
 	}
 	r.diagnosticsMu.Unlock()
 
-	err := r.run(
+	err = r.run(
 		context.Background(),
 		r.saveAnalyzers,
 		version,
@@ -429,7 +455,13 @@ func (r *Runner) runForSave(path string) {
 		r.AddSaveDiagnostics,
 	)
 	if err != nil && !errors.Is(err, context.Canceled) {
-		log.Printf("[ERROR]: running analyzers for save: %v", err)
+		log.Printf("[ERROR]: running diagnostics on save error: %v", err)
+		if err := r.client.LogMessage(ctx, &protocol.LogMessageParams{
+			Type:    protocol.Error,
+			Message: fmt.Sprintf("Running diagnostics on save error: %v", err),
+		}); err != nil {
+			log.Printf("[ERROR]: sending diagnostics on save error log to client: %v", err)
+		}
 	}
 }
 
