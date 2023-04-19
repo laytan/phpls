@@ -79,14 +79,14 @@ func (p *variableResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		t := traversers.NewVariable(toResolve.Identifier)
+		t := traversers.NewVariable(toResolve.Identifier, false)
 		tv := traverser.NewTraverser(t)
 		scopes.Block.Accept(tv)
-		if t.Result == nil {
+		if len(t.Results) == 0 {
 			return nil, nil, 0, false
 		}
 
-		ta := traversers.NewAssignment(t.Result)
+		ta := traversers.NewAssignment(t.Results[0])
 		tav := traverser.NewTraverser(ta)
 		scopes.Block.Accept(tav)
 		if ta.Assignment == nil || ta.Scope == nil {

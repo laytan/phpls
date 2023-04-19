@@ -20,6 +20,7 @@ import (
 
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/pkg/fqn"
+	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/laytan/phpls/pkg/nodeident"
 	"github.com/laytan/phpls/pkg/position"
@@ -78,6 +79,18 @@ func (s *Server) references(
 		if nodeident.Get(dctx.Current()) == d.Identifier {
 			break
 		}
+	}
+
+	if id, ok := dctx.Current().(*ast.Identifier); ok &&
+		dctx.DirectlyWrappedBy(ast.TypeExprVariable) {
+		v := traversers.NewVariable(nodeident.Get(id), true)
+		tv := traverser.NewTraverser(v)
+		dctx.Scope().Accept(tv)
+		return functional.Map(v.Results, func(n *ast.ExprVariable) protocol.Location {
+			loc := position.AstToLspLocation(d.Path, n.Name.GetPosition())
+			loc.Range.Start.Character++ // The new name does not have the $, so add a col so it stays.
+			return loc
+		}), nil
 	}
 
 	switch td := dctx.Current().(type) {

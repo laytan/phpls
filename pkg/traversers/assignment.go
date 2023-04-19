@@ -1,6 +1,8 @@
 package traversers
 
 import (
+	"log"
+
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/php-parser/pkg/visitor"
 	"github.com/laytan/phpls/pkg/nodeident"
@@ -24,6 +26,10 @@ type Assignment struct {
 }
 
 func (a *Assignment) EnterNode(node ast.Vertex) bool {
+	if a.Assignment != nil {
+		return false
+	}
+
 	defer func() { a.isFirst = false }()
 
 	// Only check the current scope.
@@ -51,6 +57,18 @@ func (a *Assignment) EnterNode(node ast.Vertex) bool {
 	}
 
 	return true
+}
+
+func (a *Assignment) ExprClosureUse(node *ast.ExprClosureUse) {
+	switch tn := node.Var.(type) {
+	case *ast.ExprVariable:
+		if nodeident.Get(tn) == nodeident.Get(a.variable) {
+			a.Assignment = tn
+			a.Scope = node
+		}
+	default:
+		log.Panicf("unexpected use var type %T", node.Var)
+	}
 }
 
 func (a *Assignment) Parameter(param *ast.Parameter) {
