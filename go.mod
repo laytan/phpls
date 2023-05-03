@@ -8,7 +8,7 @@ require (
 	github.com/arl/statsviz v0.5.2
 	github.com/cristalhq/aconfig v0.18.3
 	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
-	github.com/danielgtaylor/huma v1.13.0
+	github.com/danielgtaylor/huma v1.14.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gorilla/websocket v1.5.0
