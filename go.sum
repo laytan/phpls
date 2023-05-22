@@ -107,8 +107,8 @@ github.com/cristalhq/aconfig v0.18.4/go.mod h1:NXaRp+1e6bkO4dJn+wZ71xyaihMDYPtCS
 github.com/cristalhq/aconfig/aconfigyaml v0.17.1 h1:xCCbRKVmKrft9gQj3gHOq6U5PduasvlXEIsxtyzmFZ0=
 github.com/cristalhq/aconfig/aconfigyaml v0.17.1/go.mod h1:5DTsjHkvQ6hfbyxfG32roB1lF0U82rROtFaLxibL8V8=
 github.com/danielgtaylor/casing v0.0.0-20210126043903-4e55e6373ac3/go.mod h1:eFdYmNxcuLDrRNW0efVoxSaApmvGXfHZ9k2CT/RSUF0=
-github.com/danielgtaylor/huma v1.14.0 h1:2b4ZpTPggBB8faOJVE9rRFJNov5GhIXttl4y86RHJWA=
-github.com/danielgtaylor/huma v1.14.0/go.mod h1:I/19C1eNQd7ojMIQvynPe3lbuD5KfQEinH+ivIqjqmg=
+github.com/danielgtaylor/huma v1.14.1 h1:GL81br4Gq4BCthdTrqyAglTiZIGjBU70vR2l513Iquk=
+github.com/danielgtaylor/huma v1.14.1/go.mod h1:I/19C1eNQd7ojMIQvynPe3lbuD5KfQEinH+ivIqjqmg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
