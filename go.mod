@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5
 	github.com/laytan/php-parser v0.9.1-0.20230411203829-6b3673ece43a
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/goleak v1.2.1
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
