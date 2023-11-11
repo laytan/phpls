@@ -414,14 +414,15 @@ func AddExprCompletions(
 	}
 
 	scopes := definition.ContextToScopes(ctx)
-	res, lastClass, left := expr.Resolve(subj, scopes)
+	_, lastClass, left := expr.Resolve(subj, scopes)
 	if left != 0 {
 		log.Println("[WARN]: could not resolve reconstructed expression to provide completion")
 		return
 	}
-
-	log.Printf("[DEBUG]: res: %#v", res)
-	log.Printf("[DEBUG]: lastClass: %#v", lastClass)
+	if lastClass == nil {
+		log.Printf("[INFO]: resolved expression has no resulting class to create completions from")
+		return
+	}
 
 	cls, err := symbol.NewClassLikeFromFQN(wrkspc.NewRooter(ctx.Path(), ctx.Root()), lastClass)
 	if err != nil {
@@ -656,6 +657,7 @@ func AddFromIndex(
 		// Add completion data for automatic use statements.
 		if nodescopes.IsClassLike(node.Kind) {
 			item.Data = CompletionData(pos, node)
+			item.Detail = node.FQN.String()
 			// Adding an additional text edit, so the client shows it in the UI.
 			// The actual text edit is added in the Resolve method.
 			item.AdditionalTextEdits = []protocol.TextEdit{{}}

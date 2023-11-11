@@ -87,7 +87,7 @@ func (s *Server) additionalTextEdits(
 	item *protocol.CompletionItem,
 	pos *position.Position,
 ) []protocol.TextEdit {
-	return InsertUseStmt(fqn.New(`\`+item.Detail), pos)
+	return InsertUseStmt(fqn.New(item.Detail), pos)
 }
 
 // This works but doesn't really look good, but that is probably a problem with the Hover method.

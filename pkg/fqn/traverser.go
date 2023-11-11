@@ -1,6 +1,7 @@
 package fqn
 
 import (
+	"log"
 	"strings"
 
 	"github.com/laytan/php-parser/pkg/ast"
@@ -40,6 +41,11 @@ func (f *Traverser) ResultFor2(position *position.Position, name string) *FQN {
 
 func (f *Traverser) ResultFor(name ast.Vertex) *FQN {
 	nv := nodeident.Get(name)
+	if nv == "" {
+		log.Printf("[WARN]: fqn.ResultFor called with node of type %T without a resolved name", name)
+		return nil
+	}
+
 	// Handle self and static by returning the class the block is in.
 	if f.block != nil && f.blockClass != nil {
 		if nv == "self" || nv == "static" {
