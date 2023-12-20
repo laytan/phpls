@@ -20,7 +20,7 @@ func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocume
 
 	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
 	if s.diag != nil && !inStubs(path) {
-		code := wrkspc.Current.FContentOf(path)
+		code := wrkspc.Current.ContentF(path)
 		if err := s.diag.Run(ctx, int(params.TextDocument.Version), path, []byte(code)); err != nil {
 			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				s.showAndLog(ctx, protocol.Error, err)
@@ -54,7 +54,7 @@ func (s *Server) DidChange(
 
 	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
 	newContent := params.ContentChanges[len(params.ContentChanges)-1].Text
-	prevContent := wrkspc.Current.FContentOf(path)
+	prevContent := wrkspc.Current.ContentF(path)
 	if strutil.RemoveWhitespace(prevContent) == strutil.RemoveWhitespace(newContent) {
 		return nil
 	}
@@ -62,6 +62,7 @@ func (s *Server) DidChange(
 	// TODO: check if this file extension is in config file extensions, and return if not.
 
 	go func() {
+		wrkspc.Current.PutOverlay(path, newContent)
 		if err := s.project.ParseFileUpdate(path, newContent); err != nil {
 			s.showAndLog(ctx, protocol.Warning, err)
 		}
@@ -85,8 +86,11 @@ func (s *Server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocu
 		return err
 	}
 
+	path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
+
+	wrkspc.Current.DeleteOverlay(path)
+
 	if s.diag != nil {
-		path := strings.TrimPrefix(string(params.TextDocument.URI), "file://")
 		if err := s.diag.StopWatching(path); err != nil {
 			s.showAndLog(ctx, protocol.Error, err)
 		}

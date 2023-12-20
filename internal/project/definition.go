@@ -10,8 +10,6 @@ import (
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/project/definition"
 	"github.com/laytan/phpls/internal/project/definition/providers"
-	"github.com/laytan/phpls/internal/wrkspc"
-	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/position"
 )
 
@@ -40,7 +38,7 @@ type DefinitionProvider interface {
 	Define(ctx *context.Ctx) ([]*definition.Definition, error)
 }
 
-func (p *Project) Definition(pos *position.Position) ([]*position.Position, error) {
+func (p *Project) Definition(pos *position.Position) ([]*definition.Definition, error) {
 	ctx, err := context.New(pos)
 	if err != nil {
 		return nil, fmt.Errorf("Could not create definition context: %w", err)
@@ -59,16 +57,11 @@ func (p *Project) Definition(pos *position.Position) ([]*position.Position, erro
 					return nil, ErrNoDefinitionFound
 				}
 
-				return functional.MapFilter(defs, defPosition), nil
+				return defs, nil
 			}
 		}
 	}
 
 	log.Println("no definition provider registered for the given position")
 	return nil, ErrNoDefinitionFound
-}
-
-func defPosition(def *definition.Definition) *position.Position {
-	content := wrkspc.Current.FContentOf(def.Path)
-	return position.FromIRPosition(def.Path, content, def.Position.StartPos)
 }

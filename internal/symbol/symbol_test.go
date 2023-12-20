@@ -37,7 +37,7 @@ func TestClass(t *testing.T) {
 	require.NoError(t, err)
 
 	root, err := wrkspc.Current.
-		IROf(filepath.Join(pathutils.Root(), "internal", "symbol", "testdata", "test.php"))
+		Ast(filepath.Join(pathutils.Root(), "internal", "symbol", "testdata", "test.php"))
 	require.NoError(t, err)
 
 	n := root.Stmts[0].(*ast.StmtExpression).Expr.(*ast.ExprNew).Class.(*ast.Name)

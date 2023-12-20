@@ -338,7 +338,7 @@ func (t *Throws) resolve(node ast.Vertex) (*ast.Root, *expr.Resolved, error) {
 		)
 	}
 
-	resolvedRoot := wrkspc.Current.FIROf(resolvement.Path)
+	resolvedRoot := wrkspc.Current.AstF(resolvement.Path)
 
 	return resolvedRoot, resolvement, nil
 }

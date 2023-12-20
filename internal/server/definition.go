@@ -8,6 +8,8 @@ import (
 
 	"github.com/laytan/go-lsp-protocol/pkg/lsp/protocol"
 	"github.com/laytan/phpls/internal/project"
+	"github.com/laytan/phpls/internal/project/definition"
+	"github.com/laytan/phpls/internal/wrkspc"
 	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/lsperrors"
 	"github.com/laytan/phpls/pkg/position"
@@ -36,7 +38,8 @@ func (s *Server) Definition(
 		return nil, lsperrors.ErrRequestFailed(err.Error())
 	}
 
-	return functional.Map(definitions, func(def *position.Position) protocol.Location {
-		return def.ToLSPLocation()
+	return functional.Map(definitions, func(def *definition.Definition) protocol.Location {
+		content := wrkspc.Current.ContentF(def.Path)
+		return position.FromIRPosition(def.Path, content, def.Position.StartPos).ToLSPLocation()
 	}), nil
 }

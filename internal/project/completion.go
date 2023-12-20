@@ -84,7 +84,12 @@ func GetCompletionQuery(pos *position.Position) CompletionContext {
 	// what.Is(v.Nodes)
 
 	ctx := CompletionContext{}
-	lexer := wrkspc.Current.FLexerOf(pos.Path)
+	lexer, err := wrkspc.Current.Lexer(pos.Path)
+	if err != nil {
+		log.Printf("[ERROR]: creating lexer for completion context: %v", err)
+		return ctx
+	}
+
 	for tok := lexer.Lex(); tok != nil && tok.ID != 0; tok = lexer.Lex() {
 		if tok.Position.EndLine > int(pos.Row) {
 			break
@@ -308,7 +313,7 @@ func Complete(pos *position.Position, comp CompletionContext) (list protocol.Com
 			})
 		}
 	case NameRelative:
-		root := wrkspc.Current.FIROf(pos.Path)
+		root := wrkspc.Current.AstF(pos.Path)
 		v := traversers.NewNamespace(int(pos.Row))
 		tv := traverser.NewTraverser(v)
 		root.Accept(tv)
@@ -370,7 +375,7 @@ func Complete(pos *position.Position, comp CompletionContext) (list protocol.Com
 				return nil
 			}
 
-			if !wrkspc.Current.IsPhpFile(path) {
+			if !wrkspc.Current.IsPhp(path) {
 				return nil
 			}
 
@@ -610,11 +615,11 @@ func PredictNamespace(pos *position.Position) string {
 				continue
 			}
 
-			if !wrkspc.Current.IsPhpFile(fn) {
+			if !wrkspc.Current.IsPhp(fn) {
 				continue
 			}
 
-			root, err := wrkspc.Current.IROf(fn)
+			root, err := wrkspc.Current.Ast(fn)
 			if err != nil {
 				log.Println(err)
 				continue
@@ -669,6 +674,10 @@ func AddScopeVars(
 ) {
 	// TODO: if scope is arrow function, use the scope above that one (vars are inherited in arrow funcs).
 	scope := ctx.Scope()
+	if scope == nil {
+		return
+	}
+
 	scopet := scope.GetType()
 	if scopet != ast.TypeStmtFunction && scopet != ast.TypeStmtClassMethod &&
 		scopet != ast.TypeExprClosure && scopet != ast.TypeExprArrowFunction {
@@ -702,7 +711,7 @@ func AddScopeVars(
 
 // Gets the current word ([a-zA-Z0-9]*) that the position is at.
 func (p *Project) getCompletionQuery(pos *position.Position) string {
-	content := wrkspc.Current.FContentOf(pos.Path)
+	content := wrkspc.Current.ContentF(pos.Path)
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	for i := 0; scanner.Scan(); i++ {
 		// The target line:

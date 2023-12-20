@@ -58,7 +58,7 @@ func (p *variableResolver) Up(
 			Position: scopes.Block.GetPosition(),
 			Parts:    nameParts(nodeident.Get(scopes.Class)),
 		}); ok {
-			return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.FIROf(node.Path))},
+			return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.AstF(node.Path))},
 				node.FQN,
 				phprivacy.PrivacyPrivate,
 				true
@@ -69,7 +69,7 @@ func (p *variableResolver) Up(
 
 	case "parent":
 		node := parentOf(scopes)
-		return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.FIROf(node.Path))},
+		return &Resolved{Path: node.Path, Node: node.ToIRNode(wrk.AstF(node.Path))},
 			node.FQN,
 			phprivacy.PrivacyProtected,
 			true
@@ -79,14 +79,14 @@ func (p *variableResolver) Up(
 			return nil, nil, 0, false
 		}
 
-		t := traversers.NewVariable(toResolve.Identifier)
+		t := traversers.NewVariable(toResolve.Identifier, false)
 		tv := traverser.NewTraverser(t)
 		scopes.Block.Accept(tv)
-		if t.Result == nil {
+		if len(t.Results) == 0 {
 			return nil, nil, 0, false
 		}
 
-		ta := traversers.NewAssignment(t.Result)
+		ta := traversers.NewAssignment(t.Results[0])
 		tav := traverser.NewTraverser(ta)
 		scopes.Block.Accept(tav)
 		if ta.Assignment == nil || ta.Scope == nil {
@@ -200,7 +200,7 @@ func (p *nameResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	return &Resolved{Path: res.Path, Node: res.ToIRNode(wrkspc.Current.FIROf(res.Path))},
+	return &Resolved{Path: res.Path, Node: res.ToIRNode(wrkspc.Current.AstF(res.Path))},
 		qualified,
 		privacy,
 		true
@@ -266,7 +266,7 @@ func (p *functionResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	t := traversers.NewFunctionCall(toResolve.Identifier)
+	t := traversers.NewFunctionCall(toResolve.Identifier, false)
 	tv := traverser.NewTraverser(t)
 	scopes.Block.Accept(tv)
 	if t.Result == nil {
@@ -313,7 +313,7 @@ func (p *functionResolver) Up(
 		Position: toResolve.Position,
 		Parts:    nameParts(toResolve.Identifier),
 	}); ok {
-		n := def.ToIRNode(wrkspc.Current.FIROf(def.Path))
+		n := def.ToIRNode(wrkspc.Current.AstF(def.Path))
 		return &Resolved{
 			Node: n,
 			Path: def.Path,
@@ -328,7 +328,7 @@ func (p *functionResolver) Up(
 		return nil, nil, 0, false
 	}
 
-	n := def.ToIRNode(wrkspc.Current.FIROf(def.Path))
+	n := def.ToIRNode(wrkspc.Current.AstF(def.Path))
 	return &Resolved{
 		Node: n,
 		Path: def.Path,
@@ -378,7 +378,7 @@ func (newresolver *newResolver) Up(
 
 		return &Resolved{
 				Path: def.Path,
-				Node: def.ToIRNode(wrkspc.Current.FIROf(def.Path)),
+				Node: def.ToIRNode(wrkspc.Current.AstF(def.Path)),
 			},
 			qualified,
 			phprivacy.PrivacyPublic,

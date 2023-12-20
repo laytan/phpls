@@ -52,8 +52,8 @@ type Index interface {
 }
 
 type index struct {
-	normalParser parsing.Parser
-	stubParser   parsing.Parser
+	normalParser *parsing.Parser
+	stubParser   *parsing.Parser
 
 	symbolTrie       *symboltrie.Trie[*INode]
 	symbolTraversers *sync.Pool
@@ -81,12 +81,6 @@ func New(phpv *phpversion.PHPVersion) Index {
 }
 
 func (i *index) Index(path string, content string) error {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("Could not parse %s into an AST: %v", path, r)
-		}
-	}()
-
 	root, err := i.parser(path).Parse([]byte(content))
 	if err != nil {
 		return fmt.Errorf(errParseFmt, path, err)
@@ -205,7 +199,7 @@ func (i *index) Delete(path string) error {
 
 var stubsDir = filepath.Join(pathutils.Root(), "third_party", "phpstorm-stubs")
 
-func (i *index) parser(path string) parsing.Parser {
+func (i *index) parser(path string) *parsing.Parser {
 	if strings.HasPrefix(path, config.Current.StubsPath) || strings.HasPrefix(path, stubsDir) {
 		return i.stubParser
 	}

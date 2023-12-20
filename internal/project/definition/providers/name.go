@@ -17,6 +17,10 @@ func NewName() *NameProvider {
 }
 
 func (p *NameProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
+	if kind == ast.TypeStmtClass || kind == ast.TypeStmtInterface || kind == ast.TypeStmtTrait {
+		return true
+	}
+
 	if !nodescopes.IsName(kind) {
 		return false
 	}

@@ -291,6 +291,12 @@ github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5 h1:NtTaaRSn
 github.com/laytan/go-lsp-protocol v0.0.0-20230331135813-fccb4f5d33c5/go.mod h1:D1njoCxBWyG+vZ1r9Xy11U02X5XB5R8PTKRj3kcer7I=
 github.com/laytan/php-parser v0.9.1-0.20230411203829-6b3673ece43a h1:V9fMfdfEYUsauFstzQmdS5Evu9I6N030IC4epJNLGVY=
 github.com/laytan/php-parser v0.9.1-0.20230411203829-6b3673ece43a/go.mod h1:crDMdef5HZkk8JsREDMA6wgTXdip/8mJa4asmjt3ogM=
+github.com/laytan/php-parser v0.9.1-0.20230416220624-307175c40838 h1:IOkVuzF0K25reG7JcRuKF3uKlodtM4C9RzGAOhsb550=
+github.com/laytan/php-parser v0.9.1-0.20230416220624-307175c40838/go.mod h1:crDMdef5HZkk8JsREDMA6wgTXdip/8mJa4asmjt3ogM=
+github.com/laytan/php-parser v0.9.1-0.20230416231421-9a4744a28d1b h1:bwyZHQZmVUMwO59auHDh/GDSBHfN2acMEuwNg6jmsno=
+github.com/laytan/php-parser v0.9.1-0.20230416231421-9a4744a28d1b/go.mod h1:crDMdef5HZkk8JsREDMA6wgTXdip/8mJa4asmjt3ogM=
+github.com/laytan/php-parser v0.10.0 h1:Vpf4AdrK5uIvBLtEKbh41mnHYzT06e6yu/Kd2mJN2q0=
+github.com/laytan/php-parser v0.10.0/go.mod h1:crDMdef5HZkk8JsREDMA6wgTXdip/8mJa4asmjt3ogM=
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
 github.com/lyft/protoc-gen-star v0.5.3/go.mod h1:V0xaHgaf5oCCqmcxYcWiDfTiKsZsRc87/1qhoTACD8w=
 github.com/magiconair/properties v1.8.5/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=

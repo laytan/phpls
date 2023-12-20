@@ -281,13 +281,6 @@ func (s *Server) SignatureHelp(
 	return nil, errorUnimplemented
 }
 
-func (s *Server) References(
-	context.Context,
-	*protocol.ReferenceParams,
-) ([]protocol.Location, error) {
-	return nil, errorUnimplemented
-}
-
 func (s *Server) DocumentHighlight(
 	context.Context,
 	*protocol.DocumentHighlightParams,
@@ -367,10 +360,6 @@ func (s *Server) OnTypeFormatting(
 	context.Context,
 	*protocol.DocumentOnTypeFormattingParams,
 ) ([]protocol.TextEdit, error) {
-	return nil, errorUnimplemented
-}
-
-func (s *Server) Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
 	return nil, errorUnimplemented
 }
 

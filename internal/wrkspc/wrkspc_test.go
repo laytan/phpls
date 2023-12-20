@@ -26,9 +26,8 @@ func BenchmarkWalk(b *testing.B) {
 			}
 		}()
 
-		totalDone := make(chan bool, 1)
 		total := &atomic.Uint64{}
-		err := wrkspc.Current.Index(filesChan, total, totalDone)
+		err := wrkspc.Current.Walk(filesChan, total, wrkspc.WalkAll)
 		require.NoError(b, err)
 	}
 }

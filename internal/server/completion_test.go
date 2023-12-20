@@ -485,25 +485,57 @@ type mockWrkspc struct {
 	t       *testing.T
 }
 
+func (*mockWrkspc) All(path string) (content string, root *ast.Root, err error) {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) Ast(path string) (*ast.Root, error) {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) Content(path string) (string, error) {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) ContentF(path string) string {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) DeleteOverlay(path string) {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) IsPhp(path string) bool {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) Lexer(path string) (lexer.Lexer, error) {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) Parse(path string, content []byte) (*ast.Root, error) {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) PutOverlay(path string, content string) {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) Root() string {
+	panic("unimplemented")
+}
+
+func (*mockWrkspc) Walk(
+	files chan<- *wrkspc.ParsedFile,
+	total *atomic.Uint64,
+	opts wrkspc.WalkOptions,
+) error {
+	panic("unimplemented")
+}
+
 var _ wrkspc.Wrkspc = &mockWrkspc{}
 
-func (*mockWrkspc) FLexerOf(path string) lexer.Lexer {
-	panic("unimplemented")
-}
-
-func (*mockWrkspc) IsPhpFile(path string) bool {
-	panic("unimplemented")
-}
-
-func (mockWrkspc) AllOf(path string) (string, *ast.Root, error) {
-	panic("unimplemented")
-}
-
-func (mockWrkspc) ContentOf(path string) (string, error) {
-	panic("unimplemented")
-}
-
-func (w mockWrkspc) FAllOf(path string) (string, *ast.Root) {
+func (w mockWrkspc) AllF(path string) (string, *ast.Root) {
 	if w.path != path {
 		w.t.Errorf("expected wrkspc.FAllOf to be called with %s, but called with %s", w.path, path)
 	}
@@ -511,36 +543,6 @@ func (w mockWrkspc) FAllOf(path string) (string, *ast.Root) {
 	return w.content, w.root
 }
 
-func (mockWrkspc) FContentOf(path string) string {
-	panic("unimplemented")
-}
-
-func (w mockWrkspc) FIROf(path string) *ast.Root {
+func (w mockWrkspc) AstF(path string) *ast.Root {
 	return w.root
 }
-
-func (mockWrkspc) IROf(path string) (*ast.Root, error) {
-	panic("unimplemented")
-}
-
-func (mockWrkspc) Index(
-	files chan<- *wrkspc.ParsedFile,
-	total *atomic.Uint64,
-	totalDone chan<- bool,
-) error {
-	panic("unimplemented")
-}
-
-func (mockWrkspc) Refresh(path string) error {
-	panic("unimplemented")
-}
-
-func (mockWrkspc) RefreshFrom(path string, content string) error {
-	panic("unimplemented")
-}
-
-func (mockWrkspc) Root() string {
-	panic("unimplemented")
-}
-
-var _ wrkspc.Wrkspc = &mockWrkspc{}

@@ -54,7 +54,7 @@ func NewClassLikeFromName(nameRoot *ast.Root, n ast.Vertex) (*ClassLike, error) 
 		return nil, fmt.Errorf("[symbol.NewClassLikeFromName]: can't find %v in index", n)
 	}
 
-	root := wrkspc.Current.FIROf(iNode.Path)
+	root := wrkspc.Current.AstF(iNode.Path)
 	ct := traversers.NewClassLike(nodeident.Get(n))
 	tv := traverser.NewTraverser(ct)
 	root.Accept(tv)

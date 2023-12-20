@@ -15,7 +15,6 @@ import (
 // TODO: return bytes.
 func Get(n ast.Vertex) string {
 	if n == nil {
-		log.Println("Warning: nodeident.Get with nil node")
 		return ""
 	}
 

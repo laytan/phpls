@@ -131,3 +131,57 @@ func LocToPos(content string, row uint, col uint) uint {
 
 	return 0
 }
+
+func AstToLspLocation(path string, p *position.Position) protocol.Location {
+	return protocol.Location{
+		URI: protocol.DocumentURI("file://" + path),
+		Range: protocol.Range{
+			Start: protocol.Position{
+				Line:      uint32(p.StartLine) - 1,
+				Character: uint32(p.StartCol),
+			},
+			End: protocol.Position{
+				Line:      uint32(p.EndLine) - 1,
+				Character: uint32(p.EndCol),
+			},
+		},
+	}
+}
+
+func FromAst(path string, p *position.Position) *Position {
+	return &Position{
+		Path: path,
+		Row:  uint(p.StartLine),
+		Col:  uint(p.StartCol) + 1,
+	}
+}
+
+func AstInAst(scope *position.Position, p *position.Position) bool {
+	if scope == nil || p == nil {
+		return false
+	}
+
+	if scope.EndLine == 0 && scope.EndPos == 0 {
+		return p.StartLine >= scope.StartLine && p.StartPos >= scope.StartPos
+	}
+
+	return p.StartLine >= scope.StartLine && p.EndLine <= scope.EndLine &&
+		p.StartPos >= scope.StartPos &&
+		p.EndPos <= scope.EndPos
+}
+
+func PosInAst(scope *position.Position, p *Position) bool {
+	if scope == nil {
+		return false
+	}
+
+	if p.Row == uint(scope.StartLine) {
+		return p.Col >= uint(scope.StartCol+1)
+	}
+
+	if p.Row == uint(scope.EndLine) {
+		return p.Col <= uint(scope.EndCol+1)
+	}
+
+	return p.Row >= uint(scope.StartLine) && p.Row <= uint(scope.EndLine)
+}

@@ -4,6 +4,7 @@ import (
 	"github.com/laytan/php-parser/pkg/ast"
 	"github.com/laytan/phpls/internal/context"
 	"github.com/laytan/phpls/internal/project/definition"
+	"github.com/laytan/phpls/pkg/nodeident"
 )
 
 // FunctionProvider resolves the definition of a function call.
@@ -16,9 +17,18 @@ func NewFunction() *FunctionProvider {
 }
 
 func (p *FunctionProvider) CanDefine(ctx *context.Ctx, kind ast.Type) bool {
-	return kind == ast.TypeExprFunctionCall
+	return kind == ast.TypeExprFunctionCall || kind == ast.TypeStmtFunction
 }
 
 func (p *FunctionProvider) Define(ctx *context.Ctx) ([]*definition.Definition, error) {
+	// If stmt function, it is the current function, so just return that one.
+	if ctx.Current().GetType() == ast.TypeStmtFunction {
+		return []*definition.Definition{{
+			Path:       ctx.Path(),
+			Position:   ctx.Current().GetPosition(),
+			Identifier: nodeident.Get(ctx.Current()),
+		}}, nil
+	}
+
 	return DefineExpr(ctx)
 }

@@ -58,7 +58,7 @@ func TestAnnotateThrows(t *testing.T) {
 					}
 
 					if scenario.IsDump {
-						root, err := wrkspc.Current.IROf(scenario.In.Path)
+						root, err := wrkspc.Current.Ast(scenario.In.Path)
 						require.NoError(t, err)
 						what.Is(root)
 						return
@@ -102,7 +102,7 @@ func TestAnnotateThrows(t *testing.T) {
 								t.Errorf("out node is not a class like node %v", cls)
 							}
 
-							root, err := wrkspc.Current.IROf(pos.Path)
+							root, err := wrkspc.Current.Ast(pos.Path)
 							require.NoError(t, err)
 
 							fqn := fqner.FullyQualifyName(

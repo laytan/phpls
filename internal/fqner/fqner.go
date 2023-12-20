@@ -10,19 +10,13 @@ import (
 	"github.com/laytan/phpls/pkg/fqn"
 	"github.com/laytan/phpls/pkg/functional"
 	"github.com/laytan/phpls/pkg/nodeident"
-	"github.com/laytan/phpls/pkg/nodescopes"
 	"github.com/laytan/phpls/pkg/position"
 )
 
 func FullyQualifyName(root *ast.Root, name ast.Vertex) *fqn.FQN {
-	if !nodescopes.IsName(name.GetType()) {
-		panic(
-			"FullyQualifyName can only be called with *ast.Name, *ast.NameFullyQualified or *ast.NameRelative",
-		)
-	}
-
-	if strings.HasPrefix(nodeident.Get(name), `\`) {
-		return fqn.New(nodeident.Get(name))
+	ident := nodeident.Get(name)
+	if strings.HasPrefix(ident, `\`) {
+		return fqn.New(ident)
 	}
 
 	t := fqn.NewTraverser()
@@ -39,7 +33,7 @@ func FindFullyQualifiedName(root *ast.Root, name ast.Vertex) (*index.INode, bool
 
 // Returns whether the file at given pos needs a use statement for the given fqn.
 func NeedsUseStmtFor(pos *position.Position, name *fqn.FQN) bool {
-	content, root := wrkspc.Current.FAllOf(pos.Path)
+	content, root := wrkspc.Current.AllF(pos.Path)
 	parts := strings.Split(name.String(), `\`)
 	className := parts[len(parts)-1]
 
